@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({ TeX: { extensions: ["color.js"] }})
+    </script>
+    <style>
+      body {
+        background: #F5F5DC;
+      }
+
+      .document {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="document">
+      \(
+        \newcommand{\dt}[1]{\frac{d #1}{d t}}
+        \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+        \newcommand{\pdt}[1]{\pd{#1}{t}}
+        \newcommand{\hdiv}{\nabla_{\pi} \cdot \mathbf{V}}
+        \newcommand{\cpocv}{\frac{C_p}{C_V}}
+        \newcommand{\cvocp}{\frac{C_V}{C_p}}
+      \)
+
+      <h1>静力气压坐标</h1>
+      采用基于静力气压或质量坐标的预报方程组（Laprise 1992）
+      \[
+        \begin{align}
+          \dt{\mathbf{V}} & = - \frac{1}{\rho} \nabla_{\pi} p - \pd{p}{\pi} \nabla_{\pi} \phi + \mathbf{F} \\
+          {\color{red}\gamma \dt{w}} & {\color{red}= g \left( \pd{p}{\pi} - 1 \right) + \gamma F_z} \\
+          \dt{\theta} & = \frac{Q}{C_p} \frac{\theta}{T} \\
+          \pdt{\pi_s} & = - \int_{\pi_t}{\pi_s} \nabla_{\pi} \cdot \mathbf{V} d \pi \\
+          {\color{red}\dt{\phi}} & {\color{red}= w g} \text{或} {\color{blue}w = \frac{1}{g} \dt{\phi}}
+        \end{align}
+      \]
+      若干诊断方程
+      <ul>
+        <li>
+          连续方程（计算静力气压垂直速度\(\dot{\pi}\)）
+          \[
+            \hdiv + \pd{\dot{\pi}}{\pi} = 0 \to \dot{\pi} = - \int_{\pi_t}{\pi} \hdiv d \pi
+          \]
+        </li>
+        <li>
+          静力方程（非静力模式计算密度\(\rho\)，静力模式计算位势\(\phi\)）
+          \[
+            {\color{red}\rho = - \left( \pd{\phi}{\pi} \right)^{-1}} 或 {\color{blue}\pd{\phi}{\pi} = - \frac{1}{\rho}}
+          \]
+        </li>
+        <li>
+          代入位温定义式的状态方程（非静力模式计算气压，静力模式计算密度）
+          \[
+            {\color{red}p = p_0 \left( \frac{\rho R \theta}{p_0} \right)^{\cpocv}} 或 {\color{blue}\rho = \frac{p_0}{R \theta} \left( \frac{p}{p_0} \right)^{\cvocp}}
+          \]
+        </li>
+      </ul>
+      若干定义式
+      <ul>
+        <li>
+          时间全导数
+          \[
+            \dt{} = \hdiv + \dot{\pi} \pd{}{\pi}
+          \]
+        </li>
+        <li>
+          三维散度
+          \[
+            D_3 = \hdiv + \rho \nabla_{\pi} \phi \cdot \pd{\mathbf{V}}{\pi} - \rho g \pd{w}{\pi}
+          \]
+        </li>
+      </ul>
+      <h1>广义地形跟随坐标</h1>
+    </div>
+  </body>
+</html>
