@@ -3,7 +3,12 @@
   <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
     <script type="text/x-mathjax-config">
-      MathJax.Hub.Config({ TeX: { extensions: ["color.js"] }})
+      MathJax.Hub.Config({
+        TeX: {
+          equationNumbers: { autoNumber: "AMS" },
+          extensions: ["color.js"]
+        }
+      })
     </script>
     <style>
       body {
@@ -20,6 +25,7 @@
   <body>
     <div class="document">
       \(
+        \require{cancel}
         \newcommand{\dt}[1]{\frac{d #1}{d t}}
         \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
         \newcommand{\pdt}[1]{\pd{#1}{t}}
@@ -29,53 +35,131 @@
       \)
 
       <h1>静力气压坐标</h1>
-      采用基于静力气压或质量坐标的预报方程组（Laprise 1992）
-      \[
-        \begin{align}
-          \dt{\mathbf{V}} & = - \frac{1}{\rho} \nabla_{\pi} p - \pd{p}{\pi} \nabla_{\pi} \phi + \mathbf{F} \\
-          {\color{red}\gamma \dt{w}} & {\color{red}= g \left( \pd{p}{\pi} - 1 \right) + \gamma F_z} \\
-          \dt{\theta} & = \frac{Q}{C_p} \frac{\theta}{T} \\
-          \pdt{\pi_s} & = - \int_{\pi_t}{\pi_s} \nabla_{\pi} \cdot \mathbf{V} d \pi \\
-          {\color{red}\dt{\phi}} & {\color{red}= w g} \text{或} {\color{blue}w = \frac{1}{g} \dt{\phi}}
-        \end{align}
-      \]
-      若干诊断方程
-      <ul>
-        <li>
-          连续方程（计算静力气压垂直速度\(\dot{\pi}\)）
-          \[
-            \hdiv + \pd{\dot{\pi}}{\pi} = 0 \to \dot{\pi} = - \int_{\pi_t}{\pi} \hdiv d \pi
-          \]
-        </li>
-        <li>
-          静力方程（非静力模式计算密度\(\rho\)，静力模式计算位势\(\phi\)）
-          \[
-            {\color{red}\rho = - \left( \pd{\phi}{\pi} \right)^{-1}} 或 {\color{blue}\pd{\phi}{\pi} = - \frac{1}{\rho}}
-          \]
-        </li>
-        <li>
-          代入位温定义式的状态方程（非静力模式计算气压，静力模式计算密度）
-          \[
-            {\color{red}p = p_0 \left( \frac{\rho R \theta}{p_0} \right)^{\cpocv}} 或 {\color{blue}\rho = \frac{p_0}{R \theta} \left( \frac{p}{p_0} \right)^{\cvocp}}
-          \]
-        </li>
-      </ul>
-      若干定义式
-      <ul>
-        <li>
-          时间全导数
-          \[
-            \dt{} = \hdiv + \dot{\pi} \pd{}{\pi}
-          \]
-        </li>
-        <li>
-          三维散度
-          \[
-            D_3 = \hdiv + \rho \nabla_{\pi} \phi \cdot \pd{\mathbf{V}}{\pi} - \rho g \pd{w}{\pi}
-          \]
-        </li>
-      </ul>
+      <p>
+        采用基于静力气压或质量坐标的预报方程组（Laprise 1992）
+        \[
+          \begin{align}
+            \dt{\mathbf{V}} & = - \frac{1}{\rho} \nabla_{\pi} p - \pd{p}{\pi} \nabla_{\pi} \phi + \mathbf{F} \\
+            {\color{red}\gamma \dt{w}} & {\color{red}= g \left( \pd{p}{\pi} - 1 \right) + \gamma F_z} \\
+            \dt{\theta} & = \frac{Q}{C_p} \frac{\theta}{T} \\
+            \pdt{\pi_s} & = - \int_{\pi_t}{\pi_s} \nabla_{\pi} \cdot \mathbf{V} d \pi \\
+            {\color{red}\dt{\phi}} & {\color{red}= w g} \text{或} {\color{blue}w = \frac{1}{g} \dt{\phi}}
+          \end{align}
+        \]
+        若干诊断方程
+        <ul>
+          <li>
+            连续方程（计算静力气压垂直速度\(\dot{\pi}\)）
+            \[
+              \hdiv + \pd{\dot{\pi}}{\pi} = 0 \to \dot{\pi} = - \int_{\pi_t}{\pi} \hdiv d \pi
+            \]
+          </li>
+          <li>
+            静力方程（非静力模式计算密度\(\rho\)，静力模式计算位势\(\phi\)）
+            \[
+              {\color{red}\rho = - \left( \pd{\phi}{\pi} \right)^{-1}} 或 {\color{blue}\pd{\phi}{\pi} = - \frac{1}{\rho}}
+            \]
+          </li>
+          <li>
+            代入位温定义式的状态方程（非静力模式计算气压，静力模式计算密度）
+            \[
+              {\color{red}p = p_0 \left( \frac{\rho R \theta}{p_0} \right)^{\cpocv}} 或 {\color{blue}\rho = \frac{p_0}{R \theta} \left( \frac{p}{p_0} \right)^{\cvocp}}
+            \]
+          </li>
+        </ul>
+        若干定义式
+        <ul>
+          <li>
+            时间全导数
+            \[
+              \dt{} = \hdiv + \dot{\pi} \pd{}{\pi}
+            \]
+          </li>
+          <li>
+            三维散度
+            \[
+              D_3 = \hdiv + \rho \nabla_{\pi} \phi \cdot \pd{\mathbf{V}}{\pi} - \rho g \pd{w}{\pi}
+            \]
+          </li>
+        </ul>
+      </p>
       <h1>广义地形跟随坐标</h1>
+      <p>
+        引入一个关于静力气压坐标\(\pi\)的单调函数\(\eta \left( \pi, \pi_s \right)\)，满足如下地形追随条件：
+        <ul>
+          <li>
+            模式底是坐标面1：\(\eta \left( \pi_s, \pi_s \right) = 1\)
+          </li>
+          <li>
+            模式顶是坐标面0：\(\eta \left( \pi_t, \pi_s \right) = 0\)
+          </li>
+          <li>
+            上下边界的垂直坐标速度为零：\(\dot{\eta} \left( \pi_s, \pi_s \right) = \dot{\eta} \left( \pi_t, \pi_s \right) = 0\)
+          </li>
+        </ul>
+        \[
+          \begin{align}
+            \left( \pd{F}{t} \right)_\pi & = \left( \pd{F}{t} \right)_\eta - \pd{\eta}{\pi} \left( \pdt{\pi} \right)_\eta \pd{F}{\eta} \\
+            \nabla_\pi F & = \nabla_\eta F - \pd{\eta}{\pi} \nabla_\eta \pi \pd{F}{\eta}
+          \end{align}
+        \]
+      </p>
+      <h2>连续方程</h2>
+      <p>
+        \[
+          \begin{equation}
+            \pd{}{\eta} \pdt{\pi} + \nabla_{\eta} \cdot \left( \mathbf{V} \pd{\pi}{\eta} \right) + \pd{}{\eta} \left( \dot{\eta} \pd{\pi}{\eta} \right) = 0
+            \label{eq:eta-continuity-equation}
+          \end{equation}
+        \]
+      </p>
+      <h2>静力方程</h2>
+      <p>
+        \[
+          \begin{equation}
+            \pd{\phi}{\eta} = - \frac{1}{\rho} \pd{\pi}{\eta}
+            \label{eq:eta-hydrostatic-equation}
+          \end{equation}
+        \]
+      </p>
+      <h2>动量方程</h2>
+      <p>
+        \[
+          \frac{1}{\rho} \nabla_\pi p = \frac{1}{\rho} \nabla_\eta p - \cancel{\frac{1}{\rho} \pd{\eta}{\pi} \pd{p}{\eta} \nabla_\eta \pi}
+        \]
+        \[
+          \begin{align*}
+            \pd{p}{\pi} \nabla_{\pi} \phi & = \pd{p}{\pi} \nabla_{\eta} \phi - \pd{p}{\pi} \pd{\eta}{\pi} \pd{\phi}{\eta} \nabla_\eta \pi \\
+                                          & = \pd{p}{\pi} \nabla_{\eta} \phi + \pd{p}{\pi} \pd{\eta}{\pi} \frac{1}{\rho} \pd{\pi}{\eta} \nabla_\eta \pi \quad\leftarrow\text{代入静力方程\eqref{eq:eta-hydrostatic-equation}} \\
+                                          & = \pd{p}{\pi} \nabla_{\eta} \phi + \cancel{\pd{p}{\pi} \frac{1}{\rho} \nabla_\eta \pi}
+          \end{align*}
+        \]
+        上面两式中的第二项相消，因此动量方程形式上仅变换水平梯度算子的下标
+        \[
+          \begin{equation}
+            \dt{\mathbf{V}} = - \frac{1}{\rho} \nabla_{\eta} p - \pd{p}{\pi} \nabla_{\eta} \phi + \mathbf{F}
+          \end{equation}
+        \]
+      </p>
+      <h2>地面静力气压方程</h2>
+      <p>
+        对\eqref{eq:eta-continuity-equation}两侧做\(\eta\)从\(0\)到\(1\)的积分，其中应用了在上下边界上\(\dot{\eta} = 0\)的条件
+        \[
+          \pdt{\pi_s} = - \int_0^1 \nabla_\eta \cdot \left( \mathbf{V} \pd{\pi}{\eta} \right) d \eta
+        \]
+      </p>
+      <p>
+        最后的预报方程组为
+        \[
+          \begin{align}
+            \dt{\mathbf{V}} & = - \frac{1}{\rho} \nabla_{\eta} p - \pd{p}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
+            {\color{red}\gamma \dt{w}} & {\color{red}= g \left( \pd{p}{\pi} - 1 \right) + \gamma F_z} \\
+            \dt{\theta} & = \frac{Q}{C_p} \frac{\theta}{T} \\
+            \pdt{\pi_s} & = - \int_0^1 \nabla_\eta \cdot \left( \mathbf{V} \pd{\pi}{\eta} \right) d \eta \\
+            {\color{red}\dt{\phi}} & {\color{red}= w g} \text{或} {\color{blue}w = \frac{1}{g} \dt{\phi}}
+          \end{align}
+        \]
+      </p>
     </div>
   </body>
 </html>
