@@ -57,13 +57,13 @@
           <li>
             静力方程（非静力模式计算密度\(\rho\)，静力模式计算位势\(\phi\)）
             \[
-              {\color{red}\rho = - \left( \pd{\phi}{\pi} \right)^{-1}} 或 {\color{blue}\pd{\phi}{\pi} = - \frac{1}{\rho}}
+              {\color{red}\rho = - \left( \pd{\phi}{\pi} \right)^{-1}} \text{或} {\color{blue}\pd{\phi}{\pi} = - \frac{1}{\rho}}
             \]
           </li>
           <li>
             代入位温定义式的状态方程（非静力模式计算气压，静力模式计算密度）
             \[
-              {\color{red}p = p_0 \left( \frac{\rho R \theta}{p_0} \right)^{\cpocv}} 或 {\color{blue}\rho = \frac{p_0}{R \theta} \left( \frac{p}{p_0} \right)^{\cvocp}}
+              {\color{red}p = p_0 \left( \frac{\rho R \theta}{p_0} \right)^{\cpocv}} \text{或} {\color{blue}\rho = \frac{p_0}{R \theta} \left( \frac{p}{p_0} \right)^{\cvocp}}
             \]
           </li>
         </ul>
@@ -154,16 +154,26 @@
         </ul>
       </p>
       <p>
-        最后的预报方程组为
+        广义地形追随坐标系下的预报方程组为
         \[
           \begin{align}
-            \dt{\mathbf{V}} & = - \frac{1}{\rho} \nabla_{\eta} p - \pd{p}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
-            {\color{red}\gamma \dt{w}} & {\color{red}= g \left( \pd{p}{\pi} - 1 \right) + \gamma F_z} \\
+            \dt{\mathbf{V}} & = - \frac{1}{\rho} \nabla_{\eta} p - \pd{p}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
+            {\color{red}\gamma \dt{w}} & {\color{red}= g \left( \pd{p}{\eta} \pd{\eta}{\pi} - 1 \right) + \gamma F_z} \\
             \dt{\theta} & = \frac{Q}{C_p} \frac{\theta}{T} \\
             \pdt{\pi_s} & = - \int_0^1 \nabla_\eta \cdot \left( \mathbf{V} \pd{\pi}{\eta} \right) d \eta \\
             {\color{red}\dt{\phi}} & {\color{red}= w g} \text{或} {\color{blue}w = \frac{1}{g} \dt{\phi}}
           \end{align}
         \]
+        诊断方程为
+        \[
+          \begin{align}
+            \pd{}{\eta} \pdt{\pi} + \nabla_{\eta} \cdot \left( \mathbf{V} \pd{\pi}{\eta} \right) + \pd{}{\eta} \left( \dot{\eta} \pd{\pi}{\eta} \right) & = 0 \to 
+            \dot{\eta} \pd{\pi}{\eta} = - \pdt{\pi} - \int_0^\eta \nabla_{\eta} \cdot \left( \mathbf{V} \pd{\pi}{\eta} \right) d \eta \\
+            {\color{red}\rho = - \pd{\pi}{\eta} \left( \pd{\phi}{\eta} \right)^{-1}} & \text{或} {\color{blue}\pd{\phi}{\eta} = - \frac{1}{\rho} \pd{\pi}{\eta}} \\
+            {\color{red}p = p_0 \left( \frac{\rho R \theta}{p_0} \right)^{\cpocv}} & \text{或} {\color{blue}\rho = \frac{p_0}{R \theta} \left( \frac{p}{p_0} \right)^{\cvocp}}
+          \end{align}
+        \]
+        其中\(\pd{p}{\eta}\)和\(\pd{\pi}{\eta}\)来自于坐标定义，红色项是非静力模式需要计算的项，蓝色为静力模式。
       </p>
     </div>
   </body>
