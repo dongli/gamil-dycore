@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: {
+          equationNumbers: { autoNumber: "AMS" },
+          extensions: ["color.js"]
+        }
+      })
+    </script>
+    <style>
+      body {
+        background: #F5F5DC;
+      }
+
+      .document {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .title {
+        margin-left: auto;
+        margin-right: auto;
+        font-size: 36px;
+        font-weight: bold;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="document">
+      \(
+        \require{cancel}
+        \newcommand{\d}[2]{\frac{d #1}{d #2}}
+        \newcommand{\dt}[1]{\d{#1}{t}}
+        \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+        \newcommand{\pdt}[1]{\pd{#1}{t}}
+        \newcommand{\hdiv}{\nabla_{\pi} \cdot \mathbf{v}}
+        \newcommand{\cpocv}{\frac{C_p}{C_V}}
+        \newcommand{\cvocp}{\frac{C_V}{C_p}}
+      \)
+      <span class="title">IAP变量变换</span>
+      <div class="section">
+        <h1>动量方程</h1>
+        <p>
+          \[
+            \sqrt{\pi_{es}} \dt{\mathbf{v}} = - \frac{\sqrt{\pi_{es}}}{\rho} \nabla_\eta p - \sqrt{\pi_{es}} \pd{p}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \sqrt{\pi_{es}} \mathbf{F}
+          \]
+          \[
+           \mathbf{v} \pdt{\sqrt{\pi_{es}}} = - \frac{\mathbf{v}}{2 \sqrt{\pi_{es}}} \int_0^1 \nabla_\eta \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta
+          \]
+          \[
+            \dt{\mathbf{V}} = - \frac{\sqrt{\pi_{es}}}{\rho} \nabla_\eta p - \sqrt{\pi_{es}} \pd{p}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \sqrt{\pi_{es}} \mathbf{F} - \frac{\mathbf{v}}{2 \sqrt{\pi_{es}}} \int_0^1 \nabla_\eta \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta
+          \]
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
