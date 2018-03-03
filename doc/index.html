@@ -26,7 +26,8 @@
     <div class="document">
       \(
         \require{cancel}
-        \newcommand{\dt}[1]{\frac{d #1}{d t}}
+        \newcommand{\d}[2]{\frac{d #1}{d #2}}
+        \newcommand{\dt}[1]{\d{#1}{t}}
         \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
         \newcommand{\pdt}[1]{\pd{#1}{t}}
         \newcommand{\hdiv}{\nabla_{\pi} \cdot \mathbf{V}}
@@ -174,6 +175,26 @@
           \end{align}
         \]
         其中\(\pd{p}{\eta}\)和\(\pd{\pi}{\eta}\)来自于坐标定义，红色项是非静力模式需要计算的项，蓝色为静力模式。
+      </p>
+      <h2>几种特定形式</h2>
+      <h3>混合坐标</h3>
+      <p>
+        \[
+          \begin{equation}
+            \pi( x, y, \eta, t) = A(\eta) + B(\eta) \pi_s(x, y, t)
+            \label{eq:hybrid-coordinate}
+          \end{equation}
+        \]
+        其中函数\(A(\eta)\)和\(B(\eta)\)满足如下条件：1）\(A(1) = 0, B(1) = 1\)；2）\(A(0) = \pi_t, B(0) = 0\)。对\eqref{eq:hybrid-coordinate}做时间、\(\eta\)和水平坐标的导数得到
+        \[
+          \pdt{\pi} = B \pdt{\pi_s}
+        \]
+        \[
+          \pd{\pi}{\eta} = \d{A}{\eta} + \pi_s \d{B}{\eta}
+        \]
+        \[
+          \nabla_\eta \pi = B \nabla_\eta \pi_s = B \pi_s \nabla_\eta \ln \pi_s
+        \]
       </p>
     </div>
   </body>
