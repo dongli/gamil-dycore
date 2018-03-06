@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width">
+    <title>扰动形式推导</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: {
+          equationNumbers: { autoNumber: "AMS" },
+          extensions: ["color.js"]
+        }
+      })
+    </script>
+    <style>
+      body {
+        background: #F5F5DC;
+      }
+
+      .document {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .title {
+        margin-left: auto;
+        margin-right: auto;
+        font-size: 36px;
+        font-weight: bold;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="document">
+      \(
+        \require{cancel}
+        \newcommand{\d}[2]{\frac{d #1}{d #2}}
+        \newcommand{\dt}[1]{\d{#1}{t}}
+        \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+        \newcommand{\pdt}[1]{\pd{#1}{t}}
+        \newcommand{\hdiv}{\nabla_{\pi} \cdot \mathbf{v}}
+        \newcommand{\cpocv}{\frac{C_p}{C_V}}
+        \newcommand{\cvocp}{\frac{C_V}{C_p}}
+      \)
+      <p>
+        <ul>
+          <li>
+            水平动量方程
+            在广义地形追随坐标上采用扰动形式
+            \[
+              \begin{align*}
+                \dt{\mathbf{v}} & = - \frac{1}{\rho} \nabla_{\eta} p - \pd{p}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
+                  & = - \frac{1}{\rho} \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) - \pd{p}{\eta} \pd{\eta}{\pi} \left( {\color{red}\pd{\overline{\phi}}{\overline{\pi}} \nabla_\eta \overline{\pi}} + \nabla_\eta \phi^\prime \right) + \mathbf{F} \\
+                  & = - \frac{1}{\rho} \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) - \pd{p}{\eta} \pd{\eta}{\pi} \left( {\color{red}- \overline{\alpha} \nabla_\eta \overline{\pi}} + \nabla_\eta \phi^\prime \right) + \mathbf{F} \\
+                  & = {\color{red}- \left( \alpha - \pd{p}{\eta} \pd{\eta}{\pi} \overline{\alpha} \right) \nabla_\eta \overline{\pi}} {\color{purple}- \alpha \nabla_\eta p^\prime - \pd{p}{\eta} \pd{\eta}{\pi} \nabla_\eta \phi^\prime} + \mathbf{F}
+              \end{align*}
+            \]
+            如果在静力气压坐标的基础上则扰动方程形式简化为
+            \[
+              \begin{align*}
+                \dt{\mathbf{v}} & = - \frac{1}{\rho} \nabla_\pi p - \pd{p}{\pi} \nabla_\pi \phi + \mathbf{F} \\
+                  & = - \frac{1}{\rho} \nabla_\pi p^\prime - \pd{p}{\pi} \nabla_\pi \phi^\prime + \mathbf{F} \\
+              \end{align*}
+            \]
+            然后再进行广义地形追随坐标变换
+            \[
+              \begin{align*}
+                \dt{\mathbf{v}} & = - \frac{1}{\rho} \nabla_\pi p^\prime - \pd{p}{\pi} \nabla_\pi \phi^\prime + \mathbf{F} \\
+                  & = {\color{purple}- \frac{1}{\rho} \nabla_\eta p^\prime - \pd{p}{\eta} \pd{\eta}{\pi} \nabla_\eta \phi^\prime} + \mathbf{F}
+              \end{align*}
+            \]
+          </li>
+          <li>
+            静力平衡方程
+            \[
+              \begin{align*}
+                \pd{\phi}{\eta} & = - \pd{\pi}{\eta} \alpha \\
+                \pd{\phi^\prime}{\eta} + \pd{\overline{\phi}}{\overline{\pi}} \pd{\overline{\pi}}{\eta} & = - \pd{\pi}{\eta} \alpha \\
+                \pd{\phi^\prime}{\eta} - \overline{\alpha} \pd{\overline{\pi}}{\eta} & = - \left( \pd{\overline{\pi}}{\eta} + \pd{\pi^\prime}{\eta} \right) \left( \overline{\alpha} + \alpha^\prime \right) \\
+                \pd{\phi^\prime}{\eta} & = \overline{\alpha} \pd{\overline{\pi}}{\eta} - \left( \pd{\overline{\pi}}{\eta} + \pd{\pi^\prime}{\eta} \right) \left( \overline{\alpha} + \alpha^\prime \right) \\
+                \pd{\phi^\prime}{\eta} & = - \pd{\overline{\pi}}{\eta} \alpha^\prime - \pd{\pi^\prime}{\eta} \alpha
+              \end{align*}
+            \]
+          </li>
+        </ul>
+      </p>
+    </div>
+  </body>
+</html>

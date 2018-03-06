@@ -96,30 +96,6 @@
         </p>
       </div>
       <div class="section">
-        <h1>标准大气层结扣除</h1>
-        <p>
-          \[
-            \begin{align}
-              \theta^\prime(x, y, \pi, t) & = \theta(x, y, \pi, t) - \overline{\theta}(\pi) \\
-              \phi^\prime(x, y, \pi, t) & = \phi(x, y, \pi, t) - \overline{\phi}(\pi) 
-            \end{align}
-          \]
-          注意水平坐标\(x, y\)可以是经纬度\(\lambda, \varphi\)。
-          \[
-            \begin{align*}
-              \dt{\mathbf{v}} & = - \frac{1}{\rho} \nabla_\pi p - \pd{p}{\pi} \nabla_\pi \phi + \mathbf{F} \\
-              \dt{\mathbf{v}} & = - \frac{1}{\rho} \nabla_\pi p - \pd{p}{\pi} \nabla_\pi \phi^\prime + \mathbf{F} \\
-            \end{align*}
-          \]
-          \[
-            \begin{align*}
-              \dt{\theta^\prime + \overline{\theta}} & = \frac{Q}{C_p} \frac{\theta}{T} \\
-              \dt{\theta^\prime} + \dot{\pi} \pd{\overline{\theta}}{\pi} & = \frac{Q}{C_p} \left( \frac{p_0}{p} \right)^{\frac{R}{C_p}} \\
-            \end{align*}
-          \]
-        </p>
-      </div>
-      <div class="section">
         <h1>广义地形跟随坐标</h1>
         <p>
           引入一个关于静力气压坐标\(\pi\)的单调函数\(\eta \left( \pi, \pi_s \right)\)，满足如下地形追随条件：
@@ -198,7 +174,7 @@
               {\color{red}\gamma \dt{w}} & {\color{red}= g \left( \pd{p}{\eta} \pd{\eta}{\pi} - 1 \right) + \gamma F_z} \\
               \dt{\theta} & = \frac{Q}{C_p} \frac{\theta}{T} \\
               \pdt{\pi_{es}} & = - \int_0^1 \nabla_\eta \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta \\
-              {\color{red}\dt{\phi}} & {\color{red}= w g} \text{或} {\color{blue}w = \frac{1}{g} \dt{\phi}}
+              {\color{red}\dt{\phi}} & {\color{red}= w g} \quad \text{或} \quad {\color{blue}w = \frac{1}{g} \dt{\phi}}
             \end{align}
           \]
           诊断方程为
@@ -206,8 +182,8 @@
             \begin{align}
               \pd{}{\eta} \pdt{\pi} + \nabla_{\eta} \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) + \pd{}{\eta} \left( \dot{\eta} \pd{\pi}{\eta} \right) & = 0 \to 
               \dot{\eta} \pd{\pi}{\eta} = - \pdt{\pi} - \int_0^\eta \nabla_{\eta} \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta \\
-              {\color{red}\rho = - \pd{\pi}{\eta} \left( \pd{\phi}{\eta} \right)^{-1}} & \text{或} {\color{blue}\pd{\phi}{\eta} = - \frac{1}{\rho} \pd{\pi}{\eta}} \\
-              {\color{red}p = p_0 \left( \frac{\rho R \theta}{p_0} \right)^{\cpocv}} & \text{或} {\color{blue}\rho = \frac{p_0}{R \theta} \left( \frac{p}{p_0} \right)^{\cvocp}}
+              {\color{red}\rho = - \pd{\pi}{\eta} \left( \pd{\phi}{\eta} \right)^{-1}} & \quad \text{或} \quad {\color{blue}\pd{\phi}{\eta} = - \frac{1}{\rho} \pd{\pi}{\eta}} \\
+              {\color{red}p = p_0 \left( \frac{\rho R \theta}{p_0} \right)^{\cpocv}} & \quad \text{或} \quad {\color{blue}\rho = \frac{p_0}{R \theta} \left( \frac{p}{p_0} \right)^{\cvocp}}
             \end{align}
           \]
           其中\(\pd{p}{\eta}\)和\(\pd{\pi}{\eta}\)来自于坐标定义，红色项是非静力模式需要计算的项，蓝色为静力模式。
@@ -252,6 +228,38 @@
             </p>
           </div>
         </div>
+      </div>
+      <div class="section">
+        <h1>扰动形式</h1>
+        <p>
+          为了减少离散计算时的截断误差（大项小差问题参见<a href="details/big_val_small_diff.html">这里</a>），将方程写为扰动形式。设置静力气压坐标系下的扰动态
+          \[
+            \begin{align}
+              p^\prime(x, y, \overline{\pi}, t) & = p(x, y, \overline{\pi}, t) - \overline{\pi} \\
+              \theta^\prime(x, y, \overline{\pi}, t) & = \theta(x, y, \overline{\pi}, t) - \overline{\theta}(\overline{\pi}) \\
+              \phi^\prime(x, y, \overline{\pi}, t) & = \phi(x, y, \overline{\pi}, t) - \overline{\phi}(\overline{\pi}) \\
+              \pi_{es}^\prime(x, y) & = \pi_{es}(x, y) - \overline{\pi}_{es}(x, y)
+            \end{align}
+          \]
+          其中基准静力气压\(\overline{\pi}\)的存在是由于采用了基准地面静力气压\(\overline{\pi}_{es}\)。由于\(\eta\)坐标面相对于\(\pi\)不是“水平”的，因此基本态\(\overline{\pi}, \overline{\theta}, \overline{\phi}\)是\(x, y, \eta\)的函数。代入以上扰动后，预报方程组变为如下形式（<a href="details/perturb_form.html">推导</a>）
+          \[
+            \begin{align}
+              \dt{\mathbf{v}} & = {\color{purple}- \left( \alpha - \pd{p}{\eta} \pd{\eta}{\pi} \overline{\alpha} \right) \nabla_\eta \overline{\pi}} - \alpha \nabla_\eta p^\prime - \pd{p}{\eta} \pd{\eta}{\pi} \nabla_\eta \phi^\prime + \mathbf{F} \\
+              {\color{red}\gamma \dt{w}} & {\color{red}= g \left( \pd{p^\prime}{\eta} \pd{\eta}{\pi} + \pd{\overline{\pi}}{\eta} \pd{\eta}{\pi} - 1\right) + \gamma F_z} \\
+              \dt{\theta^\prime} & = - \d{\overline{\theta}}{\overline{\pi}} \left( {\color{purple}\mathbf{v} \cdot \nabla_\eta \overline{\pi}} + \dot{\eta} \pd{\overline{\pi}}{\eta} \right) + \frac{Q}{C_p} \frac{\theta}{T} \\
+              \pdt{\pi_{es}^\prime} & = - \int_0^1 \nabla_\eta \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta \\
+              {\color{red}\dt{\phi^\prime}} & {\color{red}= - \d{\overline{\phi}}{\overline{\pi}} \left( {\color{purple}\mathbf{v} \cdot \nabla_\eta \overline{\pi}} + \dot{\eta} \pd{\overline{\pi}}{\eta} \right) + w g} \quad \text{或} \quad {\color{blue}w = \frac{1}{g} \dt{\phi^\prime} + \frac{1}{g} \d{\overline{\phi}}{\overline{\pi}} \left( {\color{purple}\mathbf{v} \cdot \nabla_\eta \overline{\pi}} + \dot{\eta} \pd{\overline{\pi}}{\eta} \right)}
+            \end{align}
+          \]
+          诊断方程
+          \[
+            \begin{align}
+              \dot{\eta} \pd{\pi}{\eta} & = - \pdt{\pi} - \int_0^\eta \nabla_{\eta} \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta \\
+              {\color{red}\pd{\phi^\prime}{\eta} = - \pd{\overline{\pi}}{\eta} \alpha^\prime - \pd{\pi^\prime}{\eta} \alpha} & \quad \text{或} \quad {\color{blue}\pd{\phi^\prime}{\eta} = - \pd{\overline{\pi}}{\eta} \alpha^\prime - \pd{\pi^\prime}{\eta} \alpha} \\
+              {\color{red}p = p_0 \left( \frac{\rho R \theta}{p_0} \right)^{\cpocv}} & \quad \text{或} \quad {\color{blue}\rho = \frac{p_0}{R \theta} \left( \frac{p}{p_0} \right)^{\cvocp}}
+            \end{align}
+          \]
+        </p>
       </div>
       <div class="section">
         <h1>IAP变量变换</h1>
