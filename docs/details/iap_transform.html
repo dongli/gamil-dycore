@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width">
+    <title>IAP变量变换</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
     <script type="text/x-mathjax-config">
       MathJax.Hub.Config({
@@ -42,19 +43,24 @@
         \newcommand{\hdiv}{\nabla_{\pi} \cdot \mathbf{v}}
         \newcommand{\cpocv}{\frac{C_p}{C_V}}
         \newcommand{\cvocp}{\frac{C_V}{C_p}}
+        \newcommand{\p}{\sqrt{\pi_{es}}}
       \)
       <span class="title">IAP变量变换</span>
       <div class="section">
-        <h1>动量方程</h1>
         <p>
           \[
-            \sqrt{\pi_{es}} \dt{\mathbf{v}} = - \frac{\sqrt{\pi_{es}}}{\rho} \nabla_\eta p - \sqrt{\pi_{es}} \pd{p}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \sqrt{\pi_{es}} \mathbf{F}
+            \p \dt{\mathbf{v}} = - \left( \alpha - \pd{p}{\eta} \pd{\eta}{\pi} \overline{\alpha} \right) \p \nabla_\eta \overline{\pi} - \p \alpha \nabla_\eta p^\prime - \p \pd{p}{\eta} \pd{\eta}{\pi} \nabla_\eta \phi^\prime + \p \mathbf{F}
           \]
           \[
-           \mathbf{v} \pdt{\sqrt{\pi_{es}}} = - \frac{\mathbf{v}}{2 \sqrt{\pi_{es}}} \int_0^1 \nabla_\eta \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta
+            \mathbf{v} \pdt{\p} = - \frac{\mathbf{v}}{2 \p} \int_0^1 \nabla_\eta \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta
           \]
           \[
-            \dt{\mathbf{V}} = - \frac{\sqrt{\pi_{es}}}{\rho} \nabla_\eta p - \sqrt{\pi_{es}} \pd{p}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \sqrt{\pi_{es}} \mathbf{F} - \frac{\mathbf{v}}{2 \sqrt{\pi_{es}}} \int_0^1 \nabla_\eta \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta
+            \begin{align*}
+              \dt{\mathbf{V}} & = - \left( \alpha - \pd{p}{\eta} \pd{\eta}{\pi} \overline{\alpha} \right) \p \nabla_\eta \overline{\pi} - \p \alpha \nabla_\eta p^\prime - \p \pd{p}{\eta} \pd{\eta}{\pi} \nabla_\eta \phi^\prime - \frac{\mathbf{v}}{2 \p} \int_0^1 \nabla_\eta \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta + \p \mathbf{F}
+            \end{align*}
+          \]
+          \[
+            \gamma \p \dt{w} = g \p \left( \pd{p^\prime}{\eta} \pd{\eta}{\pi} + \pd{\overline{\pi}}{\eta} \pd{\eta}{\pi} - 1\right) + \gamma \p F_z
           \]
         </p>
       </div>

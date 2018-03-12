@@ -52,9 +52,13 @@
             \[
               \begin{align*}
                 \dt{\mathbf{v}} & = - \frac{1}{\rho} \nabla_{\eta} p - \pd{p}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
-                  & = - \frac{1}{\rho} \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) - \pd{p}{\eta} \pd{\eta}{\pi} \left( {\color{red}\pd{\overline{\phi}}{\overline{\pi}} \nabla_\eta \overline{\pi}} + \nabla_\eta \phi^\prime \right) + \mathbf{F} \\
-                  & = - \frac{1}{\rho} \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) - \pd{p}{\eta} \pd{\eta}{\pi} \left( {\color{red}- \overline{\alpha} \nabla_\eta \overline{\pi}} + \nabla_\eta \phi^\prime \right) + \mathbf{F} \\
-                  & = {\color{red}- \left( \alpha - \pd{p}{\eta} \pd{\eta}{\pi} \overline{\alpha} \right) \nabla_\eta \overline{\pi}} {\color{purple}- \alpha \nabla_\eta p^\prime - \pd{p}{\eta} \pd{\eta}{\pi} \nabla_\eta \phi^\prime} + \mathbf{F}
+                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) - \left( \pd{\overline{\pi}}{\eta} + \pd{p^\prime}{\eta} \right) \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
+                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) - \pd{\overline{\pi}}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi - \pd{p^\prime}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
+                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) - \pd{\overline{\pi}}{\overline{\phi}} \pd{\overline{\phi}}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi - \pd{p^\prime}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
+                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) + \frac{1}{\overline{\alpha}} \pd{\overline{\phi}}{\pi} \left( {\color{red}- \overline{\alpha} \nabla_\eta \overline{\pi}} + \nabla_\eta \phi^\prime \right) - \pd{p^\prime}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
+                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) - \left( {\color{red}- \overline{\alpha} \nabla_\eta \overline{\pi}} + \nabla_\eta \phi^\prime \right) - \pd{p^\prime}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
+                  & = - \left( \alpha - \overline{\alpha} \right) \nabla_\eta \overline{\pi} - \alpha \nabla_\eta p^\prime - \nabla_\eta \phi^\prime - \pd{p^\prime}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
+                  & = - \alpha^\prime \nabla_\eta \overline{\pi} - \alpha \nabla_\eta p^\prime - \nabla_\eta \phi^\prime - \pd{p^\prime}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F}
               \end{align*}
             \]
             如果在静力气压坐标的基础上则扰动方程形式简化为
