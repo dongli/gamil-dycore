@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: {
+          equationNumbers: { autoNumber: "AMS" },
+          extensions: ["color.js"]
+        }
+      })
+    </script>
+    <style>
+      body {
+        background: #F5F5DC;
+      }
+
+      .document {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .title {
+        margin-left: auto;
+        margin-right: auto;
+        font-size: 36px;
+        font-weight: bold;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="document">
+      \(
+        \require{cancel}
+        \newcommand{\d}[2]{\frac{d #1}{d #2}}
+        \newcommand{\dt}[1]{\d{#1}{t}}
+        \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+        \newcommand{\pdt}[1]{\pd{#1}{t}}
+        \newcommand{\hdiv}{\nabla_{\pi} \cdot \mathbf{v}}
+        \newcommand{\cpocv}{\frac{C_p}{C_V}}
+        \newcommand{\cvocp}{\frac{C_V}{C_p}}
+      \)
+      <p>
+        WRF中气压梯度力项的扰动形式推导如下：
+        \[
+          \begin{align*}
+              & \mu_d \frac{\alpha}{\alpha_d} \left( \alpha_d {\color{red}\nabla_\eta p} + \frac{1}{\mu_d} {\color{blue}\pd{p}{\eta}} \nabla_\eta \phi \right) \\
+            = & \mu_d \frac{\alpha}{\alpha_d} \left( \alpha_d {\color{red}\nabla_\eta \overline{p}} + {\color{red}\alpha_d \nabla_\eta p^\prime} + \frac{1}{\mu_d} \left( {\color{blue}\pd{\overline{p}}{\eta}} + {\color{blue}\pd{p^\prime}{\eta}} \right) \nabla_\eta \phi \right) \\
+            = &  \mu_d \frac{\alpha}{\alpha_d} \left( \alpha_d {\color{red}\nabla_\eta \overline{p}} + {\color{red}\alpha_d \nabla_\eta p^\prime} + \frac{{\color{blue}\overline{\mu}_d}}{\mu_d} \nabla_\eta \phi + \frac{1}{\mu_d} {\color{blue}\pd{p^\prime}{\eta}} \nabla_\eta \phi \right) \\
+            = & \mu_d \frac{\alpha}{\alpha_d} \left( \alpha_d {\color{red}\nabla_\eta \overline{p}} + {\color{red}\alpha_d \nabla_\eta p^\prime} + \frac{{\color{blue}\overline{\mu}_d} + {\color{magenta}\mu_d^\prime}}{\mu_d} \nabla_\eta \phi - \frac{{\color{magenta}\mu_d^\prime}}{\mu_d} \nabla_\eta \phi + \frac{1}{\mu_d} {\color{blue}\pd{p^\prime}{\eta}} \nabla_\eta \phi \right) \\
+            = & \mu_d \frac{\alpha}{\alpha_d} \left( \alpha_d {\color{red}\nabla_\eta \overline{p}} + {\color{red}\alpha_d \nabla_\eta p^\prime} + {\color{purple}\nabla_\eta \phi} + \frac{1}{\mu_d} \nabla_\eta \phi \left( {\color{blue}\pd{p^\prime}{\eta}} - {\color{magenta}\mu_d^\prime} \right) \right) \\
+            = & \mu_d \frac{\alpha}{\alpha_d} \left( \alpha_d {\color{red}\nabla_\eta \overline{p}} + {\color{red}\alpha_d \nabla_\eta p^\prime} + {\color{purple}\nabla_\eta \overline{\phi}} + {\color{purple}\nabla_\eta \phi^\prime} + \frac{1}{\mu_d} \nabla_\eta \phi \left( {\color{blue}\pd{p^\prime}{\eta}} - {\color{magenta}\mu_d^\prime} \right) \right) \\
+            = & \mu_d \frac{\alpha}{\alpha_d} \left( \alpha_d {\color{red}\nabla_\eta \overline{p}} + {\color{red}\alpha_d \nabla_\eta p^\prime} + {\color{purple}\pd{\overline{\phi}}{\overline{p}} \nabla_\eta \overline{p}} + {\color{purple}\nabla_\eta \phi^\prime} + \frac{1}{\mu_d} \nabla_\eta \phi \left( {\color{blue}\pd{p^\prime}{\eta}} - {\color{magenta}\mu_d^\prime} \right) \right) \\
+            = & \mu_d \frac{\alpha}{\alpha_d} \left( \alpha_d {\color{red}\nabla_\eta \overline{p}} + {\color{red}\alpha_d \nabla_\eta p^\prime} - {\color{purple}\overline{\alpha}_d \nabla_\eta \overline{p}} + {\color{purple}\nabla_\eta \phi^\prime} + \frac{1}{\mu_d} \nabla_\eta \phi \left( {\color{blue}\pd{p^\prime}{\eta}} - {\color{magenta}\mu_d^\prime} \right) \right) \\
+            = & \mu_d \frac{\alpha}{\alpha_d} \left( \alpha_d^\prime {\color{red}\nabla_\eta \overline{p}} + {\color{red}\alpha_d \nabla_\eta p^\prime} + {\color{purple}\nabla_\eta \phi^\prime} + \frac{1}{\mu_d} \nabla_\eta \phi \left( {\color{blue}\pd{p^\prime}{\eta}} - {\color{magenta}\mu_d^\prime} \right) \right) \\
+          \end{align*}
+        \]
+      </p>
+    </div>
+  </body>
+</html>
