@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width">
+    <title>垂直速度</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: {
+          equationNumbers: { autoNumber: "AMS" },
+          extensions: ["color.js"]
+        }
+      })
+    </script>
+    <style>
+      body {
+        background: #F5F5DC;
+      }
+
+      .document {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .title {
+        margin-left: auto;
+        margin-right: auto;
+        font-size: 36px;
+        font-weight: bold;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="document">
+      \(
+        \require{cancel}
+        \newcommand{\d}[2]{\frac{d #1}{d #2}}
+        \newcommand{\dt}[1]{\d{#1}{t}}
+        \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+        \newcommand{\pdt}[1]{\pd{#1}{t}}
+        \newcommand{\hdiv}{\nabla_{\pi} \cdot \mathbf{v}}
+        \newcommand{\cpocv}{\frac{C_p}{C_V}}
+        \newcommand{\cvocp}{\frac{C_V}{C_p}}
+      \)
+
+      <p>
+        垂直坐标变换式（假定坐标为\(\eta\)）
+        \[
+          \begin{align*}
+            \left( \pdt{F} \right)_\eta & = \left( \pdt{F} \right)_z + \pd{F}{\eta} \pd{\eta}{z} \left( \pdt{z} \right)_\eta \\
+            \nabla_\eta F & = \nabla_z F + \pd{F}{\eta} \pd{\eta}{z} \nabla_\eta z
+          \end{align*}
+        \]
+        则变量的时间全导数为
+        \[
+          \begin{align*}
+            \left( \dt{F} \right)_z & = {\color{magenta}\left( \pdt{F} \right)_z} + {\color{blue}\mathbf{v} \cdot \nabla_z F} + {\color{red}w \pd{F}{z}} \\
+              & = {\color{magenta}\left( \pdt{F} \right)_\eta - \pd{F}{\eta} \pd{\eta}{z} \left( \pd{z}{t} \right)_\eta} + {\color{blue}\mathbf{v} \cdot \nabla_\eta F - \pd{F}{\eta} \pd{\eta}{z} \mathbf{v} \cdot \nabla_\eta z} + {\color{red}w \pd{F}{\eta} \pd{\eta}{z}} \\
+              & = {\color{magenta}\left( \pdt{F} \right)_\eta} + {\color{blue}\mathbf{v} \cdot \nabla_\eta F} + {\color{green}\left[ w - \left( \pdt{z} \right)_\eta - \mathbf{v} \cdot \nabla_\eta z \right] \pd{\eta}{z}} \pd{F}{\eta} \\
+              & = {\color{magenta}\left( \pdt{F} \right)_\eta} + {\color{blue}\mathbf{v} \cdot \nabla_\eta F} + {\color{green}\dot{\eta}} \pd{F}{\eta}
+          \end{align*}
+        \]
+        所以转换后的垂直坐标速度与原始坐标的垂直坐标速度的关系式为
+        \[
+          \dot{\eta} = \pd{\eta}{z} \left[ w - \left( \pdt{z} \right)_\eta - \mathbf{v} \cdot \nabla_\eta z \right]
+        \]
+        或者
+        \[
+          w = \left( \pdt{z} \right)_\eta + \mathbf{v} \cdot \nabla_\eta z + \dot{\eta} \pd{z}{\eta}
+        \]
+        进一步得到
+        \[
+          \begin{align*}
+            \pd{w}{z} = \pd{w}{\eta} \pd{\eta}{z} & = \pd{\eta}{z} \left[ \pd{}{\eta} \left( \pdt{z} \right)_\eta + {\color{red}\pd{}{\eta} \mathbf{v} \cdot \nabla_\eta z} + {\color{blue}\pd{}{\eta} \left( \dot{\eta} \pd{z}{\eta} \right)} \right] \\
+              & = \pd{\eta}{z} \left[ \underline{\left( \pdt{} \pd{z}{\eta} \right)_\eta} + {\color{red}\underline{\mathbf{v} \cdot \nabla_\eta \pd{z}{\eta}} + \pd{\mathbf{v}}{\eta} \cdot \nabla_\eta z} + {\color{blue}\underline{\pd{\dot{\eta}}{\eta} \pd{z}{\eta}} + \dot{\eta} \pd{}{\eta} \pd{z}{\eta}} \right] \\
+              & = \pd{\eta}{z} \left[ \underline{\left( \dt{} \pd{z}{\eta} \right)_\eta} + \pd{\mathbf{v}}{\eta} \cdot \nabla_\eta z + {\color{blue}\pd{\dot{\eta}}{\eta} \pd{z}{\eta}} \right] \\
+              & = \pd{\eta}{z} \left[ \left( \dt{} \pd{z}{\eta} \right)_\eta + \pd{\mathbf{v}}{\eta} \cdot \nabla_\eta z \right] + \pd{\dot{\eta}}{\eta}
+          \end{align*}
+        \]
+      </p>
+    </div>
+  </body>
+</html>

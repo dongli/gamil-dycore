@@ -51,14 +51,14 @@
             在广义地形追随坐标上采用扰动形式
             \[
               \begin{align*}
-                \dt{\mathbf{v}} & = - \frac{1}{\rho} \nabla_{\eta} p - \pd{p}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
-                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) - \left( \pd{\overline{\pi}}{\eta} + \pd{p^\prime}{\eta} \right) \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
-                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) - \pd{\overline{\pi}}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi - \pd{p^\prime}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
-                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) - \pd{\overline{\pi}}{\overline{\phi}} \pd{\overline{\phi}}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi - \pd{p^\prime}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
-                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) + \frac{1}{\overline{\alpha}} \pd{\overline{\phi}}{\pi} \left( {\color{red}- \overline{\alpha} \nabla_\eta \overline{\pi}} + \nabla_\eta \phi^\prime \right) - \pd{p^\prime}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
-                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + \nabla_\eta p^\prime \right) - \left( {\color{red}- \overline{\alpha} \nabla_\eta \overline{\pi}} + \nabla_\eta \phi^\prime \right) - \pd{p^\prime}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
-                  & = - \left( \alpha - \overline{\alpha} \right) \nabla_\eta \overline{\pi} - \alpha \nabla_\eta p^\prime - \nabla_\eta \phi^\prime - \pd{p^\prime}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
-                  & = - \alpha^\prime \nabla_\eta \overline{\pi} - \alpha \nabla_\eta p^\prime - \nabla_\eta \phi^\prime - \pd{p^\prime}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F}
+                \dt{\mathbf{v}} & = - \frac{1}{\rho} {\color{red}\nabla_{\eta} p} - {\color{blue}\pd{p}{\eta}} \pd{\eta}{\pi} {\color{magenta}\nabla_{\eta} \phi} + \mathbf{F} \\
+                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + {\color{red}\nabla_\eta p^\prime} \right) - \left( {\color{blue}\pd{\overline{\pi}}{\eta}} + {\color{blue}\pd{p^\prime}{\eta}} \right) \pd{\eta}{\pi} {\color{magenta}\nabla_{\eta} \phi} + \mathbf{F} \\
+                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + {\color{red}\nabla_\eta p^\prime} \right) - {\color{blue}\pd{\overline{\pi}}{\eta}} \pd{\eta}{\pi} {\color{magenta}\nabla_{\eta} \phi} - {\color{blue}\pd{p^\prime}{\eta}} \pd{\eta}{\pi} {\color{magenta}\nabla_{\eta} \phi} + \mathbf{F} \\
+                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + {\color{red}\nabla_\eta p^\prime} \right) - \left( {\color{blue}1 - \pd{\pi^\prime}{\eta} \pd{\eta}{\pi}} \right) {\color{magenta}\nabla_{\eta} \phi} - {\color{blue}\pd{p^\prime}{\eta}} \pd{\eta}{\pi} {\color{magenta}\nabla_{\eta} \phi} + \mathbf{F} \\
+                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + {\color{red}\nabla_\eta p^\prime} \right) - {\color{magenta}\nabla_{\eta} \phi} + {\color{blue}\pd{\pi^\prime}{\eta}} \pd{\eta}{\pi} {\color{magenta}\nabla_{\eta} \phi} - {\color{blue}\pd{p^\prime}{\eta}} \pd{\eta}{\pi} {\color{magenta}\nabla_{\eta} \phi} + \mathbf{F} \\
+                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + {\color{red}\nabla_\eta p^\prime} \right) - {\color{magenta}\nabla_{\eta} \overline{\phi}} - {\color{magenta}\nabla_{\eta} \phi^\prime} + \pd{\eta}{\pi} {\color{magenta}\nabla_{\eta} \phi} \left( {\color{blue}\pd{\pi^\prime}{\eta}} - {\color{blue}\pd{p^\prime}{\eta}} \right) + \mathbf{F} \\
+                  & = - \alpha \left( {\color{red}\nabla_\eta \overline{\pi}} + {\color{red}\nabla_\eta p^\prime} \right) + {\color{magenta}\overline{\alpha} \nabla_\eta \overline{\pi}} - {\color{magenta}\nabla_{\eta} \phi^\prime} + \pd{\eta}{\pi} {\color{magenta}\nabla_{\eta} \phi} \left( {\color{blue}\pd{\pi^\prime}{\eta}} - {\color{blue}\pd{p^\prime}{\eta}} \right) + \mathbf{F} \\
+                  & = - {\color{magenta}\alpha^\prime} {\color{red}\nabla_\eta \overline{\pi}} - \alpha {\color{red}\nabla_\eta p^\prime} - {\color{magenta}\nabla_{\eta} \phi^\prime} + \pd{\eta}{\pi} {\color{magenta}\nabla_{\eta} \phi} \left( {\color{blue}\pd{\pi^\prime}{\eta}} - {\color{blue}\pd{p^\prime}{\eta}} \right) + \mathbf{F} \\
               \end{align*}
             \]
             如果在静力气压坐标的基础上则扰动方程形式简化为
@@ -73,6 +73,28 @@
               \begin{align*}
                 \dt{\mathbf{v}} & = - \frac{1}{\rho} \nabla_\pi p^\prime - \pd{p}{\pi} \nabla_\pi \phi^\prime + \mathbf{F} \\
                   & = {\color{purple}- \frac{1}{\rho} \nabla_\eta p^\prime - \pd{p}{\eta} \pd{\eta}{\pi} \nabla_\eta \phi^\prime} + \mathbf{F}
+              \end{align*}
+            \]
+          </li>
+          <li>
+            垂直动量方程
+            \[
+              \begin{align*}
+                \gamma \dt{w} & = g \left( \pd{p}{\eta} \pd{\eta}{\pi} - 1 \right) + \gamma F_z \\
+                  & = g \left[ \left( \pd{\overline{\pi}}{\eta} + \pd{p^\prime}{\eta} \right) \pd{\eta}{\pi} - 1 \right] + \gamma F_z \\
+                  & = g \left( \pd{\overline{\pi}}{\eta} \pd{\eta}{\pi} + \pd{p^\prime}{\eta} \pd{\eta}{\pi} - 1 \right) + \gamma F_z \\
+                  & = g \left( 1 - \pd{\pi^\prime}{\eta} \pd{\eta}{\pi} + \pd{p^\prime}{\eta} \pd{\eta}{\pi} - 1 \right) + \gamma F_z \\
+                  & = - g \pd{\eta}{\pi} \left( \pd{\pi^\prime}{\eta} - \pd{p^\prime}{\eta} \right) + \gamma F_z \\
+              \end{align*}
+            \]
+          </li>
+          <li>
+            热力学方程
+            \[
+              \begin{align*}
+                \dt{\theta} & = \frac{Q}{C_p} \frac{\theta}{T} \\
+                \dt{\theta^\prime} & = - \mathbf{v} \cdot \nabla \overline{\theta} - \dot{\eta} \pd{\overline{\theta}}{\eta} + \frac{Q}{C_p} \frac{\theta}{T} \\
+                \dt{\theta^\prime} & = - \pd{\overline{\theta}}{\overline{\pi}} \left( \mathbf{v} \cdot \nabla \overline{\pi} + \dot{\eta} \pd{\overline{\pi}}{\eta} \right) + \frac{Q}{C_p} \frac{\theta}{T} \\
               \end{align*}
             \]
           </li>

@@ -33,6 +33,7 @@
         \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
         \newcommand{\pdt}[1]{\pd{#1}{t}}
         \newcommand{\hdiv}{\nabla_{\pi} \cdot \mathbf{v}}
+        \newcommand{\hadv}{\mathbf{v} \cdot \nabla_{\pi}}
         \newcommand{\cpocv}{\frac{C_p}{C_V}}
         \newcommand{\cvocp}{\frac{C_V}{C_p}}
       \)
@@ -77,7 +78,7 @@
             <li>
               时间全导数
               \[
-                \dt{} = \hdiv + \dot{\pi} \pd{}{\pi}
+                \dt{} = \hadv + \dot{\pi} \pd{}{\pi}
               \]
             </li>
             <li>
@@ -121,10 +122,10 @@
         <p>
           <ul>
             <li>
-              连续方程
+              连续方程（<a href="details/mass_eqn.html">推导</a>）
               \[
                 \begin{equation}
-                  \pd{}{\eta} \pdt{\pi} + \nabla_{\eta} \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) + \pd{}{\eta} \left( \dot{\eta} \pd{\pi}{\eta} \right) = 0
+                  \pdt{} \pd{\pi}{\eta} + \nabla_{\eta} \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) + \pd{}{\eta} \left( \dot{\eta} \pd{\pi}{\eta} \right) = 0
                   \label{eq:eta-continuity-equation}
                 \end{equation}
               \]
@@ -172,7 +173,7 @@
               \dt{\mathbf{v}} & = - \frac{1}{\rho} \nabla_{\eta} p - \pd{p}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
               {\color{red}\gamma \dt{w}} & {\color{red}= g \left( \pd{p}{\eta} \pd{\eta}{\pi} - 1 \right) + \gamma F_z} \\
               \dt{\theta} & = \frac{Q}{C_p} \frac{\theta}{T} \\
-              \pdt{\pi_{es}} & = - \int_0^1 \nabla_\eta \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta \\
+              \dt{} \pd{\pi}{\eta} & = - \pd{\pi}{\eta} \left( \nabla_\eta \cdot \mathbf{v} + \pd{\dot{\eta}}{\eta} \right) \\
               {\color{red}\dt{\phi}} & {\color{red}= w g} \quad \text{或} \quad {\color{blue}w = \frac{1}{g} \dt{\phi}}
             \end{align}
           \]
@@ -185,7 +186,7 @@
               {\color{red}p = p_0 \left( \frac{\rho R \theta}{p_0} \right)^{\cpocv}} & \quad \text{或} \quad {\color{blue}\rho = \frac{p_0}{R \theta} \left( \frac{p}{p_0} \right)^{\cvocp}}
             \end{align}
           \]
-          其中\(\pd{p}{\eta}\)和\(\pd{\pi}{\eta}\)来自于坐标定义，红色项是非静力模式需要计算的项，蓝色为静力模式。
+          其中\(\pd{\pi}{\eta}\)来自于坐标定义，红色项是非静力模式需要计算的项，蓝色为静力模式。
         </p>
         <div class="subsection">
           <h2>几种特定形式</h2>
@@ -231,7 +232,7 @@
       <div class="section">
         <h1>扰动形式</h1>
         <p>
-          为了减少离散计算时的截断误差（大项小差问题参见<a href="details/big_val_small_diff.html">这里</a>），将方程写为扰动形式。设置静力气压坐标系下的扰动态
+          为了减少离散计算时的舍入误差（大项小差问题参见<a href="details/big_val_small_diff.html">这里</a>），将方程写为扰动形式。设置静力气压坐标系下的扰动态
           \[
             \begin{align}
               p^\prime(x, y, \overline{\pi}, t) & = p(x, y, \overline{\pi}, t) - \overline{\pi} \\
@@ -243,10 +244,10 @@
           其中基准静力气压\(\overline{\pi}\)的存在是由于采用了基准地面静力气压\(\overline{\pi}_{es}\)。由于\(\eta\)坐标面相对于\(\pi\)不是“水平”的，因此基本态\(\overline{\pi}, \overline{\theta}, \overline{\phi}\)是\(x, y, \eta\)的函数（注意当在做地形坐标变换前扣除基准态时，不存在基准态的水平梯度，两种形式都没有近似，但是两者的扰动是不一样的）。代入以上扰动后，预报方程组变为如下形式（<a href="details/perturb_form.html">推导</a>）
           \[
             \begin{align}
-              \dt{\mathbf{v}} & = - \alpha^\prime \nabla_\eta \overline{\pi} - \alpha \nabla_\eta p^\prime - \nabla_\eta \phi^\prime - \pd{p^\prime}{\eta} \pd{\eta}{\pi} \nabla_{\eta} \phi + \mathbf{F} \\
-              {\color{red}\gamma \dt{w}} & {\color{red}= g \left( \pd{p^\prime}{\eta} \pd{\eta}{\pi} + \pd{\overline{\pi}}{\eta} \pd{\eta}{\pi} - 1\right) + \gamma F_z} \\
-              \dt{\theta^\prime} & = - \d{\overline{\theta}}{\overline{\pi}} \left( {\color{purple}\mathbf{v} \cdot \nabla_\eta \overline{\pi}} + \dot{\eta} \pd{\overline{\pi}}{\eta} \right) + \frac{Q}{C_p} \frac{\theta}{T} \\
-              \pdt{\pi_{es}^\prime} & = - \int_0^1 \nabla_\eta \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta \\
+              \dt{\mathbf{v}} & = - \alpha^\prime \nabla_\eta \overline{\pi} - \alpha \nabla_\eta p^\prime - \nabla_{\eta} \phi^\prime + \pd{\eta}{\pi} \nabla_{\eta} \phi \left( \pd{\pi^\prime}{\eta} - \pd{p^\prime}{\eta} \right) + \mathbf{F} \\
+              {\color{red}\gamma \dt{w}} & {\color{red}= - g \pd{\eta}{\pi} \left( \pd{\pi^\prime}{\eta} - \pd{p^\prime}{\eta} \right) + \gamma F_z} \\
+              \dt{\theta^\prime} & = - \d{\overline{\theta}}{\overline{\pi}} \left( \mathbf{v} \cdot \nabla_\eta \overline{\pi} + \dot{\eta} \pd{\overline{\pi}}{\eta} \right) + \frac{Q}{C_p} \frac{\theta}{T} \\
+              \pdt{} \pd{\pi^\prime}{\eta} & = - \nabla_\eta \cdot \left( \pd{\pi}{\eta} \mathbf{v} \right) - \pd{}{\eta} \left( \pd{\pi}{\eta} \dot{\eta} \right) \\
               {\color{red}\dt{\phi^\prime}} & {\color{red}= - \d{\overline{\phi}}{\overline{\pi}} \left( \mathbf{v} \cdot \nabla_\eta \overline{\pi} + \dot{\eta} \pd{\overline{\pi}}{\eta} \right) + w g} \quad \text{或} \quad {\color{blue}w = \frac{1}{g} \dt{\phi^\prime} + \frac{1}{g} \d{\overline{\phi}}{\overline{\pi}} \left( \mathbf{v} \cdot \nabla_\eta \overline{\pi} + \dot{\eta} \pd{\overline{\pi}}{\eta} \right)}
             \end{align}
           \]

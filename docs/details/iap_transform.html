@@ -43,27 +43,116 @@
         \newcommand{\hdiv}{\nabla_{\pi} \cdot \mathbf{v}}
         \newcommand{\cpocv}{\frac{C_p}{C_V}}
         \newcommand{\cvocp}{\frac{C_V}{C_p}}
-        \newcommand{\p}{\sqrt{\pi_{es}}}
       \)
-      <span class="title">IAP变量变换</span>
-      <div class="section">
-        <p>
-          \[
-            \p \dt{\mathbf{v}} = - \left( \alpha - \pd{p}{\eta} \pd{\eta}{\pi} \overline{\alpha} \right) \p \nabla_\eta \overline{\pi} - \p \alpha \nabla_\eta p^\prime - \p \pd{p}{\eta} \pd{\eta}{\pi} \nabla_\eta \phi^\prime + \p \mathbf{F}
-          \]
-          \[
-            \mathbf{v} \pdt{\p} = - \frac{\mathbf{v}}{2 \p} \int_0^1 \nabla_\eta \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta
-          \]
-          \[
-            \begin{align*}
-              \dt{\mathbf{V}} & = - \left( \alpha - \pd{p}{\eta} \pd{\eta}{\pi} \overline{\alpha} \right) \p \nabla_\eta \overline{\pi} - \p \alpha \nabla_\eta p^\prime - \p \pd{p}{\eta} \pd{\eta}{\pi} \nabla_\eta \phi^\prime - \frac{\mathbf{v}}{2 \p} \int_0^1 \nabla_\eta \cdot \left( \mathbf{v} \pd{\pi}{\eta} \right) d \eta + \p \mathbf{F}
-            \end{align*}
-          \]
-          \[
-            \gamma \p \dt{w} = g \p \left( \pd{p^\prime}{\eta} \pd{\eta}{\pi} + \pd{\overline{\pi}}{\eta} \pd{\eta}{\pi} - 1\right) + \gamma \p F_z
-          \]
-        </p>
-      </div>
+      <h1>动量方程</h1>
+      <h2>水平动量方程</h2>
+      <p>
+        \[
+          \begin{align*}
+            \sqrt{\pd{\pi}{\eta}} \pdt{\mathbf{v}} & = - \sqrt{\pd{\pi}{\eta}} \mathbf{v} \cdot \nabla_\eta \mathbf{v} - \sqrt{\pd{\pi}{\eta}} \dot{\eta} \pd{\mathbf{v}}{\eta} - \sqrt{\pd{\pi}{\eta}} \frac{1}{\rho} \nabla_\eta p - \sqrt{\pd{\pi}{\eta}} \pd{p}{\eta} \pd{\eta}{\pi} \nabla_\eta \phi + \sqrt{\pd{\pi}{\eta}} \mathbf{F} \\
+            \mathbf{v} \pdt{} \sqrt{\pd{\pi}{\eta}} & = - \frac{\mathbf{v}}{2 \sqrt{\pd{\pi}{\eta}}} \nabla_\eta \cdot \left( \pd{\pi}{\eta} \mathbf{v} \right) - \frac{\mathbf{v}}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{\eta} \left( \pd{\pi}{\eta} \dot{\eta} \right) \\
+          \end{align*}
+        \]
+      </p>
+      <p>
+        假设在笛卡尔坐标系下
+        \[
+          \begin{align*}
+            \pdt{u} & = - u \pd{u}{x} - v \pd{u}{y} - \dot{\eta} \pd{u}{\eta} - \frac{1}{\rho} \pd{p}{x} - \pd{p}{\eta} \pd{\eta}{\pi} \pd{\phi}{x} + F_x \\
+            \pdt{v} & = - u \pd{v}{x} - v \pd{v}{y} - \dot{\eta} \pd{v}{\eta} - \frac{1}{\rho} \pd{p}{y} - \pd{p}{\eta} \pd{\eta}{\pi} \pd{\phi}{y} + F_y
+          \end{align*}
+        \]
+        两边乘以\(\sqrt{\pd{\pi}{\eta}}\)
+        \[
+          \begin{align*}
+            \sqrt{\pd{\pi}{\eta}} \pdt{u} & = - \sqrt{\pd{\pi}{\eta}} u \pd{u}{x} - \sqrt{\pd{\pi}{\eta}} v \pd{u}{y} - \sqrt{\pd{\pi}{\eta}} \dot{\eta} \pd{u}{\eta} - \sqrt{\pd{\pi}{\eta}} \frac{1}{\rho} \pd{p}{x} - \sqrt{\pd{\pi}{\eta}} \pd{p}{\eta} \pd{\eta}{\pi} \pd{\phi}{x} + \sqrt{\pd{\pi}{\eta}} F_x \\
+            \sqrt{\pd{\pi}{\eta}} \pdt{v} & = - \sqrt{\pd{\pi}{\eta}} u \pd{v}{x} - \sqrt{\pd{\pi}{\eta}} v \pd{v}{y} - \sqrt{\pd{\pi}{\eta}} \dot{\eta} \pd{v}{\eta} - \sqrt{\pd{\pi}{\eta}} \frac{1}{\rho} \pd{p}{y} - \sqrt{\pd{\pi}{\eta}} \pd{p}{\eta} \pd{\eta}{\pi} \pd{\phi}{y} + \sqrt{\pd{\pi}{\eta}} F_y
+          \end{align*}
+        \]
+        对连续方程两侧乘以\(u\)和\(v\)
+        \[
+          \begin{align*}
+            u \pdt{} \sqrt{\pd{\pi}{\eta}} & = - \frac{u}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{x} \left( u \pd{\pi}{\eta} \right) - \frac{u}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{y} \left( v \pd{\pi}{\eta} \right) - \frac{u}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{\eta} \left( \dot{\eta} \pd{\pi}{\eta} \right) \\
+            v \pdt{} \sqrt{\pd{\pi}{\eta}} & = - \frac{v}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{x} \left( u \pd{\pi}{\eta} \right) - \frac{v}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{y} \left( v \pd{\pi}{\eta} \right) - \frac{v}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{\eta} \left( \dot{\eta} \pd{\pi}{\eta} \right) \\
+          \end{align*}
+        \]
+        将上两组方程相加，首先处理\(u\)的平流项
+        \[
+          \begin{align*}
+            & - \sqrt{\pd{\pi}{\eta}} u \pd{u}{x} {\color{red}- \frac{u}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{x} \left( u \pd{\pi}{\eta} \right)} \\
+            = & - \underline{\sqrt{\pd{\pi}{\eta}} u \pd{u}{x}} {\color{red}- \frac{1}{2} u \sqrt{\pd{\pi}{\eta}} \pd{u}{x} - \underline{u u \pd{}{x} \sqrt{\pd{\pi}{\eta}}}} \\
+            = & - \underline{\pd{}{x} \left( \sqrt{\pd{\pi}{\eta}} u u \right)} + {\color{blue}\underline{u \sqrt{\pd{\pi}{\eta}} \pd{u}{x}}} {\color{red}- \frac{1}{2} u \sqrt{\pd{\pi}{\eta}} \pd{u}{x}} \\
+            = & - \pd{u U}{x} + \frac{1}{2} U \pd{u}{x} \\
+          \end{align*}
+        \]
+        \[
+          \begin{align*}
+            & - \sqrt{\pd{\pi}{\eta}} v \pd{u}{y} {\color{red}- \frac{u}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{y} \left( v \pd{\pi}{\eta} \right)} \\
+            = & - \underline{\sqrt{\pd{\pi}{\eta}} v \pd{u}{y}} {\color{red}- \frac{1}{2} u \sqrt{\pd{\pi}{\eta}} \pd{v}{y} - \underline{u v \pd{}{y} \sqrt{\pd{\pi}{\eta}}}} \\
+            = & - \underline{\pd{}{y} \left( \sqrt{\pd{\pi}{\eta}} u v \right)} + {\color{blue}\underline{u \sqrt{\pd{\pi}{\eta}} \pd{v}{y}}} {\color{red}- \frac{1}{2} u \sqrt{\pd{\pi}{\eta}} \pd{v}{y}} \\
+            = & - \pd{v U}{y} + \frac{1}{2} U \pd{v}{y}
+          \end{align*}
+        \]
+        \[
+          \begin{align*}
+            - \sqrt{\pd{\pi}{\eta}} \dot{\eta} \pd{u}{\eta} - \frac{u}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{\eta} \left( \dot{\eta} \pd{\pi}{\eta} \right) = - \pd{\dot{\eta} U}{\eta} + \frac{1}{2} U \pd{\dot{\eta}}{\eta}
+          \end{align*}
+        \]
+        \(v\)的平流项类似。
+        \[
+          \begin{align*}
+            \pdt{U} & = - \pd{u U}{x} + \frac{1}{2} U \pd{u}{x} - \pd{v U}{y} + \frac{1}{2} U \pd{v}{y} - \pd{\dot{\eta} U}{\eta} + \frac{1}{2} U \pd{\dot{\eta}}{\eta} - \sqrt{\pd{\pi}{\eta}} \frac{1}{\rho} \pd{p}{x} - \sqrt{\pd{\pi}{\eta}} \pd{p}{\eta} \pd{\eta}{\pi} \pd{\phi}{x} + \sqrt{\pd{\pi}{\eta}} F_x \\
+            \pdt{V} & = - \pd{u V}{x} + \frac{1}{2} V \pd{u}{x} - \pd{v V}{y} + \frac{1}{2} V \pd{v}{y} - \pd{\dot{\eta} V}{\eta} + \frac{1}{2} V \pd{\dot{\eta}}{\eta} - \sqrt{\pd{\pi}{\eta}} \frac{1}{\rho} \pd{p}{y} - \sqrt{\pd{\pi}{\eta}} \pd{p}{\eta} \pd{\eta}{\pi} \pd{\phi}{y} + \sqrt{\pd{\pi}{\eta}} F_y \\
+          \end{align*}
+        \]
+        写成向量形式
+        \[
+          \begin{align*}
+            \pdt{\mathbf{V}} & = - \nabla_\eta \mathbf{v} \mathbf{V} + \frac{1}{2} \mathbf{V} \nabla_\eta \cdot \mathbf{v} - \pd{\dot{\eta} \mathbf{V}}{\eta} + \frac{1}{2} \mathbf{V} \pd{\dot{\eta}}{\eta} - \sqrt{\pd{\pi}{\eta}} \frac{1}{\rho} \nabla_\eta p - \sqrt{\pd{\pi}{\eta}} \pd{p}{\eta} \pd{\eta}{\pi} \nabla_\eta \phi + \sqrt{\pd{\pi}{\eta}} \mathbf{F}
+          \end{align*}
+        \]
+      </p>
+      <h2>垂直动量方程</h2>
+      <p>
+        对垂直动量方程两边乘以\(\sqrt{\pd{\pi}{\eta}}\)
+        \[
+          \begin{align*}
+            \gamma \sqrt{\pd{\pi}{\eta}} \pdt{w} & = - \gamma \sqrt{\pd{\pi}{\eta}} u \pd{w}{x} - \gamma \sqrt{\pd{\pi}{\eta}} v \pd{w}{y} - \gamma \sqrt{\pd{\pi}{\eta}} \dot{\eta} \pd{w}{\eta} + \sqrt{\pd{\pi}{\eta}} g \left( \pd{p}{\eta} \pd{\eta}{\pi} - 1 \right) + \gamma \sqrt{\pd{\pi}{\eta}} F_z
+          \end{align*}
+        \]
+        对连续方程两边乘以\(w\)
+        \[
+          \begin{align*}
+            w \pdt{} \sqrt{\pd{\pi}{\eta}} & = - \frac{w}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{x} \left( u \pd{\pi}{\eta} \right) - \frac{w}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{y} \left( v \pd{\pi}{\eta} \right) - \frac{w}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{\eta} \left( \dot{\eta} \pd{\pi}{\eta} \right) \\
+          \end{align*}
+        \]
+        将上两式相加
+        \[
+          \begin{align*}
+            \pdt{W} & = - \nabla_\eta \mathbf{v} W + \frac{1}{2} W \nabla_\eta \cdot \mathbf{v} - \pd{\dot{\eta} W}{\eta} + \frac{1}{2} W \pd{\dot{\eta}}{\eta} + \sqrt{\pd{\pi}{\eta}} g \left( \pd{p}{\eta} \pd{\eta}{\pi} - 1 \right) + \gamma \sqrt{\pd{\pi}{\eta}} F_z
+          \end{align*}
+        \]
+      </p>
+      <h1>热力学方程</h1>
+      <p>
+        \[
+          \begin{align*}
+            \sqrt{\pd{\pi}{\eta}} \pdt{\theta} & = - \sqrt{\pd{\pi}{\eta}} u \pd{\theta}{x} - \sqrt{\pd{\pi}{\eta}} v \pd{\theta}{y} - \sqrt{\pd{\pi}{\eta}} \dot{\eta} \pd{\theta}{\eta} + \sqrt{\pd{\pi}{\eta}} \frac{Q}{C_p} \frac{\theta}{T}
+          \end{align*}
+        \]
+        对连续方程两边乘以\(\theta\)
+        \[
+          \begin{align*}
+            \theta \pdt{} \sqrt{\pd{\pi}{\eta}} & = - \frac{\theta}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{x} \left( u \pd{\pi}{\eta} \right) - \frac{\theta}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{y} \left( v \pd{\pi}{\eta} \right) - \frac{\theta}{2 \sqrt{\pd{\pi}{\eta}}} \pd{}{\eta} \left( \dot{\eta} \pd{\pi}{\eta} \right) \\
+          \end{align*}
+        \]
+        将上两式相加
+        \[
+          \begin{align*}
+            \pdt{\Theta} & = - \nabla_\eta \mathbf{v} \Theta + \frac{1}{2} \Theta \nabla_\eta \cdot \mathbf{v} - \pd{\dot{\eta} \Theta}{\eta} + \frac{1}{2} \Theta \pd{\dot{\eta}}{\eta} + \frac{Q}{C_p} \frac{\Theta}{T}
+          \end{align*}
+        \]
+      </p>
     </div>
   </body>
 </html>
