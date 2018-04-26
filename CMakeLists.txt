@@ -38,6 +38,8 @@ set (source_files
   "src/types_mod.F90"
   "src/history_mod.F90"
   "src/restart_mod.F90"
+  "src/data_mod.F90"
+  "src/reduce_mod.F90"
   "src/dycore_mod.F90"
   "src/dycore_main.F90"
   "src/test_cases/barotropic/rossby_haurwitz_test_mod.F90"

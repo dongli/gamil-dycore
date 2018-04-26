@@ -30,12 +30,14 @@ contains
     call io_add_var('u', long_name='u wind component', units='m s-1', dim_names=['ilon', 'lat ', 'time'], dataset_name='restart')
     call io_add_var('v', long_name='v wind component', units='m s-1', dim_names=['lon ', 'ilat', 'time'], dataset_name='restart')
     call io_add_var('gd', long_name='geopotential depth', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'], dataset_name='restart')
+    call io_add_var('ghs', long_name='surface geopotential', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'], dataset_name='restart')
 
   end subroutine restart_init
 
-  subroutine restart_read(state)
+  subroutine restart_read(state, static)
 
     type(state_type), intent(inout) :: state
+    type(static_type), intent(inout) :: static
 
     call io_create_dataset('restart', file_path=restart_file, mode='input')
     call io_start_input('restart')
@@ -47,12 +49,15 @@ contains
     call parallel_fill_halo(state%v(:,:), all_halo=.true.)
     call io_input('gd', state%gd, 'restart')
     call parallel_fill_halo(state%gd(:,:), all_halo=.true.)
+    call io_input('ghs', static%ghs, 'restart')
+    call parallel_fill_halo(static%ghs, all_halo=.true.)
 
   end subroutine restart_read
 
-  subroutine restart_write(state)
+  subroutine restart_write(state, static)
 
     type(state_type), intent(in) :: state
+    type(static_type), intent(in) :: static
 
     call io_add_meta('restart_time', curr_time_format, 'restart')
     call io_add_meta('elapsed_seconds', time_elapsed_seconds(), 'restart')
@@ -64,6 +69,7 @@ contains
     call io_output('u', state%u(:,:), 'restart')
     call io_output('v', state%v(:,:), 'restart')
     call io_output('gd', state%gd(:,:), 'restart')
+    call io_output('ghs', static%ghs(:,:), 'restart')
     call io_end_output('restart')
 
   end subroutine restart_write

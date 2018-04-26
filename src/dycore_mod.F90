@@ -2,6 +2,8 @@ module dycore_mod
 
   use ieee_arithmetic
   use params_mod, time_scheme_in => time_scheme, split_scheme_in => split_scheme
+  use data_mod
+  use reduce_mod
   use log_mod
   use types_mod
   use mesh_mod
@@ -35,18 +37,11 @@ module dycore_mod
   integer, parameter :: fast_pass = 1
   integer, parameter :: slow_pass = 2
 
-  type(coef_type) coef
-  type(state_type) state(-1:2)
-  type(static_type) static
-  type(tend_type) tend(0:2)
-
   integer, parameter :: half_time_idx = 0
 
 contains
 
   subroutine dycore_init()
-
-    integer i, j, time_idx
 
     if (case_name == '') then
       call log_error('case_name is not set!')
@@ -58,31 +53,7 @@ contains
     call io_init()
     call history_init()
     call restart_init()
-
-    call allocate_data(coef)
-    do j = 1, mesh%num_full_lat
-      coef%cori(j) = 2.0 * omega * mesh%full_sin_lat(j)
-      if (j == 1 .or. j == mesh%num_full_lat) then
-        coef%curv(j) = 0.0
-      else
-        coef%curv(j) = mesh%full_sin_lat(j) / mesh%full_cos_lat(j) / radius
-      end if
-      coef%full_dlon(j) = 2.0 * radius * mesh%dlon * mesh%full_cos_lat(j)
-      coef%full_dlat(j) = 2.0 * radius * mesh%dlat * mesh%full_cos_lat(j)
-    end do
-
-    do j = 1, mesh%num_half_lat
-      coef%half_dlon(j) = 2.0 * radius * mesh%dlon * mesh%half_cos_lat(j)
-      coef%half_dlat(j) = 2.0 * radius * mesh%dlat * mesh%half_cos_lat(j)
-    end do
-
-    do time_idx = 0, 2
-      call allocate_data(state(time_idx))
-    end do
-    do time_idx = 0, 2
-      call allocate_data(tend(time_idx))
-    end do
-    call allocate_data(static)
+    call data_init()
 
     select case (time_scheme_in)
     case ('predict_correct')
@@ -115,7 +86,7 @@ contains
 
   subroutine dycore_restart()
 
-    call restart_read(state(old_time_idx))
+    call restart_read(state(old_time_idx), static)
 
   end subroutine dycore_restart
 
@@ -143,20 +114,10 @@ contains
 
   subroutine dycore_final()
 
-    integer time_idx
-
     call mesh_final()
     call parallel_final()
     call history_final()
-
-    call deallocate_data(coef)
-    do time_idx = lbound(state, 1), ubound(state, 1)
-      call deallocate_data(state(time_idx))
-    end do
-    do time_idx = lbound(tend, 1), ubound(tend, 1)
-      call deallocate_data(tend(time_idx))
-    end do
-    call deallocate_data(static)
+    call data_final()
 
     call log_notice('Dycore module is finalized.')
 
@@ -183,7 +144,7 @@ contains
     type(state_type), intent(in) :: state
 
     if (time_is_alerted('hist0.output')) call history_write(state, static)
-    if (time_is_alerted('restart.output')) call restart_write(state)
+    if (time_is_alerted('restart.output')) call restart_write(state, static)
 
   end subroutine output
 
@@ -225,43 +186,9 @@ contains
     real, intent(in) :: dt
     integer, intent(in) :: pass
 
-    real cfl, mean_dlon
-    integer i, j, k
+    integer i, j
 
-    ! Calculate maximum CFL along each zonal circle.
-    state%reduce_factor(:) = 1
-    mean_dlon = sum(coef%full_dlon) / mesh%num_full_lat
-    if (use_zonal_reduce) then
-      do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-        state%max_cfl(j) = 0.0
-        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          cfl = dt * state%iap%gd(i,j) / coef%full_dlon(j)
-          if (state%max_cfl(j) < cfl) state%max_cfl(j) = cfl
-        end do
-        ! Calculate reduced state.
-        if (state%max_cfl(j) > 0.2) then
-          ! Find reduce_factor based on excess of CFL.
-          do k = 1, size(zonal_reduce_factors)
-            !if (state%max_cfl(j) < zonal_reduce_factors(k)) then
-            if (mean_dlon / coef%full_dlon(j) < zonal_reduce_factors(k)) then
-              state%reduce_factor(j) = zonal_reduce_factors(k)
-              exit
-            end if
-            if (zonal_reduce_factors(k) == 0) then
-              ! call log_warning('Insufficient zonal_reduce_factors or time step size is too large!')
-              state%reduce_factor(j) = zonal_reduce_factors(k - 1)
-              exit
-            end if
-          end do
-          call original_array_to_reduced_array(state%gd(:,j), state%reduce_gd(:,j), state%reduce_factor(j))
-          call original_array_to_reduced_array(state%iap%u(:,j), state%iap%reduce_u(:,j), state%reduce_factor(j))
-          call original_array_to_reduced_array(static%ghs(:,j), static%reduce_ghs(:,j), state%reduce_factor(j))
-          state%iap%reduce_gd(:,j) = sqrt(state%reduce_gd(:,j))
-          ! print *, j, state%max_cfl(j)
-        end if
-      end do
-    end if
-    call log_add_diag('num_reduce_zonal', count(state%reduce_factor /= 1))
+    call reduce_run(state, static, dt)
 
     select case (pass)
     case (all_pass)
@@ -573,7 +500,7 @@ contains
         call zonal_pressure_gradient_force( &
           j, factor, reduce_lb(factor), reduce_ub(factor), &
           state%reduce_gd(:,j), state%iap%reduce_gd(:,j), static%reduce_ghs(:,j), reduce_tend)
-        call reduced_tend_to_original_tend(reduce_tend, tend%u_pgf(:,j), factor)
+        call reduced_tend_to_raw_tend(reduce_tend, tend%u_pgf(:,j), factor)
       end if
     end do
 
@@ -632,7 +559,7 @@ contains
         call zonal_mass_divergence( &
           j, factor, reduce_lb(factor), reduce_ub(factor), &
           state%iap%reduce_gd(:,j), state%iap%reduce_u(:,j), reduce_tend)
-        call reduced_tend_to_original_tend(reduce_tend, tend%mass_div_lon(:,j), factor)
+        call reduced_tend_to_raw_tend(reduce_tend, tend%mass_div_lon(:,j), factor)
       end if
     end do
 
@@ -681,76 +608,6 @@ contains
     end if
 
   end subroutine meridional_mass_divergence_operator
-
-  integer function reduce_lb(reduce_factor) result(lb)
-
-    integer, intent(in) :: reduce_factor
-
-    lb = 1 - parallel%lon_halo_width
-
-  end function reduce_lb
-
-  integer function reduce_ub(reduce_factor) result(ub)
-
-    integer, intent(in) :: reduce_factor
-
-    ub = mesh%num_full_lon / reduce_factor + parallel%lon_halo_width
-
-  end function reduce_ub
-
-  subroutine original_array_to_reduced_array(fine_array, reduce_array, reduce_factor)
-
-    ! NOTE: Here we allocate more-than-need space for reduce_array.
-    real, intent(inout) :: fine_array(:)
-    real, intent(out) :: reduce_array(:)
-    integer, intent(in) :: reduce_factor
-
-    integer i, j, count, m, n
-
-    n = parallel%lon_halo_width
-    reduce_array(:) = 0.0
-    j = n + 1
-    count = 0
-    do i = 1 + n, size(fine_array) - n
-      count = count + 1
-      ! write(*, '(F20.5)', advance='no') fine_array(i)
-      reduce_array(j) = reduce_array(j) + fine_array(i)
-      if (count == reduce_factor) then
-        reduce_array(j) = reduce_array(j) / reduce_factor
-        ! write(*, '(" | ", F20.5)') reduce_array(j)
-        j = j + 1
-        count = 0
-      end if
-    end do
-
-    ! Fill halo for reduce_array.
-    m = (size(fine_array) - 2 * n) / reduce_factor + 2 * n
-    reduce_array(1 : n) = reduce_array(m - 2 * n + 1 : m - n)
-    reduce_array(m - n + 1 : m) = reduce_array(1 + n : 2 * n)
-
-  end subroutine original_array_to_reduced_array
-
-  subroutine reduced_tend_to_original_tend(reduce_tend, fine_tend, reduce_factor)
-
-    real, intent(in) :: reduce_tend(:)
-    real, intent(out) :: fine_tend(:)
-    integer, intent(in) :: reduce_factor
-
-    integer i, j, count, n
-
-    n = parallel%lon_halo_width
-    j = n + 1
-    count = 0
-    do i = 1 + n, size(fine_tend) - n
-      count = count + 1
-      fine_tend(i) = reduce_tend(j)
-      if (count == reduce_factor) then
-        j = j + 1
-        count = 0
-      end if
-    end do
-
-  end subroutine reduced_tend_to_original_tend
 
   subroutine update_state(dt, tend, old_state, new_state)
 
