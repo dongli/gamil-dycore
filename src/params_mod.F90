@@ -7,8 +7,8 @@ module params_mod
   real, parameter :: rad_to_deg = 180.0 / pi
   real, parameter :: deg_to_rad = pi / 180.0
   real, parameter :: omega = 2.0 * pi / 86400.0
-  real, parameter :: radius = 6.371e6
-  real, parameter :: g = 9.8
+  real, parameter :: radius = 6.37122e6
+  real, parameter :: g = 9.80616
 
   integer num_lon
   integer num_lat
@@ -44,8 +44,8 @@ module params_mod
   ! - none
   character(30) split_scheme
 
-  logical use_zonal_coarse
-  integer zonal_coarse_factors(10)
+  logical use_zonal_reduce
+  integer zonal_reduce_factors(10)
 
   logical is_restart_run
 
@@ -70,8 +70,8 @@ module params_mod
     time_order, &
     qcon_modified, &
     split_scheme, &
-    use_zonal_coarse, &
-    zonal_coarse_factors
+    use_zonal_reduce, &
+    zonal_reduce_factors
 
 contains
 
@@ -79,8 +79,8 @@ contains
 
     character(*), intent(in) :: file_path
 
-    use_zonal_coarse = .true.
-    zonal_coarse_factors(:) = 0
+    use_zonal_reduce = .true.
+    zonal_reduce_factors(:) = 0
 
     open(10, file=file_path)
     read(10, nml=qconswm_params)

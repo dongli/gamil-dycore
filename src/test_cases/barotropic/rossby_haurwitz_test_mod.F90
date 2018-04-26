@@ -9,11 +9,10 @@ module rossby_haurwitz_test_mod
 
   private
 
-  public rossby_haurwitz_test_set_initial_condition
+  public test_set_initial_condition
 
   real, parameter :: R = 4.0
-  real, parameter :: omg = 7.848e-6
-  !real, parameter :: omg = 3.924e-6
+  real, parameter :: omg = 7.292e-5
   real, parameter :: gd0 = 8.0e3 * g
 
 contains
@@ -29,7 +28,7 @@ contains
   ! C(φ) = 1/4 ω² cos²ᴿφ ((R + 1) cos²φ - (R + 2))
 
 
-  subroutine rossby_haurwitz_test_set_initial_condition()
+  subroutine test_set_initial_condition()
 
     real lon, cos_lat, sin_lat
     real a, b, c
@@ -80,6 +79,6 @@ contains
 
     call parallel_fill_halo(state(1)%gd, all_halo=.true.)
 
-  end subroutine rossby_haurwitz_test_set_initial_condition
+  end subroutine test_set_initial_condition
 
 end module rossby_haurwitz_test_mod

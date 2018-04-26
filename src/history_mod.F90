@@ -24,8 +24,8 @@ contains
   subroutine history_init()
 
     call io_create_dataset(desc=case_desc, file_prefix=case_name // '.h0')
-    call io_add_meta('use_zonal_coarse', use_zonal_coarse)
-    call io_add_meta('zonal_coarse_factors', pack(zonal_coarse_factors, zonal_coarse_factors /= 0))
+    call io_add_meta('use_zonal_reduce', use_zonal_reduce)
+    call io_add_meta('zonal_reduce_factors', pack(zonal_reduce_factors, zonal_reduce_factors /= 0))
     call io_add_meta('time_step_size', time_step_size)
     call io_add_meta('time_scheme', time_scheme)
     call io_add_meta('split_scheme', split_scheme)
@@ -36,6 +36,7 @@ contains
     call io_add_var('u', long_name='u wind component', units='m s-1', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('v', long_name='v wind component', units='m s-1', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('gd', long_name='geopotential depth', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('ghs', long_name='surface geopotential', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
 
     if (.not. allocated(u)) call parallel_allocate(u)
     if (.not. allocated(v)) call parallel_allocate(v)
@@ -53,9 +54,10 @@ contains
 
   end subroutine history_final
 
-  subroutine history_write(state)
+  subroutine history_write(state, static)
 
     type(state_type), intent(in) :: state
+    type(static_type), intent(in) :: static
 
     integer i, j
 
@@ -76,6 +78,7 @@ contains
     call io_output('u', u(:,:))
     call io_output('v', v(:,:))
     call io_output('gd', state%gd(:,:))
+    call io_output('ghs', static%ghs(:,:))
     call io_end_output()
 
   end subroutine history_write

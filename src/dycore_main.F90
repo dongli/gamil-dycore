@@ -4,7 +4,9 @@ program dycore_main
   use io_mod
   use time_mod
   use dycore_mod
-  use rossby_haurwitz_test_mod
+  ! use rossby_haurwitz_test_mod
+  ! use steady_geostrophic_flow_test_mod
+  use mountain_zonal_flow_test_mod
 
   character(256) namelist_file_path
 
@@ -22,7 +24,7 @@ program dycore_main
   if (is_restart_run) then
     call dycore_restart()
   else
-    call rossby_haurwitz_test_set_initial_condition()
+    call test_set_initial_condition()
   end if
 
   call dycore_run()

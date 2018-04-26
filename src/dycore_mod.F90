@@ -182,7 +182,7 @@ contains
 
     type(state_type), intent(in) :: state
 
-    if (time_is_alerted('hist0.output')) call history_write(state)
+    if (time_is_alerted('hist0.output')) call history_write(state, static)
     if (time_is_alerted('restart.output')) call restart_write(state)
 
   end subroutine output
@@ -220,8 +220,6 @@ contains
 
   subroutine space_operators(state, tend, dt, pass)
 
-    use omp_lib
-
     type(state_type), intent(inout) :: state
     type(tend_type), intent(inout) :: tend
     real, intent(in) :: dt
@@ -231,41 +229,39 @@ contains
     integer i, j, k
 
     ! Calculate maximum CFL along each zonal circle.
-    state%coarse_factor(:) = 1
+    state%reduce_factor(:) = 1
     mean_dlon = sum(coef%full_dlon) / mesh%num_full_lat
-!$omp parallel do private(cfl) schedule(static)
-    if (use_zonal_coarse) then
+    if (use_zonal_reduce) then
       do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
         state%max_cfl(j) = 0.0
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           cfl = dt * state%iap%gd(i,j) / coef%full_dlon(j)
           if (state%max_cfl(j) < cfl) state%max_cfl(j) = cfl
         end do
-        ! Calculate coarsed state.
+        ! Calculate reduced state.
         if (state%max_cfl(j) > 0.2) then
-          ! Find coarse_factor based on excess of CFL.
-          do k = 1, size(zonal_coarse_factors)
-            !if (state%max_cfl(j) < zonal_coarse_factors(k)) then
-            if (mean_dlon / coef%full_dlon(j) < zonal_coarse_factors(k)) then
-              state%coarse_factor(j) = zonal_coarse_factors(k)
+          ! Find reduce_factor based on excess of CFL.
+          do k = 1, size(zonal_reduce_factors)
+            !if (state%max_cfl(j) < zonal_reduce_factors(k)) then
+            if (mean_dlon / coef%full_dlon(j) < zonal_reduce_factors(k)) then
+              state%reduce_factor(j) = zonal_reduce_factors(k)
               exit
             end if
-            if (zonal_coarse_factors(k) == 0) then
-              ! call log_warning('Insufficient zonal_coarse_factors or time step size is too large!')
-              state%coarse_factor(j) = zonal_coarse_factors(k - 1)
+            if (zonal_reduce_factors(k) == 0) then
+              ! call log_warning('Insufficient zonal_reduce_factors or time step size is too large!')
+              state%reduce_factor(j) = zonal_reduce_factors(k - 1)
               exit
             end if
           end do
-          call fine_array_to_coarse_array(state%gd(:,j), state%coarse_gd(:,j), state%coarse_factor(j))
-          call fine_array_to_coarse_array(state%iap%u(:,j), state%iap%coarse_u(:,j), state%coarse_factor(j))
-          call fine_array_to_coarse_array(static%ghs(:,j), static%coarse_ghs(:,j), state%coarse_factor(j))
-          state%iap%coarse_gd(:,j) = sqrt(state%coarse_gd(:,j))
+          call original_array_to_reduced_array(state%gd(:,j), state%reduce_gd(:,j), state%reduce_factor(j))
+          call original_array_to_reduced_array(state%iap%u(:,j), state%iap%reduce_u(:,j), state%reduce_factor(j))
+          call original_array_to_reduced_array(static%ghs(:,j), static%reduce_ghs(:,j), state%reduce_factor(j))
+          state%iap%reduce_gd(:,j) = sqrt(state%reduce_gd(:,j))
           ! print *, j, state%max_cfl(j)
         end if
       end do
     end if
-!$omp end parallel do
-    call log_add_diag('num_coarse_zonal', count(state%coarse_factor /= 1))
+    call log_add_diag('num_reduce_zonal', count(state%reduce_factor /= 1))
 
     select case (pass)
     case (all_pass)
@@ -278,29 +274,23 @@ contains
       call zonal_mass_divergence_operator(state, tend)
       call meridional_mass_divergence_operator(state, tend)
 
-!$omp parallel do collapse(2) schedule(static)
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%du(i,j) = - tend%u_adv_lon(i,j) - tend%u_adv_lat(i,j) + tend%fv(i,j) + tend%cv(i,j) - tend%u_pgf(i,j)
         end do
       end do
-!$omp end parallel do
 
-!$omp parallel do collapse(2) schedule(static)
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv(i,j) = - tend%v_adv_lon(i,j) - tend%v_adv_lat(i,j) - tend%fu(i,j) - tend%cu(i,j) - tend%v_pgf(i,j)
         end do
       end do
-!$omp end parallel do
 
-!$omp parallel do collapse(2) schedule(static)
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dgd(i,j) = - tend%mass_div_lon(i,j) - tend%mass_div_lat(i,j)
         end do
       end do
-!$omp end parallel do
     case (slow_pass)
 #ifndef NDEBUG
       tend%fv = 0.0
@@ -315,21 +305,17 @@ contains
       call zonal_momentum_advection_operator(state, tend)
       call meridional_momentum_advection_operator(state, tend)
 
-!$omp parallel do collapse(2) schedule(static)
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%du(i,j) = - tend%u_adv_lon(i,j) - tend%u_adv_lat(i,j)
         end do
       end do
-!$omp end parallel do
 
-!$omp parallel do collapse(2) schedule(static)
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv(i,j) = - tend%v_adv_lon(i,j) - tend%v_adv_lat(i,j)
         end do
       end do
-!$omp end parallel do
 
       tend%dgd = 0.0
     case (fast_pass)
@@ -346,39 +332,33 @@ contains
       call zonal_mass_divergence_operator(state, tend)
       call meridional_mass_divergence_operator(state, tend)
 
-!$omp parallel do collapse(2) schedule(static)
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%du(i,j) =    tend%fv(i,j) + tend%cv(i,j) - tend%u_pgf(i,j)
         end do
       end do
-!$omp end parallel do
 
-!$omp parallel do collapse(2) schedule(static)
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv(i,j) =  - tend%fu(i,j) - tend%cu(i,j) - tend%v_pgf(i,j)
         end do
       end do
-!$omp end parallel do
 
-!$omp parallel do collapse(2) schedule(static)
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dgd(i,j) = - tend%mass_div_lon(i,j) - tend%mass_div_lat(i,j)
         end do
       end do
-!$omp end parallel do
     end select
 
     ! call check_antisymmetry(tend, state)
 
   end subroutine space_operators
 
-  subroutine zonal_u_momentum_advection(j, coarse_factor, lb, ub, u, iap_u, du)
+  subroutine zonal_u_momentum_advection(j, reduce_factor, lb, ub, u, iap_u, du)
 
     integer, intent(in) :: j
-    integer, intent(in) :: coarse_factor
+    integer, intent(in) :: reduce_factor
     integer, intent(in) :: lb
     integer, intent(in) :: ub
     real, intent(in) :: u(lb:ub)
@@ -387,18 +367,16 @@ contains
 
     integer i
 
-!$omp parallel do schedule(static)
     do i = lb + parallel%lon_halo_width, ub - parallel%lon_halo_width
-      du(i) = 0.5 / coef%full_dlon(j) / coarse_factor * ((u(i) + u(i+1)) * iap_u(i+1) - (u(i) + u(i-1)) * iap_u(i-1))
+      du(i) = 0.5 / coef%full_dlon(j) / reduce_factor * ((u(i) + u(i+1)) * iap_u(i+1) - (u(i) + u(i-1)) * iap_u(i-1))
     end do
-!$omp end parallel do
 
   end subroutine zonal_u_momentum_advection
 
-  subroutine zonal_v_momentum_advection(j, coarse_factor, lb, ub, u1, u2, iap_v, dv)
+  subroutine zonal_v_momentum_advection(j, reduce_factor, lb, ub, u1, u2, iap_v, dv)
 
     integer, intent(in) :: j
-    integer, intent(in) :: coarse_factor
+    integer, intent(in) :: reduce_factor
     integer, intent(in) :: lb
     integer, intent(in) :: ub
     real, intent(in) :: u1(lb:ub)
@@ -408,11 +386,9 @@ contains
 
     integer i
 
-!$omp parallel do schedule(static)
     do i = lb + parallel%lon_halo_width, ub - parallel%lon_halo_width
-      dv(i) = 0.5 / coef%half_dlon(j) / coarse_factor * ((u1(i) + u2(i)) * iap_v(i+1) - (u1(i-1) + u2(i-1)) * iap_v(i-1))
+      dv(i) = 0.5 / coef%half_dlon(j) / reduce_factor * ((u1(i) + u2(i)) * iap_v(i+1) - (u1(i-1) + u2(i-1)) * iap_v(i-1))
     end do
-!$omp end parallel do
 
   end subroutine zonal_v_momentum_advection
 
@@ -421,26 +397,22 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real coarse_tend(parallel%half_lon_lb:parallel%half_lon_ub)
+    real reduce_tend(parallel%half_lon_lb:parallel%half_lon_ub)
     integer j, factor
 
     ! U
-!$omp parallel do schedule(static)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       call zonal_u_momentum_advection( &
         j, 1, parallel%half_lon_lb, parallel%half_lon_ub, &
         state%u(:,j), state%iap%u(:,j), tend%u_adv_lon(:,j))
     end do
-!$omp end parallel do
 
     ! V
-!$omp parallel do schedule(static)
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       call zonal_v_momentum_advection( &
         j, 1, parallel%full_lon_lb, parallel%full_lon_ub, &
         state%u(:,j), state%u(:,j+1), state%iap%v(:,j), tend%v_adv_lon(:,j))
     end do
-!$omp end parallel do
 
   end subroutine zonal_momentum_advection_operator
 
@@ -453,7 +425,6 @@ contains
     integer i, j
 
     ! U
-!$omp parallel do collapse(2) private(vp1, vm1) schedule(static)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         vp1 = (state%v(i,j  ) + state%v(i+1,j  )) * mesh%half_cos_lat(j  )
@@ -461,10 +432,8 @@ contains
         tend%u_adv_lat(i,j) = 0.5 / coef%full_dlat(j) * (vp1 * state%iap%u(i,j+1) - vm1 * state%iap%u(i,j-1))
       end do
     end do
-!$omp end parallel do
 
     ! V
-!$omp parallel do collapse(2) private(vp1, vm1) schedule(static)
     do j = parallel%half_lat_start_idx_no_pole, parallel%half_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         vp1 = state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j+1) * mesh%half_cos_lat(j+1)
@@ -472,7 +441,6 @@ contains
         tend%v_adv_lat(i,j) = 0.5 / coef%half_dlat(j) * (vp1 * state%iap%v(i,j+1) - vm1 * state%iap%v(i,j-1))
       end do
     end do
-!$omp end parallel do
 
     ! Handle meridional advection at South Pole.
     if (parallel%has_south_pole) then
@@ -502,7 +470,6 @@ contains
     real c1, c2
     integer i, j
 
-!$omp parallel do private(c1, c2) schedule(static)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       c1 = mesh%half_cos_lat(j  ) / mesh%full_cos_lat(j)
       c2 = mesh%half_cos_lat(j-1) / mesh%full_cos_lat(j)
@@ -511,15 +478,12 @@ contains
                                               c2 * (state%iap%v(i,j-1) + state%iap%v(i+1,j-1)))
       end do
     end do
-!$omp end parallel do
-!$omp parallel do collapse(2) schedule(static)
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%fu(i,j) = 0.25 * (coef%cori(j  ) * (state%iap%u(i,j  ) + state%iap%u(i-1,j  )) + &
                                coef%cori(j+1) * (state%iap%u(i,j+1) + state%iap%u(i-1,j+1)))
       end do
     end do
-!$omp end parallel do
 
 #ifndef NDEBUG
     if (parallel%has_south_pole) then
@@ -550,7 +514,6 @@ contains
     real c1, c2
     integer i, j
 
-!$omp parallel do private(c1, c2) schedule(static)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       c1 = mesh%half_cos_lat(j  ) / mesh%full_cos_lat(j)
       c2 = mesh%half_cos_lat(j-1) / mesh%full_cos_lat(j)
@@ -560,9 +523,7 @@ contains
            c2 * (state%iap%v(i,j-1) + state%iap%v(i+1,j-1)))
       end do
     end do
-!$omp end parallel do
 
-!$omp parallel do collapse(2) schedule(static)
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%cu(i,j) = 0.25 * &
@@ -572,14 +533,13 @@ contains
            coef%curv(j+1) * state%u(i-1,j+1) * state%iap%u(i-1,j+1))
       end do
     end do
-!$omp end parallel do
 
   end subroutine curvature_operator
 
-  subroutine zonal_pressure_gradient_force(j, coarse_factor, lb, ub, gd, iap_gd, ghs, du)
+  subroutine zonal_pressure_gradient_force(j, reduce_factor, lb, ub, gd, iap_gd, ghs, du)
 
     integer, intent(in) :: j
-    integer, intent(in) :: coarse_factor
+    integer, intent(in) :: reduce_factor
     integer, intent(in) :: lb
     integer, intent(in) :: ub
     real, intent(in) :: gd(lb:ub)
@@ -589,11 +549,9 @@ contains
 
     integer i
 
-!$omp parallel do schedule(static)
     do i = lb + parallel%lon_halo_width, ub - parallel%lon_halo_width
-      du(i) = (iap_gd(i) + iap_gd(i+1)) / coef%full_dlon(j) / coarse_factor * (gd(i+1) - gd(i) + ghs(i+1) - ghs(i))
+      du(i) = (iap_gd(i) + iap_gd(i+1)) / coef%full_dlon(j) / reduce_factor * (gd(i+1) - gd(i) + ghs(i+1) - ghs(i))
     end do
-!$omp end parallel do
 
   end subroutine zonal_pressure_gradient_force
 
@@ -602,24 +560,22 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real coarse_tend(parallel%half_lon_lb:parallel%half_lon_ub)
+    real reduce_tend(parallel%half_lon_lb:parallel%half_lon_ub)
     integer j, factor
 
-!$omp parallel do private(factor, coarse_tend) schedule(static)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      if (state%coarse_factor(j) == 1) then
+      if (state%reduce_factor(j) == 1) then
         call zonal_pressure_gradient_force( &
           j, 1, parallel%half_lon_lb, parallel%half_lon_ub, &
           state%gd(:,j), state%iap%gd(:,j), static%ghs(:,j), tend%u_pgf(:,j))
       else
-        factor = state%coarse_factor(j)
+        factor = state%reduce_factor(j)
         call zonal_pressure_gradient_force( &
-          j, factor, coarse_lb(factor), coarse_ub(factor), &
-          state%coarse_gd(:,j), state%iap%coarse_gd(:,j), static%coarse_ghs(:,j), coarse_tend)
-        call coarse_tend_to_fine_tend(coarse_tend, tend%u_pgf(:,j), factor)
+          j, factor, reduce_lb(factor), reduce_ub(factor), &
+          state%reduce_gd(:,j), state%iap%reduce_gd(:,j), static%reduce_ghs(:,j), reduce_tend)
+        call reduced_tend_to_original_tend(reduce_tend, tend%u_pgf(:,j), factor)
       end if
     end do
-!$omp end parallel do
 
   end subroutine zonal_pressure_gradient_force_operator
 
@@ -630,21 +586,19 @@ contains
 
     integer i, j
 
-!$omp parallel do collapse(2) schedule(static)
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%v_pgf(i,j) = (state%iap%gd(i,j) + state%iap%gd(i,j+1)) / coef%half_dlat(j) * &
           (state%gd(i,j+1) - state%gd(i,j) + static%ghs(i,j+1) - static%ghs(i,j)) * mesh%half_cos_lat(j)
       end do
     end do
-!$omp end parallel do
 
   end subroutine meridional_pressure_gradient_force_operator
 
-  subroutine zonal_mass_divergence(j, coarse_factor, lb, ub, iap_gd, iap_u, dgd)
+  subroutine zonal_mass_divergence(j, reduce_factor, lb, ub, iap_gd, iap_u, dgd)
 
     integer, intent(in) :: j
-    integer, intent(in) :: coarse_factor
+    integer, intent(in) :: reduce_factor
     integer, intent(in) :: lb
     integer, intent(in) :: ub
     real, intent(in) :: iap_gd(lb:ub)
@@ -653,12 +607,10 @@ contains
 
     integer i
 
-!$omp parallel do schedule(static)
     do i = lb + parallel%lon_halo_width, ub - parallel%lon_halo_width
-      dgd(i) = 1.0 / coef%full_dlon(j) / coarse_factor * ( &
+      dgd(i) = 1.0 / coef%full_dlon(j) / reduce_factor * ( &
         (iap_gd(i) + iap_gd(i+1)) * iap_u(i) - (iap_gd(i) + iap_gd(i-1)) * iap_u(i-1))
     end do
-!$omp end parallel do
 
   end subroutine zonal_mass_divergence
 
@@ -667,24 +619,22 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real coarse_tend(parallel%half_lon_lb:parallel%half_lon_ub)
+    real reduce_tend(parallel%half_lon_lb:parallel%half_lon_ub)
     integer j, factor
 
-!$omp parallel do private(factor, coarse_tend) schedule(static)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      if (state%coarse_factor(j) == 1) then
+      if (state%reduce_factor(j) == 1) then
         call zonal_mass_divergence( &
           j, 1, parallel%full_lon_lb, parallel%full_lon_ub, &
           state%iap%gd(:,j), state%iap%u(:,j), tend%mass_div_lon(:,j))
       else
-        factor = state%coarse_factor(j)
+        factor = state%reduce_factor(j)
         call zonal_mass_divergence( &
-          j, factor, coarse_lb(factor), coarse_ub(factor), &
-          state%iap%coarse_gd(:,j), state%iap%coarse_u(:,j), coarse_tend)
-        call coarse_tend_to_fine_tend(coarse_tend, tend%mass_div_lon(:,j), factor)
+          j, factor, reduce_lb(factor), reduce_ub(factor), &
+          state%iap%reduce_gd(:,j), state%iap%reduce_u(:,j), reduce_tend)
+        call reduced_tend_to_original_tend(reduce_tend, tend%mass_div_lon(:,j), factor)
       end if
     end do
-!$omp end parallel do
 
   end subroutine zonal_mass_divergence_operator
 
@@ -696,7 +646,6 @@ contains
     integer i, j
     real sp, np, sum
 
-!$omp parallel do collapse(2) schedule(static)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%mass_div_lat(i,j) = 1.0 / coef%full_dlat(j) * ( &
@@ -704,7 +653,6 @@ contains
           (state%iap%gd(i,j) + state%iap%gd(i,j-1)) * state%iap%v(i,j-1) * mesh%half_cos_lat(j-1))
       end do
     end do
-!$omp end parallel do
 
     if (parallel%full_lat_start_idx == parallel%full_lat_south_pole_idx) then
       j = parallel%full_lat_south_pole_idx
@@ -734,59 +682,59 @@ contains
 
   end subroutine meridional_mass_divergence_operator
 
-  integer function coarse_lb(coarse_factor) result(lb)
+  integer function reduce_lb(reduce_factor) result(lb)
 
-    integer, intent(in) :: coarse_factor
+    integer, intent(in) :: reduce_factor
 
     lb = 1 - parallel%lon_halo_width
 
-  end function coarse_lb
+  end function reduce_lb
 
-  integer function coarse_ub(coarse_factor) result(ub)
+  integer function reduce_ub(reduce_factor) result(ub)
 
-    integer, intent(in) :: coarse_factor
+    integer, intent(in) :: reduce_factor
 
-    ub = mesh%num_full_lon / coarse_factor + parallel%lon_halo_width
+    ub = mesh%num_full_lon / reduce_factor + parallel%lon_halo_width
 
-  end function coarse_ub
+  end function reduce_ub
 
-  subroutine fine_array_to_coarse_array(fine_array, coarse_array, coarse_factor)
+  subroutine original_array_to_reduced_array(fine_array, reduce_array, reduce_factor)
 
-    ! NOTE: Here we allocate more-than-need space for coarse_array.
+    ! NOTE: Here we allocate more-than-need space for reduce_array.
     real, intent(inout) :: fine_array(:)
-    real, intent(out) :: coarse_array(:)
-    integer, intent(in) :: coarse_factor
+    real, intent(out) :: reduce_array(:)
+    integer, intent(in) :: reduce_factor
 
     integer i, j, count, m, n
 
     n = parallel%lon_halo_width
-    coarse_array(:) = 0.0
+    reduce_array(:) = 0.0
     j = n + 1
     count = 0
     do i = 1 + n, size(fine_array) - n
       count = count + 1
       ! write(*, '(F20.5)', advance='no') fine_array(i)
-      coarse_array(j) = coarse_array(j) + fine_array(i)
-      if (count == coarse_factor) then
-        coarse_array(j) = coarse_array(j) / coarse_factor
-        ! write(*, '(" | ", F20.5)') coarse_array(j)
+      reduce_array(j) = reduce_array(j) + fine_array(i)
+      if (count == reduce_factor) then
+        reduce_array(j) = reduce_array(j) / reduce_factor
+        ! write(*, '(" | ", F20.5)') reduce_array(j)
         j = j + 1
         count = 0
       end if
     end do
 
-    ! Fill halo for coarse_array.
-    m = (size(fine_array) - 2 * n) / coarse_factor + 2 * n
-    coarse_array(1 : n) = coarse_array(m - 2 * n + 1 : m - n)
-    coarse_array(m - n + 1 : m) = coarse_array(1 + n : 2 * n)
+    ! Fill halo for reduce_array.
+    m = (size(fine_array) - 2 * n) / reduce_factor + 2 * n
+    reduce_array(1 : n) = reduce_array(m - 2 * n + 1 : m - n)
+    reduce_array(m - n + 1 : m) = reduce_array(1 + n : 2 * n)
 
-  end subroutine fine_array_to_coarse_array
+  end subroutine original_array_to_reduced_array
 
-  subroutine coarse_tend_to_fine_tend(coarse_tend, fine_tend, coarse_factor)
+  subroutine reduced_tend_to_original_tend(reduce_tend, fine_tend, reduce_factor)
 
-    real, intent(in) :: coarse_tend(:)
+    real, intent(in) :: reduce_tend(:)
     real, intent(out) :: fine_tend(:)
-    integer, intent(in) :: coarse_factor
+    integer, intent(in) :: reduce_factor
 
     integer i, j, count, n
 
@@ -795,14 +743,14 @@ contains
     count = 0
     do i = 1 + n, size(fine_tend) - n
       count = count + 1
-      fine_tend(i) = coarse_tend(j)
-      if (count == coarse_factor) then
+      fine_tend(i) = reduce_tend(j)
+      if (count == reduce_factor) then
         j = j + 1
         count = 0
       end if
     end do
 
-  end subroutine coarse_tend_to_fine_tend
+  end subroutine reduced_tend_to_original_tend
 
   subroutine update_state(dt, tend, old_state, new_state)
 
@@ -824,36 +772,28 @@ contains
     call parallel_fill_halo(new_state%gd(:,:), all_halo=.true.)
 
     ! Update IAP wind state.
-!$omp parallel do collapse(2) schedule(static)
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         new_state%iap%u(i,j) = old_state%iap%u(i,j) + dt * tend%du(i,j)
       end do
     end do
-!$omp end parallel do
-!$omp parallel do collapse(2) schedule(static)
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         new_state%iap%v(i,j) = old_state%iap%v(i,j) + dt * tend%dv(i,j)
       end do
     end do
-!$omp end parallel do
 
     ! Transform from IAP to normal state.
-!$omp parallel do collapse(2) schedule(static)
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         new_state%u(i,j) = new_state%iap%u(i,j) * 2.0 / (new_state%iap%gd(i,j) + new_state%iap%gd(i+1,j))
       end do
     end do
-!$omp end parallel do
-!$omp parallel do collapse(2) schedule(static)
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         new_state%v(i,j) = new_state%iap%v(i,j) * 2.0 / (new_state%iap%gd(i,j) + new_state%iap%gd(i,j+1))
       end do
     end do
-!$omp end parallel do
 
     call parallel_fill_halo(new_state%iap%u(:,:), all_halo=.true.)
     call parallel_fill_halo(new_state%iap%v(:,:), all_halo=.true.)
@@ -871,27 +811,21 @@ contains
 
     res = 0.0
 
-!$omp parallel do collapse(2) reduction(+:res) schedule(static)
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         res = res + tend1%du(i,j) * tend2%du(i,j) * mesh%full_cos_lat(j)
       end do
     end do
-!$omp end parallel do
-!$omp parallel do collapse(2) reduction(+:res) schedule(static)
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         res = res + tend1%dv(i,j) * tend2%dv(i,j) * mesh%half_cos_lat(j)
       end do
     end do
-!$omp end parallel do
-!$omp parallel do collapse(2) reduction(+:res) schedule(static)
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         res = res + tend1%dgd(i,j) * tend2%dgd(i,j) * mesh%full_cos_lat(j)
       end do
     end do
-!$omp end parallel do
 
   end function inner_product
 
@@ -902,13 +836,11 @@ contains
     integer i, j
 
     total_mass = 0.0
-!$omp parallel do collapse(2) reduction(+:total_mass) schedule(static)
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         total_mass = total_mass + mesh%full_cos_lat(j) * mesh%dlon * mesh%dlat * state%gd(i,j)
       end do
     end do
-!$omp end parallel do
     total_mass = total_mass * radius**2
 
     if (ieee_is_nan(total_mass)) then
@@ -924,27 +856,21 @@ contains
     integer i, j
 
     total_energy = 0.0
-!$omp parallel do collapse(2) reduction(+:total_energy) schedule(static)
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         total_energy = total_energy + state%iap%u(i,j)**2 * mesh%full_cos_lat(j)
       end do
     end do
-!$omp end parallel do
-!$omp parallel do collapse(2) reduction(+:total_energy) schedule(static)
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         total_energy = total_energy + state%iap%v(i,j)**2 * mesh%half_cos_lat(j)
       end do
     end do
-!$omp end parallel do
-!$omp parallel do collapse(2) reduction(+:total_energy) schedule(static)
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         total_energy = total_energy + (state%gd(i,j) + static%ghs(i,j))**2 * mesh%full_cos_lat(j)
       end do
     end do
-!$omp end parallel do
 
     if (ieee_is_nan(total_energy)) then
       call log_error('Total energy is NaN!')
@@ -1043,7 +969,7 @@ contains
     ip1 = inner_product(tend(old), tend(new))
     ip2 = inner_product(tend(new), tend(new))
     call log_add_diag('beta', ip1 / ip2)
-    dt = time_step_size * merge(ip1 / ip2, 1.0, qcon_modified)
+    dt = time_step_size * merge(ip1 / ip2, 1.0, qcon_modified .and. ip1 /= 0.0 .and. ip2 /= 0.0)
     call update_state(dt, tend(new), state(old), state(new))
 
   end subroutine predict_correct

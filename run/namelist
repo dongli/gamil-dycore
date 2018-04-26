@@ -1,18 +1,18 @@
 &qconswm_params
-case_name = 'rh_test.360x181.coarse.dt240'
-case_desc = 'Rossby-Haurwitz 4 wave test'
+case_name = 'mz_test.360x181.reduce.no_coriolis.dt240'
+case_desc = 'Mountain zonal flow test'
 author = 'Li Dong <dongli@lasg.iap.ac.cn>'
-days = 32
+days = 1
 num_lon = 360
 num_lat = 181
 time_step_size = 240
-history_periods = '1 days'
+history_periods = '10 steps'
 restart_period = '1 days'
-!restart_file = './rh_test.360x181.coarse.dt240.r.0001-01-02T00:00:00Z.nc'
+!restart_file = './rh_test.360x181.reduce.dt240.r.0001-01-02T00:00:00Z.nc'
 time_scheme = 'predict_correct'
 qcon_modified = .true.
-split_scheme = 'csp2' ! or 'csp1' or 'isp'
+split_scheme = 'csp2' ! 'csp2' or 'csp1' or 'isp'
 subcycles = 8
-use_zonal_coarse = .true.
-zonal_coarse_factors = 2, 4, 6, 8, 10
+use_zonal_reduce = .true.
+zonal_reduce_factors = 5
 /

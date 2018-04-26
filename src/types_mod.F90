@@ -35,8 +35,8 @@ module types_mod
     real, allocatable :: u(:,:)
     real, allocatable :: v(:,:)
     real, allocatable :: gd(:,:)
-    real, allocatable :: coarse_u(:,:)
-    real, allocatable :: coarse_gd(:,:)
+    real, allocatable :: reduce_u(:,:)
+    real, allocatable :: reduce_gd(:,:)
   end type iap_type
 
   type state_type
@@ -46,13 +46,13 @@ module types_mod
     type(iap_type) iap
     ! Zonal maximum CFL number
     real, allocatable :: max_cfl(:)
-    integer, allocatable :: coarse_factor(:)
-    real, allocatable :: coarse_gd(:,:)
+    integer, allocatable :: reduce_factor(:)
+    real, allocatable :: reduce_gd(:,:)
   end type state_type
 
   type static_type
     real, allocatable :: ghs(:,:) ! Surface geopotential
-    real, allocatable :: coarse_ghs(:,:)
+    real, allocatable :: reduce_ghs(:,:)
   end type static_type
 
   type tend_type
@@ -107,7 +107,7 @@ contains
     type(static_type), intent(out) :: static
 
     if (.not. allocated(static%ghs)) call parallel_allocate(static%ghs)
-    if (.not. allocated(static%coarse_ghs)) call parallel_allocate(static%coarse_ghs)
+    if (.not. allocated(static%reduce_ghs)) call parallel_allocate(static%reduce_ghs)
 
   end subroutine allocate_static_data
 
@@ -119,14 +119,14 @@ contains
     if (.not. allocated(state%v)) call parallel_allocate(state%v, half_lat=.true.)
     if (.not. allocated(state%gd)) call parallel_allocate(state%gd)
     if (.not. allocated(state%max_cfl)) call parallel_allocate(state%max_cfl, full_lat=.true.)
-    if (.not. allocated(state%coarse_factor)) call parallel_allocate(state%coarse_factor, full_lat=.true.)
-    if (.not. allocated(state%coarse_gd)) call parallel_allocate(state%coarse_gd)
+    if (.not. allocated(state%reduce_factor)) call parallel_allocate(state%reduce_factor, full_lat=.true.)
+    if (.not. allocated(state%reduce_gd)) call parallel_allocate(state%reduce_gd)
 
     if (.not. allocated(state%iap%u)) call parallel_allocate(state%iap%u, half_lon=.true.)
     if (.not. allocated(state%iap%v)) call parallel_allocate(state%iap%v, half_lat=.true.)
     if (.not. allocated(state%iap%gd)) call parallel_allocate(state%iap%gd)
-    if (.not. allocated(state%iap%coarse_u)) call parallel_allocate(state%iap%coarse_u, half_lon=.true.)
-    if (.not. allocated(state%iap%coarse_gd)) call parallel_allocate(state%iap%coarse_gd)
+    if (.not. allocated(state%iap%reduce_u)) call parallel_allocate(state%iap%reduce_u, half_lon=.true.)
+    if (.not. allocated(state%iap%reduce_gd)) call parallel_allocate(state%iap%reduce_gd)
 
   end subroutine allocate_state_data
 
@@ -170,7 +170,7 @@ contains
     type(static_type), intent(inout) :: static
 
     if (allocated(static%ghs)) deallocate(static%ghs)
-    if (allocated(static%coarse_ghs)) deallocate(static%coarse_ghs)
+    if (allocated(static%reduce_ghs)) deallocate(static%reduce_ghs)
 
   end subroutine deallocate_static_data
 
@@ -182,14 +182,14 @@ contains
     if (allocated(state%v)) deallocate(state%v)
     if (allocated(state%gd)) deallocate(state%gd)
     if (allocated(state%max_cfl)) deallocate(state%max_cfl)
-    if (allocated(state%coarse_factor)) deallocate(state%coarse_factor)
-    if (allocated(state%coarse_gd)) deallocate(state%coarse_gd)
+    if (allocated(state%reduce_factor)) deallocate(state%reduce_factor)
+    if (allocated(state%reduce_gd)) deallocate(state%reduce_gd)
 
     if (allocated(state%iap%u)) deallocate(state%iap%u)
     if (allocated(state%iap%v)) deallocate(state%iap%v)
     if (allocated(state%iap%gd)) deallocate(state%iap%gd)
-    if (allocated(state%iap%coarse_u)) deallocate(state%iap%coarse_u)
-    if (allocated(state%iap%coarse_gd)) deallocate(state%iap%coarse_gd)
+    if (allocated(state%iap%reduce_u)) deallocate(state%iap%reduce_u)
+    if (allocated(state%iap%reduce_gd)) deallocate(state%iap%reduce_gd)
 
   end subroutine deallocate_state_data
 

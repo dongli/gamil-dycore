@@ -22,6 +22,10 @@ module mesh_mod
     real, allocatable :: half_lon(:)
     real, allocatable :: full_lat(:)
     real, allocatable :: half_lat(:)
+    real, allocatable :: full_cos_lon(:)
+    real, allocatable :: half_cos_lon(:)
+    real, allocatable :: full_sin_lon(:)
+    real, allocatable :: half_sin_lon(:)
     real, allocatable :: full_cos_lat(:)
     real, allocatable :: half_cos_lat(:)
     real, allocatable :: full_sin_lat(:)
@@ -50,6 +54,10 @@ contains
     allocate(mesh%half_lon(mesh%num_half_lon))
     allocate(mesh%full_lat(mesh%num_full_lat))
     allocate(mesh%half_lat(mesh%num_half_lat))
+    allocate(mesh%full_cos_lon(mesh%num_full_lon))
+    allocate(mesh%half_cos_lon(mesh%num_half_lon))
+    allocate(mesh%full_sin_lon(mesh%num_full_lon))
+    allocate(mesh%half_sin_lon(mesh%num_half_lon))
     allocate(mesh%full_cos_lat(mesh%num_full_lat))
     allocate(mesh%half_cos_lat(mesh%num_half_lat))
     allocate(mesh%full_sin_lat(mesh%num_full_lat))
@@ -76,6 +84,16 @@ contains
     end do
     mesh%full_lat(num_lat) = 0.5 * pi
     mesh%full_lat_deg(num_lat) = 90.0
+
+    do i = 1, mesh%num_full_lon
+      mesh%full_cos_lon(i) = cos(mesh%full_lon(i))
+      mesh%full_sin_lon(i) = sin(mesh%full_lon(i))
+    end do
+
+    do i = 1, mesh%num_half_lon
+      mesh%half_cos_lon(i) = cos(mesh%half_lon(i))
+      mesh%half_sin_lon(i) = sin(mesh%half_lon(i))
+    end do
 
     do j = 1, mesh%num_half_lat
       mesh%half_cos_lat(j) = cos(mesh%half_lat(j))

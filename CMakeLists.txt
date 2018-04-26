@@ -3,18 +3,18 @@ cmake_minimum_required (VERSION 2.8)
 project (gamil-dycore Fortran)
 
 find_package (MPI)
-if (NOT ${MPI_Fortran_FOUND})
+if (NOT MPI_Fortran_FOUND)
   set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DNO_MPI")
 else ()
-  set (CMAKE_Fortran_COMPILER ${MPI_Fortran_COMPILER})
+  include_directories (${MPI_Fortran_INCLUDE_DIRS})
 endif ()
 
 set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -ffpe-summary=none -ffree-line-length-none -Ofast -flto")
 
 find_package (PkgConfig)
-if (${PKG_CONFIG_FOUND})
+if (PKG_CONFIG_FOUND)
   pkg_search_module (NETCDF REQUIRED netcdf)
-  if (${NETCDF_FOUND})
+  if (NETCDF_FOUND)
     include_directories (${NETCDF_INCLUDE_DIRS})
     link_directories (${NETCDF_LIBRARY_DIRS})
   else ()
@@ -41,9 +41,16 @@ set (source_files
   "src/dycore_mod.F90"
   "src/dycore_main.F90"
   "src/test_cases/barotropic/rossby_haurwitz_test_mod.F90"
+  "src/test_cases/barotropic/steady_geostrophic_flow_test_mod.F90"
+  "src/test_cases/barotropic/mountain_zonal_flow_test_mod.F90"
 )
 
 set (CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")
 
 add_executable (gamil_dycore.exe ${source_files})
 target_link_libraries (gamil_dycore.exe fortran_datetime netcdf netcdff)
+if (MPI_Fortran_FOUND)
+  set_target_properties (gamil_dycore.exe PROPERTIES
+    LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}"
+  )
+endif ()
