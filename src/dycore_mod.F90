@@ -389,22 +389,45 @@ contains
 
   end subroutine meridional_momentum_advection_operator
 
+  subroutine zonal_coriolis(j, lb, ub, v1, v2, du)
+
+    integer, intent(in) :: j
+    integer, intent(in) :: lb
+    integer, intent(in) :: ub
+    real, intent(in) :: v1(lb:ub)
+    real, intent(in) :: v2(lb:ub)
+    real, intent(out) :: du(lb:ub)
+
+    real c1, c2
+    integer i
+
+    c1 = mesh%half_cos_lat(j-1) / mesh%full_cos_lat(j)
+    c2 = mesh%half_cos_lat(j  ) / mesh%full_cos_lat(j)
+    do i = lb + parallel%lon_halo_width, ub - parallel%lon_halo_width
+      du(i) = 0.25 * coef%cori(j) * (c1 * (v1(i) + v1(i+1)) + c2 * (v2(i) + v2(i+1)))
+    end do
+
+  end subroutine zonal_coriolis
+
   subroutine coriolis_operator(state, tend)
 
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real c1, c2
+    real reduce_tend(parallel%half_lon_lb:parallel%half_lon_ub)
     integer i, j
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      c1 = mesh%half_cos_lat(j  ) / mesh%full_cos_lat(j)
-      c2 = mesh%half_cos_lat(j-1) / mesh%full_cos_lat(j)
-      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        tend%fv(i,j) = 0.25 * coef%cori(j) * (c1 * (state%iap%v(i,j  ) + state%iap%v(i+1,j  )) + &
-                                              c2 * (state%iap%v(i,j-1) + state%iap%v(i+1,j-1)))
-      end do
+      if (state%reduce_factor(j) == 1) then
+        call zonal_coriolis(j, parallel%half_lon_lb, parallel%half_lon_ub, &
+          state%iap%v(:,j-1), state%iap%v(:,j), tend%fv(:,j))
+      else
+        call zonal_coriolis(j, reduce_lb(state%reduce_factor(j)), reduce_ub(state%reduce_factor(j)), &
+          state%iap%reduce_v(:,j,1), state%iap%reduce_v(:,j,2), reduce_tend)
+        call reduced_tend_to_raw_tend(reduce_tend, tend%fv(:,j), state%reduce_factor(j))
+      end if
     end do
+
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%fu(i,j) = 0.25 * (coef%cori(j  ) * (state%iap%u(i,j  ) + state%iap%u(i-1,j  )) + &
@@ -433,22 +456,44 @@ contains
 
   end subroutine coriolis_operator
 
+  subroutine zonal_curvature(j, lb, ub, u, v1, v2, du)
+
+    integer, intent(in) :: j
+    integer, intent(in) :: lb
+    integer, intent(in) :: ub
+    real, intent(in) :: u(lb:ub)
+    real, intent(in) :: v1(lb:ub)
+    real, intent(in) :: v2(lb:ub)
+    real, intent(out) :: du(lb:ub)
+
+    real c1, c2
+    integer i
+
+    c1 = mesh%half_cos_lat(j-1) / mesh%full_cos_lat(j)
+    c2 = mesh%half_cos_lat(j  ) / mesh%full_cos_lat(j)
+    do i = lb + parallel%lon_halo_width, ub - parallel%lon_halo_width
+      du(i) = 0.25 * coef%curv(j) * u(i) * (c1 * (v1(i) + v1(i+1)) + c2 * (v2(i) + v2(i+1)))
+    end do
+
+  end subroutine zonal_curvature
+
   subroutine curvature_operator(state, tend)
 
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real c1, c2
+    real reduce_tend(parallel%half_lon_lb:parallel%half_lon_ub)
     integer i, j
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      c1 = mesh%half_cos_lat(j  ) / mesh%full_cos_lat(j)
-      c2 = mesh%half_cos_lat(j-1) / mesh%full_cos_lat(j)
-      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        tend%cv(i,j) = 0.25 * coef%curv(j) * state%u(i,j) * &
-          (c1 * (state%iap%v(i,j  ) + state%iap%v(i+1,j  )) + &
-           c2 * (state%iap%v(i,j-1) + state%iap%v(i+1,j-1)))
-      end do
+      if (state%reduce_factor(j) == 1) then
+        call zonal_curvature(j, parallel%half_lon_lb, parallel%half_lon_ub, &
+          state%u(:,j), state%iap%v(:,j-1), state%iap%v(:,j), tend%cv(:,j))
+      else
+        call zonal_curvature(j, reduce_lb(state%reduce_factor(j)), reduce_ub(state%reduce_factor(j)), &
+          state%reduce_u(:,j), state%iap%reduce_v(:,j,1), state%iap%reduce_v(:,j,2), reduce_tend)
+        call reduced_tend_to_raw_tend(reduce_tend, tend%cv(:,j), state%reduce_factor(j))
+      end if
     end do
 
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx

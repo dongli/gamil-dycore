@@ -55,8 +55,11 @@ contains
           end do
           call raw_array_to_reduced_array(state%gd(:,j), state%reduce_gd(:,j), state%reduce_factor(j))
           call raw_array_to_reduced_array(state%iap%u(:,j), state%iap%reduce_u(:,j), state%reduce_factor(j))
+          call raw_array_to_reduced_array(state%iap%v(:,j-1), state%iap%reduce_v(:,j,1), state%reduce_factor(j))
+          call raw_array_to_reduced_array(state%iap%v(:,j), state%iap%reduce_v(:,j,2), state%reduce_factor(j))
           call raw_array_to_reduced_array(static%ghs(:,j), static%reduce_ghs(:,j), state%reduce_factor(j))
           state%iap%reduce_gd(:,j) = sqrt(state%reduce_gd(:,j))
+          state%reduce_u(:,j) = state%iap%reduce_u(:,j) / state%iap%reduce_gd(:,j)
           ! print *, j, state%max_cfl(j)
         end if
       end do
