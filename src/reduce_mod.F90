@@ -12,10 +12,17 @@ module reduce_mod
   private
 
   public reduce_run
-  public reduce_lb
-  public reduce_ub
-  public raw_array_to_reduced_array
-  public reduced_tend_to_raw_tend
+  public reduced_full_start_idx
+  public reduced_full_end_idx
+  public reduced_half_start_idx
+  public reduced_half_end_idx
+  public reduced_full_lb
+  public reduced_full_ub
+  public reduced_half_lb
+  public reduced_half_ub
+  public average_raw_array_to_reduced_array
+  public assign_reduced_tend_to_raw_tend
+  public append_reduced_tend_to_raw_tend
 
 contains
 
@@ -53,13 +60,13 @@ contains
               exit
             end if
           end do
-          call raw_array_to_reduced_array(state%gd(:,j), state%reduce_gd(:,j), state%reduce_factor(j))
-          call raw_array_to_reduced_array(state%iap%u(:,j), state%iap%reduce_u(:,j), state%reduce_factor(j))
-          call raw_array_to_reduced_array(state%iap%v(:,j-1), state%iap%reduce_v(:,j,1), state%reduce_factor(j))
-          call raw_array_to_reduced_array(state%iap%v(:,j), state%iap%reduce_v(:,j,2), state%reduce_factor(j))
-          call raw_array_to_reduced_array(static%ghs(:,j), static%reduce_ghs(:,j), state%reduce_factor(j))
-          state%iap%reduce_gd(:,j) = sqrt(state%reduce_gd(:,j))
-          state%reduce_u(:,j) = state%iap%reduce_u(:,j) / state%iap%reduce_gd(:,j)
+          call average_raw_array_to_reduced_array(state%gd(:,j), state%reduced_gd(:,j), state%reduce_factor(j))
+          call average_raw_array_to_reduced_array(state%iap%u(:,j), state%iap%reduced_u(:,j), state%reduce_factor(j))
+          call average_raw_array_to_reduced_array(state%iap%v(:,j-1), state%iap%reduced_v(:,j,1), state%reduce_factor(j))
+          call average_raw_array_to_reduced_array(state%iap%v(:,j), state%iap%reduced_v(:,j,2), state%reduce_factor(j))
+          call average_raw_array_to_reduced_array(static%ghs(:,j), static%reduced_ghs(:,j), state%reduce_factor(j))
+          state%iap%reduced_gd(:,j) = sqrt(state%reduced_gd(:,j))
+          state%reduced_u(:,j) = state%iap%reduced_u(:,j) / state%iap%reduced_gd(:,j)
           ! print *, j, state%max_cfl(j)
         end if
       end do
@@ -68,24 +75,71 @@ contains
 
   end subroutine reduce_run
 
+  integer function reduced_full_start_idx(reduce_factor) result(start_idx)
 
-  integer function reduce_lb(reduce_factor) result(lb)
+    integer, intent(in) :: reduce_factor
+
+    start_idx = 1
+
+  end function reduced_full_start_idx
+
+  integer function reduced_full_end_idx(reduce_factor) result(end_idx)
+
+    integer, intent(in) :: reduce_factor
+
+    end_idx = mesh%num_full_lon / reduce_factor
+
+  end function reduced_full_end_idx
+
+  integer function reduced_half_start_idx(reduce_factor) result(start_idx)
+
+    integer, intent(in) :: reduce_factor
+
+    start_idx = 1
+
+  end function reduced_half_start_idx
+
+  integer function reduced_half_end_idx(reduce_factor) result(end_idx)
+
+    integer, intent(in) :: reduce_factor
+
+    end_idx = mesh%num_half_lon / reduce_factor
+
+  end function reduced_half_end_idx
+
+  integer function reduced_half_lb(reduce_factor) result(lb)
 
     integer, intent(in) :: reduce_factor
 
     lb = 1 - parallel%lon_halo_width
 
-  end function reduce_lb
+  end function reduced_half_lb
 
-  integer function reduce_ub(reduce_factor) result(ub)
+  integer function reduced_half_ub(reduce_factor) result(ub)
+
+    integer, intent(in) :: reduce_factor
+
+    ub = mesh%num_half_lon / reduce_factor + parallel%lon_halo_width
+
+  end function reduced_half_ub
+
+  integer function reduced_full_lb(reduce_factor) result(lb)
+
+    integer, intent(in) :: reduce_factor
+
+    lb = 1 - parallel%lon_halo_width
+
+  end function reduced_full_lb
+
+  integer function reduced_full_ub(reduce_factor) result(ub)
 
     integer, intent(in) :: reduce_factor
 
     ub = mesh%num_full_lon / reduce_factor + parallel%lon_halo_width
 
-  end function reduce_ub
+  end function reduced_full_ub
 
-  subroutine raw_array_to_reduced_array(raw_array, reduce_array, reduce_factor)
+  subroutine average_raw_array_to_reduced_array(raw_array, reduce_array, reduce_factor)
 
     ! NOTE: Here we allocate more-than-need space for reduce_array.
     real, intent(inout) :: raw_array(:)
@@ -115,9 +169,9 @@ contains
     reduce_array(1 : n) = reduce_array(m - 2 * n + 1 : m - n)
     reduce_array(m - n + 1 : m) = reduce_array(1 + n : 2 * n)
 
-  end subroutine raw_array_to_reduced_array
+  end subroutine average_raw_array_to_reduced_array
 
-  subroutine reduced_tend_to_raw_tend(reduce_tend, raw_tend, reduce_factor)
+  subroutine assign_reduced_tend_to_raw_tend(reduce_tend, raw_tend, reduce_factor)
 
     real, intent(in) :: reduce_tend(:)
     real, intent(out) :: raw_tend(:)
@@ -137,6 +191,28 @@ contains
       end if
     end do
 
-  end subroutine reduced_tend_to_raw_tend
+  end subroutine assign_reduced_tend_to_raw_tend
+
+  subroutine append_reduced_tend_to_raw_tend(reduce_tend, raw_tend, reduce_factor)
+
+    real, intent(in) :: reduce_tend(:)
+    real, intent(inout) :: raw_tend(:)
+    integer, intent(in) :: reduce_factor
+
+    integer i, j, count, n
+
+    n = parallel%lon_halo_width
+    j = n + 1
+    count = 0
+    do i = 1 + n, size(raw_tend) - n
+      count = count + 1
+      raw_tend(i) = raw_tend(i) + reduce_tend(j)
+      if (count == reduce_factor) then
+        j = j + 1
+        count = 0
+      end if
+    end do
+
+  end subroutine append_reduced_tend_to_raw_tend
 
 end module reduce_mod

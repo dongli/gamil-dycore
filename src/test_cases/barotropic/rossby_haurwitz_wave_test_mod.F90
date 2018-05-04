@@ -1,4 +1,4 @@
-module rossby_haurwitz_test_mod
+module rossby_haurwitz_wave_test_mod
 
   use mesh_mod
   use parallel_mod
@@ -9,7 +9,7 @@ module rossby_haurwitz_test_mod
 
   private
 
-  public test_set_initial_condition
+  public rossby_haurwitz_wave_test_set_initial_condition
 
   real, parameter :: R = 4.0
   real, parameter :: omg = 7.848e-6
@@ -28,7 +28,7 @@ contains
   ! C(φ) = 1/4 ω² cos²ᴿφ ((R + 1) cos²φ - (R + 2))
 
 
-  subroutine test_set_initial_condition()
+  subroutine rossby_haurwitz_wave_test_set_initial_condition()
 
     real lon, cos_lat, sin_lat
     real a, b, c
@@ -79,6 +79,6 @@ contains
 
     call parallel_fill_halo(state(1)%gd, all_halo=.true.)
 
-  end subroutine test_set_initial_condition
+  end subroutine rossby_haurwitz_wave_test_set_initial_condition
 
-end module rossby_haurwitz_test_mod
+end module rossby_haurwitz_wave_test_mod

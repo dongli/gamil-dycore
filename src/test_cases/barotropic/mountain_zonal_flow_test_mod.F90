@@ -9,7 +9,7 @@ module mountain_zonal_flow_test_mod
 
   private
 
-  public test_set_initial_condition
+  public mountain_zonal_flow_test_set_initial_condition
 
   real, parameter :: alpha = 0.0
   real, parameter :: u0 = 20.0
@@ -21,7 +21,7 @@ module mountain_zonal_flow_test_mod
 
 contains
 
-  subroutine test_set_initial_condition()
+  subroutine mountain_zonal_flow_test_set_initial_condition()
 
     real cos_lat, sin_lat, cos_lon, sin_lon, cos_alpha, sin_alpha, d
     integer i, j
@@ -72,6 +72,6 @@ contains
 
     call parallel_fill_halo(state(1)%gd, all_halo=.true.)
 
-  end subroutine test_set_initial_condition
+  end subroutine mountain_zonal_flow_test_set_initial_condition
 
 end module mountain_zonal_flow_test_mod

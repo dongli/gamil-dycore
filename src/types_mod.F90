@@ -35,9 +35,9 @@ module types_mod
     real, allocatable :: u(:,:)
     real, allocatable :: v(:,:)
     real, allocatable :: gd(:,:)
-    real, allocatable :: reduce_u(:,:)
-    real, allocatable :: reduce_v(:,:,:) ! The third dimension is due to v is at half meridional grids.
-    real, allocatable :: reduce_gd(:,:)
+    real, allocatable :: reduced_u(:,:)
+    real, allocatable :: reduced_v(:,:,:) ! The third dimension is due to v is at half meridional grids.
+    real, allocatable :: reduced_gd(:,:)
   end type iap_type
 
   type state_type
@@ -48,13 +48,13 @@ module types_mod
     ! Zonal maximum CFL number
     real, allocatable :: max_cfl(:)
     integer, allocatable :: reduce_factor(:)
-    real, allocatable :: reduce_u(:,:)
-    real, allocatable :: reduce_gd(:,:)
+    real, allocatable :: reduced_u(:,:)
+    real, allocatable :: reduced_gd(:,:)
   end type state_type
 
   type static_type
     real, allocatable :: ghs(:,:) ! Surface geopotential
-    real, allocatable :: reduce_ghs(:,:)
+    real, allocatable :: reduced_ghs(:,:)
   end type static_type
 
   type tend_type
@@ -109,7 +109,7 @@ contains
     type(static_type), intent(out) :: static
 
     if (.not. allocated(static%ghs)) call parallel_allocate(static%ghs)
-    if (.not. allocated(static%reduce_ghs)) call parallel_allocate(static%reduce_ghs)
+    if (.not. allocated(static%reduced_ghs)) call parallel_allocate(static%reduced_ghs)
 
   end subroutine allocate_static_data
 
@@ -122,15 +122,15 @@ contains
     if (.not. allocated(state%gd)) call parallel_allocate(state%gd)
     if (.not. allocated(state%max_cfl)) call parallel_allocate(state%max_cfl, full_lat=.true.)
     if (.not. allocated(state%reduce_factor)) call parallel_allocate(state%reduce_factor, full_lat=.true.)
-    if (.not. allocated(state%reduce_u)) call parallel_allocate(state%reduce_u, half_lon=.true.)
-    if (.not. allocated(state%reduce_gd)) call parallel_allocate(state%reduce_gd)
+    if (.not. allocated(state%reduced_u)) call parallel_allocate(state%reduced_u, half_lon=.true.)
+    if (.not. allocated(state%reduced_gd)) call parallel_allocate(state%reduced_gd)
 
     if (.not. allocated(state%iap%u)) call parallel_allocate(state%iap%u, half_lon=.true.)
     if (.not. allocated(state%iap%v)) call parallel_allocate(state%iap%v, half_lat=.true.)
     if (.not. allocated(state%iap%gd)) call parallel_allocate(state%iap%gd)
-    if (.not. allocated(state%iap%reduce_u)) call parallel_allocate(state%iap%reduce_u, half_lon=.true.)
-    if (.not. allocated(state%iap%reduce_v)) call parallel_allocate(state%iap%reduce_v, dim=3, size=2)
-    if (.not. allocated(state%iap%reduce_gd)) call parallel_allocate(state%iap%reduce_gd)
+    if (.not. allocated(state%iap%reduced_u)) call parallel_allocate(state%iap%reduced_u, half_lon=.true.)
+    if (.not. allocated(state%iap%reduced_v)) call parallel_allocate(state%iap%reduced_v, dim=3, size=2)
+    if (.not. allocated(state%iap%reduced_gd)) call parallel_allocate(state%iap%reduced_gd)
 
   end subroutine allocate_state_data
 
@@ -174,7 +174,7 @@ contains
     type(static_type), intent(inout) :: static
 
     if (allocated(static%ghs)) deallocate(static%ghs)
-    if (allocated(static%reduce_ghs)) deallocate(static%reduce_ghs)
+    if (allocated(static%reduced_ghs)) deallocate(static%reduced_ghs)
 
   end subroutine deallocate_static_data
 
@@ -187,15 +187,15 @@ contains
     if (allocated(state%gd)) deallocate(state%gd)
     if (allocated(state%max_cfl)) deallocate(state%max_cfl)
     if (allocated(state%reduce_factor)) deallocate(state%reduce_factor)
-    if (allocated(state%reduce_u)) deallocate(state%reduce_u)
-    if (allocated(state%reduce_gd)) deallocate(state%reduce_gd)
+    if (allocated(state%reduced_u)) deallocate(state%reduced_u)
+    if (allocated(state%reduced_gd)) deallocate(state%reduced_gd)
 
     if (allocated(state%iap%u)) deallocate(state%iap%u)
     if (allocated(state%iap%v)) deallocate(state%iap%v)
     if (allocated(state%iap%gd)) deallocate(state%iap%gd)
-    if (allocated(state%iap%reduce_u)) deallocate(state%iap%reduce_u)
-    if (allocated(state%iap%reduce_v)) deallocate(state%iap%reduce_v)
-    if (allocated(state%iap%reduce_gd)) deallocate(state%iap%reduce_gd)
+    if (allocated(state%iap%reduced_u)) deallocate(state%iap%reduced_u)
+    if (allocated(state%iap%reduced_v)) deallocate(state%iap%reduced_v)
+    if (allocated(state%iap%reduced_gd)) deallocate(state%iap%reduced_gd)
 
   end subroutine deallocate_state_data
 

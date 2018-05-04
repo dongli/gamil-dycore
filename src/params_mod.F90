@@ -22,6 +22,7 @@ module params_mod
   integer :: end_time(5) = [0, 0, 0, 0, 0]
   character(30) :: time_units = 'days'
 
+  character(30) test_case
   character(256) case_name
   character(256) case_desc
   character(256) author
@@ -49,7 +50,7 @@ module params_mod
 
   logical is_restart_run
 
-  namelist /qconswm_params/ &
+  namelist /dycore_params/ &
     num_lon, &
     num_lat, &
     subcycles, &
@@ -60,6 +61,7 @@ module params_mod
     end_time, &
     time_units, &
     time_step_size, &
+    test_case, &
     case_name, &
     case_desc, &
     author, &
@@ -83,7 +85,7 @@ contains
     zonal_reduce_factors(:) = 0
 
     open(10, file=file_path)
-    read(10, nml=qconswm_params)
+    read(10, nml=dycore_params)
     close(10)
 
     is_restart_run = restart_file /= ''

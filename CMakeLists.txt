@@ -41,18 +41,18 @@ set (source_files
   "src/data_mod.F90"
   "src/reduce_mod.F90"
   "src/dycore_mod.F90"
-  "src/dycore_main.F90"
-  "src/test_cases/barotropic/rossby_haurwitz_test_mod.F90"
+  "src/dycore_test.F90"
+  "src/test_cases/barotropic/rossby_haurwitz_wave_test_mod.F90"
   "src/test_cases/barotropic/steady_geostrophic_flow_test_mod.F90"
   "src/test_cases/barotropic/mountain_zonal_flow_test_mod.F90"
 )
 
 set (CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")
 
-add_executable (gamil_dycore.exe ${source_files})
-target_link_libraries (gamil_dycore.exe fortran_datetime netcdf netcdff)
+add_executable (dycore_test.exe ${source_files})
+target_link_libraries (dycore_test.exe fortran_datetime netcdf netcdff)
 if (MPI_Fortran_FOUND)
-  set_target_properties (gamil_dycore.exe PROPERTIES
+  set_target_properties (dycore_test.exe PROPERTIES
     LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}"
   )
 endif ()
