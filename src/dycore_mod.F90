@@ -577,7 +577,7 @@ contains
       else
         do i = reduced_full_start_idx(state%reduce_factor(j)), reduced_full_end_idx(state%reduce_factor(j))
           reduced_tend(i) = ((state%iap%reduced_gd(i,j) + state%iap%reduced_gd(i+1,j)) * state%iap%reduced_u(i,j) - &
-                             (state%iap%reduced_gd(i,j) + state%iap%reduced_gd(i-1,j)) * state%iap%reduced_gd(i-1,j)) &
+                             (state%iap%reduced_gd(i,j) + state%iap%reduced_gd(i-1,j)) * state%iap%reduced_u(i-1,j)) &
                             / coef%full_dlon(j) / state%reduce_factor(j)
         end do
         call assign_reduced_tend_to_raw_tend(reduced_tend, tend%mass_div_lon(:,j), state%reduce_factor(j))
