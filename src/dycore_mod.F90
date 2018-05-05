@@ -518,44 +518,26 @@ contains
 
   end subroutine curvature_operator
 
-  subroutine zonal_pressure_gradient_force(j, reduce_factor, lb, ub, gd, iap_gd, ghs, du)
-
-    integer, intent(in) :: j
-    integer, intent(in) :: reduce_factor
-    integer, intent(in) :: lb
-    integer, intent(in) :: ub
-    real, intent(in) :: gd(lb:ub)
-    real, intent(in) :: iap_gd(lb:ub)
-    real, intent(in) :: ghs(lb:ub)
-    real, intent(out) :: du(lb:ub)
-
-    integer i
-
-    do i = lb + parallel%lon_halo_width, ub - parallel%lon_halo_width
-      du(i) = (iap_gd(i) + iap_gd(i+1)) / coef%full_dlon(j) / reduce_factor * (gd(i+1) - gd(i) + ghs(i+1) - ghs(i))
-    end do
-
-  end subroutine zonal_pressure_gradient_force
-
   subroutine zonal_pressure_gradient_force_operator(state, tend)
 
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
     real reduced_tend(parallel%half_lon_lb:parallel%half_lon_ub)
-    integer j, factor
+    integer i, j
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       if (state%reduce_factor(j) == 1) then
-        call zonal_pressure_gradient_force( &
-          j, 1, parallel%half_lon_lb, parallel%half_lon_ub, &
-          state%gd(:,j), state%iap%gd(:,j), static%ghs(:,j), tend%u_pgf(:,j))
+        do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+          tend%u_pgf(i,j) = (state%iap%gd(i,j) + state%iap%gd(i+1,j)) / coef%full_dlon(j) * &
+            (state%gd(i+1,j) - state%gd(i,j) + static%ghs(i+1,j) - static%ghs(i,j))
+        end do
       else
-        factor = state%reduce_factor(j)
-        call zonal_pressure_gradient_force( &
-          j, factor, reduced_half_lb(factor), reduced_half_ub(factor), &
-          state%reduced_gd(:,j), state%iap%reduced_gd(:,j), static%reduced_ghs(:,j), reduced_tend)
-        call assign_reduced_tend_to_raw_tend(reduced_tend, tend%u_pgf(:,j), factor)
+        do i = reduced_half_start_idx(state%reduce_factor(j)), reduced_half_end_idx(state%reduce_factor(j))
+          reduced_tend(i) = (state%iap%reduced_gd(i,j) + state%iap%reduced_gd(i+1,j)) / coef%full_dlon(j) / state%reduce_factor(j) * &
+            (state%reduced_gd(i+1,j) - state%reduced_gd(i,j) + static%reduced_ghs(i+1,j) - static%reduced_ghs(i,j))
+        end do
+        call assign_reduced_tend_to_raw_tend(reduced_tend, tend%u_pgf(:,j), state%reduce_factor(j))
       end if
     end do
 
@@ -577,44 +559,28 @@ contains
 
   end subroutine meridional_pressure_gradient_force_operator
 
-  subroutine zonal_mass_divergence(j, reduce_factor, lb, ub, iap_gd, iap_u, dgd)
-
-    integer, intent(in) :: j
-    integer, intent(in) :: reduce_factor
-    integer, intent(in) :: lb
-    integer, intent(in) :: ub
-    real, intent(in) :: iap_gd(lb:ub)
-    real, intent(in) :: iap_u(lb:ub)
-    real, intent(out) :: dgd(lb:ub)
-
-    integer i
-
-    do i = lb + parallel%lon_halo_width, ub - parallel%lon_halo_width
-      dgd(i) = 1.0 / coef%full_dlon(j) / reduce_factor * ( &
-        (iap_gd(i) + iap_gd(i+1)) * iap_u(i) - (iap_gd(i) + iap_gd(i-1)) * iap_u(i-1))
-    end do
-
-  end subroutine zonal_mass_divergence
-
   subroutine zonal_mass_divergence_operator(state, tend)
 
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real reduced_tend(parallel%half_lon_lb:parallel%half_lon_ub)
-    integer j, factor
+    real reduced_tend(parallel%full_lon_lb:parallel%full_lon_ub)
+    integer i, j
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       if (state%reduce_factor(j) == 1) then
-        call zonal_mass_divergence( &
-          j, 1, parallel%full_lon_lb, parallel%full_lon_ub, &
-          state%iap%gd(:,j), state%iap%u(:,j), tend%mass_div_lon(:,j))
+        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+          tend%mass_div_lon(i,j) = ((state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%iap%u(i,j) - &
+                                    (state%iap%gd(i,j) + state%iap%gd(i-1,j)) * state%iap%u(i-1,j)) &
+                                   / coef%full_dlon(j)
+        end do
       else
-        factor = state%reduce_factor(j)
-        call zonal_mass_divergence( &
-          j, factor, reduced_full_lb(factor), reduced_full_ub(factor), &
-          state%iap%reduced_gd(:,j), state%iap%reduced_u(:,j), reduced_tend)
-        call assign_reduced_tend_to_raw_tend(reduced_tend, tend%mass_div_lon(:,j), factor)
+        do i = reduced_full_start_idx(state%reduce_factor(j)), reduced_full_end_idx(state%reduce_factor(j))
+          reduced_tend(i) = ((state%iap%reduced_gd(i,j) + state%iap%reduced_gd(i+1,j)) * state%iap%reduced_u(i,j) - &
+                             (state%iap%reduced_gd(i,j) + state%iap%reduced_gd(i-1,j)) * state%iap%reduced_gd(i-1,j)) &
+                            / coef%full_dlon(j) / state%reduce_factor(j)
+        end do
+        call assign_reduced_tend_to_raw_tend(reduced_tend, tend%mass_div_lon(:,j), state%reduce_factor(j))
       end if
     end do
 
@@ -712,7 +678,7 @@ contains
     call parallel_fill_halo(new_state%u(:,:), all_halo=.true.)
     call parallel_fill_halo(new_state%v(:,:), all_halo=.true.)
 
-
+    return
     ! TEST: Smooth state to check if noise could be removed.
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       if (j < 6 .or. j > mesh%num_full_lat - 5) then
