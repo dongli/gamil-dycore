@@ -76,8 +76,8 @@ module io_mod
   end interface io_add_meta
 
   interface io_output
-    module procedure io_output_real_1d
-    module procedure io_output_real_2d
+    module procedure io_output_1d
+    module procedure io_output_2d
   end interface io_output
 
   interface io_get_meta
@@ -490,38 +490,68 @@ contains
 
   end subroutine io_start_output
 
-  subroutine io_output_real_1d(name, array, dataset_name)
+  subroutine io_output_1d(name, array, dataset_name)
 
     character(*), intent(in) :: name
-    real, intent(in) :: array(:)
+    class(*), intent(in) :: array(:)
     character(*), intent(in), optional :: dataset_name
 
     type(dataset_type), pointer :: dataset
     type(var_type), pointer :: var
-    integer ierr    
+    integer lb, ub
+    integer i, ierr
+    integer start(2), count(2)
 
     dataset => get_dataset(dataset_name, 'output')
     var => dataset%get_var(name)
 
-    ierr = NF90_PUT_VAR(dataset%id, var%id, array)
-    if (ierr /= NF90_NOERR) then
-      call log_error('Failed to write variable ' // trim(name) // ' in dataset ' // trim(dataset%name) // '!')
+    if (size(var%dims) == 1) then
+      lb = 1
+      ub = var%dims(1)%ptr%size
+      start(1) = 1
+      count(1) = var%dims(1)%ptr%size
+    else
+      do i = 1, 2
+        start(i) = 1
+        if (var%dims(i)%ptr%size == NF90_UNLIMITED) then
+          count(i) = 1
+        else
+          select case (var%dims(i)%ptr%name)
+          case ('lon')
+            lb = lbound(array, 1) + parallel%lon_halo_width
+            ub = ubound(array, 1) - parallel%lon_halo_width
+          case ('lat')
+            lb = lbound(array, 1) + parallel%lat_halo_width
+            ub = ubound(array, 1) - parallel%lat_halo_width
+          end select
+          count(i) = var%dims(i)%ptr%size
+        end if
+      end do
     end if
 
-  end subroutine io_output_real_1d
+    select type (array)
+    type is (integer)
+      ierr = NF90_PUT_VAR(dataset%id, var%id, array(lb:ub), start, count)
+    type is (real(8))
+      ierr = NF90_PUT_VAR(dataset%id, var%id, array(lb:ub), start, count)
+    end select
+    if (ierr /= NF90_NOERR) then
+      call log_error('Failed to write variable ' // trim(name) // ' in dataset ' // trim(dataset%name) // '! ' // trim(NF90_STRERROR(ierr)))
+    end if
 
-  subroutine io_output_real_2d(name, array, dataset_name)
+  end subroutine io_output_1d
+
+  subroutine io_output_2d(name, array, dataset_name)
 
     character(*), intent(in) :: name
-    real, intent(in) :: array(:,:)
+    class(*), intent(in) :: array(:,:)
     character(*), intent(in), optional :: dataset_name
 
     type(dataset_type), pointer :: dataset
     type(var_type), pointer :: var
     integer lb1, ub1, lb2, ub2
-    integer i, j, ierr, varid
-    integer start(3), count(3)    
-    real, allocatable :: buffer(:,:)
+    integer i, ierr
+    integer start(3), count(3)
 
     dataset => get_dataset(dataset_name, 'output')
     var => dataset%get_var(name)
@@ -530,13 +560,6 @@ contains
     ub1 = ubound(array, 1) - parallel%lon_halo_width
     lb2 = lbound(array, 2) + parallel%lat_halo_width
     ub2 = ubound(array, 2) - parallel%lat_halo_width
-    allocate(buffer(lb1:ub1,lb2:ub2))
-
-    do j = lb2, ub2
-      do i = lb1, ub1
-        buffer(i,j) = array(i,j)
-      end do
-    end do
 
     do i = 1, 3
       start(i) = 1
@@ -546,14 +569,18 @@ contains
         count(i) = var%dims(i)%ptr%size
       end if
     end do
-    ierr = NF90_PUT_VAR(dataset%id, var%id, buffer, start, count)
+
+    select type (array)
+    type is (integer)
+      ierr = NF90_PUT_VAR(dataset%id, var%id, array(lb1:ub1,lb2:ub2), start, count)
+    type is (real(8))
+      ierr = NF90_PUT_VAR(dataset%id, var%id, array(lb1:ub1,lb2:ub2), start, count)
+    end select
     if (ierr /= NF90_NOERR) then
       call log_error('Failed to write variable ' // trim(name) // ' to ' // trim(dataset%name) // '!' // NF90_STRERROR(ierr))
     end if
 
-    deallocate(buffer)
-
-  end subroutine io_output_real_2d
+  end subroutine io_output_2d
 
   subroutine io_end_output(dataset_name)
 

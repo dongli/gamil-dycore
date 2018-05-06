@@ -37,6 +37,7 @@ contains
     call io_add_var('v', long_name='v wind component', units='m s-1', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('gd', long_name='geopotential depth', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('ghs', long_name='surface geopotential', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('rf', long_name='reduce factor', units='1', dim_names=['lat ', 'time'])
 
     if (.not. allocated(u)) call parallel_allocate(u)
     if (.not. allocated(v)) call parallel_allocate(v)
@@ -79,6 +80,7 @@ contains
     call io_output('v', v(:,:))
     call io_output('gd', state%gd(:,:))
     call io_output('ghs', static%ghs(:,:))
+    call io_output('rf', state%reduce_factor(:))
     call io_end_output()
 
   end subroutine history_write
