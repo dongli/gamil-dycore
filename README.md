@@ -31,7 +31,6 @@ $ git clone https://github.com/dongli/gamil-dycore --recursive
 Build the model:
 
 ```
-$ mkdir build
 $ cd build
 $ FC=gfortran cmake ..
 $ make
@@ -45,16 +44,22 @@ Run the Rossby-Haurwitz wave test:
 ```
 $ cd run
 $ ../build/dycore_test.exe namelist.rh_test
+$ ls rh_test.360x181.dt240.h0.*.nc
 $ ncl -Q ../src/test_cases/barotropic/plot_rossby_haurwitz_wave_test.ncl file_prefix=\"rh_test.360x181.dt240\"
 ```
+
+You can modify the namelist file `namelist.rh_test`, such change the time step size. There should be `rh_test.360x181.dt240.pdf` file depending on your modification of the namelist file.
 
 Run the mountain zonal flow test:
 
 ```
 $ cd run
 $ ../build/dycore_test.exe namelist.mz_test
+$ ls mz_test.360x181.dt240.h0.*.nc
 $ ncl -Q ../src/test_cases/barotropic/plot_mountain_zonal_flow_test.ncl file_prefix=\"mz_test.360x181.dt240\"
 ```
+
+There should be `mz_test.360x181.dt240.pdf`.
 
 # Authors
 
