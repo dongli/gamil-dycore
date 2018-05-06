@@ -1,0 +1,18 @@
+&dycore_params
+test_case = 'mountain_zonal_flow'
+case_name = 'mz_test.360x181.no_smth.dt240'
+case_desc = 'Mountain zonal flow test'
+author = 'Li Dong <dongli@lasg.iap.ac.cn>'
+days = 15
+num_lon = 360
+num_lat = 181
+time_step_size = 240
+history_periods = '6 hours'
+restart_period = '1 days'
+time_scheme = 'predict_correct'
+qcon_modified = .true.
+split_scheme = 'csp2' ! 'csp2' or 'csp1' or 'isp'
+subcycles = 8
+use_zonal_reduce = .true.
+zonal_reduce_factors = 2, 4, 8
+/
