@@ -282,63 +282,27 @@ contains
 
   end subroutine space_operators
 
-  subroutine zonal_u_momentum_advection(j, reduce_factor, lb, ub, u, iap_u, du)
-
-    integer, intent(in) :: j
-    integer, intent(in) :: reduce_factor
-    integer, intent(in) :: lb
-    integer, intent(in) :: ub
-    real, intent(in) :: u(lb:ub)
-    real, intent(in) :: iap_u(lb:ub)
-    real, intent(out) :: du(lb:ub)
-
-    integer i
-
-    do i = lb + parallel%lon_halo_width, ub - parallel%lon_halo_width
-      du(i) = 0.5 / coef%full_dlon(j) / reduce_factor * ((u(i) + u(i+1)) * iap_u(i+1) - (u(i) + u(i-1)) * iap_u(i-1))
-    end do
-
-  end subroutine zonal_u_momentum_advection
-
-  subroutine zonal_v_momentum_advection(j, reduce_factor, lb, ub, u1, u2, iap_v, dv)
-
-    integer, intent(in) :: j
-    integer, intent(in) :: reduce_factor
-    integer, intent(in) :: lb
-    integer, intent(in) :: ub
-    real, intent(in) :: u1(lb:ub)
-    real, intent(in) :: u2(lb:ub)
-    real, intent(in) :: iap_v(lb:ub)
-    real, intent(out) :: dv(lb:ub)
-
-    integer i
-
-    do i = lb + parallel%lon_halo_width, ub - parallel%lon_halo_width
-      dv(i) = 0.5 / coef%half_dlon(j) / reduce_factor * ((u1(i) + u2(i)) * iap_v(i+1) - (u1(i-1) + u2(i-1)) * iap_v(i-1))
-    end do
-
-  end subroutine zonal_v_momentum_advection
-
   subroutine zonal_momentum_advection_operator(state, tend)
 
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real reduced_tend(parallel%half_lon_lb:parallel%half_lon_ub)
-    integer j, factor
+    integer i, j
 
     ! U
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      call zonal_u_momentum_advection( &
-        j, 1, parallel%half_lon_lb, parallel%half_lon_ub, &
-        state%u(:,j), state%iap%u(:,j), tend%u_adv_lon(:,j))
+      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+        tend%u_adv_lon(i,j) = 0.5 / coef%full_dlon(j) * ((state%u(i,j) + state%u(i+1,j)) * state%iap%u(i+1,j) - &
+                                                         (state%u(i,j) + state%u(i-1,j)) * state%iap%u(i-1,j))
+      end do
     end do
 
     ! V
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
-      call zonal_v_momentum_advection( &
-        j, 1, parallel%full_lon_lb, parallel%full_lon_ub, &
-        state%u(:,j), state%u(:,j+1), state%iap%v(:,j), tend%v_adv_lon(:,j))
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        tend%v_adv_lon(i,j) = 0.5 / coef%half_dlon(j) * ((state%u(i,  j) + state%u(i,  j+1)) * state%iap%v(i+1,j) - &
+                                                         (state%u(i-1,j) + state%u(i-1,j+1)) * state%iap%v(i-1,j))
+      end do
     end do
 
   end subroutine zonal_momentum_advection_operator
