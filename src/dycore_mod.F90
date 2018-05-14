@@ -190,10 +190,9 @@ contains
 
     integer i, j
 
-    call reduce_run(state, static)
-
     select case (pass)
     case (all_pass)
+      call reduce_run(state, static)
       call zonal_momentum_advection_operator(state, tend)
       call meridional_momentum_advection_operator(state, tend)
       call coriolis_operator(state, tend)
@@ -254,6 +253,7 @@ contains
       tend%v_adv_lon = 0.0
       tend%v_adv_lat = 0.0
 #endif
+      call reduce_run(state, static)
       call coriolis_operator(state, tend)
       call curvature_operator(state, tend)
       call zonal_pressure_gradient_force_operator(state, tend)
@@ -289,53 +289,24 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    ! real reduced_tend(parallel%half_lon_start_idx:parallel%half_lon_end_idx)
     integer i, j, k
 
     ! U
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      ! if (full_reduce_factor(j) == 1) then
-        do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-          tend%u_adv_lon(i,j) = 0.5 / coef%full_dlon(j) * &
-            ((state%u(i,j) + state%u(i+1,j)) * state%iap%u(i+1,j) - &
-             (state%u(i,j) + state%u(i-1,j)) * state%iap%u(i-1,j))
-        end do
-      ! else
-      !   tend%u_adv_lon(:,j) = 0.0
-      !   ! do k = 1, full_reduce_factor(j)
-      !   k = 1
-      !     do i = reduced_full_start_idx(j), reduced_full_end_idx(j)
-      !       reduced_tend(i) = 0.5 / coef%full_dlon(j) / full_reduce_factor(j)**1 * &
-      !         ((state%reduced_u(i,k,j) + state%reduced_u(i+1,k,j)) * state%iap%reduced_u(i+1,k,j) - &
-      !          (state%reduced_u(i,k,j) + state%reduced_u(i-1,k,j)) * state%iap%reduced_u(i-1,k,j))
-      !     end do
-      !     call append_reduced_tend_to_raw_tend(full_reduce_factor(j), k, reduced_tend, tend%u_adv_lon(:,j))
-      !   ! end do
-      !   ! call parallel_overlay_inner_halo(tend%u_adv_lon(:,j), left_halo=.true.)
-      ! end if
+      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+        tend%u_adv_lon(i,j) = 0.5 / coef%full_dlon(j) * &
+          ((state%u(i,j) + state%u(i+1,j)) * state%iap%u(i+1,j) - &
+           (state%u(i,j) + state%u(i-1,j)) * state%iap%u(i-1,j))
+      end do
     end do
 
     ! V
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
-      ! if (half_reduce_factor(j) == 1) then
-        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%v_adv_lon(i,j) = 0.5 / coef%half_dlon(j) * &
-            ((state%u(i,  j) + state%u(i,  j+1)) * state%iap%v(i+1,j) - &
-             (state%u(i-1,j) + state%u(i-1,j+1)) * state%iap%v(i-1,j))
-        end do
-      ! else
-      !   tend%v_adv_lon(:,j) = 0.0
-      !   ! do k = 1, half_reduce_factor(j)
-      !   k = 1
-      !     do i = reduced_half_start_idx(j), reduced_half_end_idx(j)
-      !       reduced_tend(i) = 0.5 / coef%half_dlon(j) / half_reduce_factor(j)**1 * &
-      !         ((state%half_reduced_u(i,  k,j,1) + state%half_reduced_u(i,  k,j,2)) * state%iap%reduced_v(i+1,k,j) - &
-      !          (state%half_reduced_u(i-1,k,j,1) + state%half_reduced_u(i-1,k,j,2)) * state%iap%reduced_v(i-1,k,j))
-      !     end do
-      !     call append_reduced_tend_to_raw_tend(half_reduce_factor(j), k, reduced_tend, tend%v_adv_lon(:,j))
-      !   ! end do
-      !   ! call parallel_overlay_inner_halo(tend%v_adv_lon(:,j), left_halo=.true.)
-      ! end if
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        tend%v_adv_lon(i,j) = 0.5 / coef%half_dlon(j) * &
+          ((state%u(i,  j) + state%u(i,  j+1)) * state%iap%v(i+1,j) - &
+           (state%u(i-1,j) + state%u(i-1,j+1)) * state%iap%v(i-1,j))
+      end do
     end do
 
   end subroutine zonal_momentum_advection_operator
@@ -398,7 +369,7 @@ contains
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       c1 = mesh%half_cos_lat(j-1) / mesh%full_cos_lat(j)
       c2 = mesh%half_cos_lat(j  ) / mesh%full_cos_lat(j)
-      if (full_reduce_factor(j) == 1) then
+      if (reduce_factor(j) == 1) then
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%fv(i,j) = 0.25 * coef%cori(j) * &
             (c1 * (state%iap%v(i,j-1) + state%iap%v(i+1,j-1)) + &
@@ -406,13 +377,13 @@ contains
         end do
       else
         tend%fv(:,j) = 0.0
-        do k = 1, full_reduce_factor(j)
-          do i = reduced_half_start_idx(j), reduced_half_end_idx(j)
+        do k = 1, reduce_factor(j)
+          do i = reduced_start_idx(j), reduced_end_idx(j)
             reduced_tend(i) = 0.25 * coef%cori(j) * &
-              (c1 * (state%iap%full_reduced_v(i,k,j,1) + state%iap%full_reduced_v(i+1,k,j,1)) + &
-               c2 * (state%iap%full_reduced_v(i,k,j,2) + state%iap%full_reduced_v(i+1,k,j,2))) / full_reduce_factor(j)
+              (c1 * (state%iap%reduced_v(i,k,j,1) + state%iap%reduced_v(i+1,k,j,1)) + &
+               c2 * (state%iap%reduced_v(i,k,j,2) + state%iap%reduced_v(i+1,k,j,2))) / reduce_factor(j)
           end do
-          call append_reduced_tend_to_raw_tend(full_reduce_factor(j), k, reduced_tend, tend%fv(:,j))
+          call append_reduced_tend_to_raw_tend(reduce_factor(j), k, reduced_tend, tend%fv(:,j))
         end do
         call parallel_overlay_inner_halo(tend%fv(:,j), left_halo=.true.)
       end if
@@ -420,31 +391,31 @@ contains
 
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       tend%fu(:,j) = 0.0
-      if (full_reduce_factor(j) == 1) then
+      if (reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%fu(i,j) = 0.25 * coef%cori(j) * (state%iap%u(i,j) + state%iap%u(i-1,j))
         end do
       else
-        do k = 1, full_reduce_factor(j)
-          do i = reduced_full_start_idx(j), reduced_full_end_idx(j)
-            reduced_tend(i) = 0.25 * coef%cori(j) * (state%iap%reduced_u(i,k,j) + state%iap%reduced_u(i-1,k,j)) / full_reduce_factor(j)
+        do k = 1, reduce_factor(j)
+          do i = reduced_start_idx(j), reduced_end_idx(j)
+            reduced_tend(i) = 0.25 * coef%cori(j) * (state%iap%reduced_u(i,k,j) + state%iap%reduced_u(i-1,k,j)) / reduce_factor(j)
           end do
-          call append_reduced_tend_to_raw_tend(full_reduce_factor(j), k, reduced_tend, tend%fu(:,j))
+          call append_reduced_tend_to_raw_tend(reduce_factor(j), k, reduced_tend, tend%fu(:,j))
         end do
         call parallel_overlay_inner_halo(tend%fu(:,j), left_halo=.true.)
       end if
-      if (full_reduce_factor(j+1) == 1) then
+      if (reduce_factor(j+1) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%fu(i,j) = tend%fu(i,j) + 0.25 * coef%cori(j+1) * (state%iap%u(i,j+1) + state%iap%u(i-1,j+1))
         end do
       else
         ! Clear out right halo of tendency, because we will overlay them with left inner halo below.
         tend%fu(parallel%full_lon_end_idx+1:,j) = 0.0
-        do k = 1, full_reduce_factor(j+1)
-          do i = reduced_full_start_idx(j+1), reduced_full_end_idx(j+1)
-            reduced_tend(i) = 0.25 * coef%cori(j+1) * (state%iap%reduced_u(i,k,j+1) + state%iap%reduced_u(i-1,k,j+1)) / full_reduce_factor(j+1)
+        do k = 1, reduce_factor(j+1)
+          do i = reduced_start_idx(j+1), reduced_end_idx(j+1)
+            reduced_tend(i) = 0.25 * coef%cori(j+1) * (state%iap%reduced_u(i,k,j+1) + state%iap%reduced_u(i-1,k,j+1)) / reduce_factor(j+1)
           end do
-          call append_reduced_tend_to_raw_tend(full_reduce_factor(j+1), k, reduced_tend, tend%fu(:,j))
+          call append_reduced_tend_to_raw_tend(reduce_factor(j+1), k, reduced_tend, tend%fu(:,j))
         end do
         call parallel_overlay_inner_halo(tend%fu(:,j), left_halo=.true.)
       end if
@@ -483,7 +454,7 @@ contains
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       c1 = mesh%half_cos_lat(j-1) / mesh%full_cos_lat(j)
       c2 = mesh%half_cos_lat(j  ) / mesh%full_cos_lat(j)
-      if (full_reduce_factor(j) == 1) then
+      if (reduce_factor(j) == 1) then
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%cv(i,j) = 0.25 * coef%curv(j) * state%u(i,j) * &
             (c1 * (state%iap%v(i,j-1) + state%iap%v(i+1,j-1)) + &
@@ -491,13 +462,13 @@ contains
         end do
       else
         tend%cv(:,j) = 0.0
-        do k = 1, full_reduce_factor(j)
-          do i = reduced_half_start_idx(j), reduced_half_end_idx(j)
+        do k = 1, reduce_factor(j)
+          do i = reduced_start_idx(j), reduced_end_idx(j)
             reduced_tend(i) = 0.25 * coef%curv(j) * state%reduced_u(i,k,j) * &
-              (c1 * (state%iap%full_reduced_v(i,k,j,1) + state%iap%full_reduced_v(i+1,k,j,1)) + &
-               c2 * (state%iap%full_reduced_v(i,k,j,2) + state%iap%full_reduced_v(i+1,k,j,2))) / full_reduce_factor(j)
+              (c1 * (state%iap%reduced_v(i,k,j,1) + state%iap%reduced_v(i+1,k,j,1)) + &
+               c2 * (state%iap%reduced_v(i,k,j,2) + state%iap%reduced_v(i+1,k,j,2))) / reduce_factor(j)
           end do
-          call append_reduced_tend_to_raw_tend(full_reduce_factor(j), k, reduced_tend, tend%cv(:,j))
+          call append_reduced_tend_to_raw_tend(reduce_factor(j), k, reduced_tend, tend%cv(:,j))
         end do
         call parallel_overlay_inner_halo(tend%cv(:,j), left_halo=.true.)
       end if
@@ -505,23 +476,23 @@ contains
 
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       tend%cu(:,j) = 0.0
-      if (full_reduce_factor(j) == 1) then
+      if (reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%cu(i,j) = 0.25 * coef%curv(j) * (state%u(i,  j) * state%iap%u(i,  j) + &
                                                 state%u(i-1,j) * state%iap%u(i-1,j))
         end do
       else
-        do k = 1, full_reduce_factor(j)
-          do i = reduced_full_start_idx(j), reduced_full_end_idx(j)
+        do k = 1, reduce_factor(j)
+          do i = reduced_start_idx(j), reduced_end_idx(j)
             reduced_tend(i) = 0.25 * coef%curv(j) * &
               (state%reduced_u(i,  k,j) * state%iap%reduced_u(i,  k,j) + &
-               state%reduced_u(i-1,k,j) * state%iap%reduced_u(i-1,k,j)) / full_reduce_factor(j)
+               state%reduced_u(i-1,k,j) * state%iap%reduced_u(i-1,k,j)) / reduce_factor(j)
           end do
-          call append_reduced_tend_to_raw_tend(full_reduce_factor(j), k, reduced_tend, tend%cu(:,j))
+          call append_reduced_tend_to_raw_tend(reduce_factor(j), k, reduced_tend, tend%cu(:,j))
         end do
         call parallel_overlay_inner_halo(tend%cu(:,j), left_halo=.true.)
       end if
-      if (full_reduce_factor(j+1) == 1) then
+      if (reduce_factor(j+1) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%cu(i,j) = tend%cu(i,j) + 0.25 * coef%curv(j+1) * (state%u(i,  j+1) * state%iap%u(i,  j+1) + &
                                                                  state%u(i-1,j+1) * state%iap%u(i-1,j+1))
@@ -529,13 +500,13 @@ contains
       else
         ! Clear out right halo of tendency, because we will overlay them with left inner halo below.
         tend%cu(parallel%full_lon_end_idx+1:,j) = 0.0
-        do k = 1, full_reduce_factor(j+1)
-          do i = reduced_full_start_idx(j+1), reduced_full_end_idx(j+1)
+        do k = 1, reduce_factor(j+1)
+          do i = reduced_start_idx(j+1), reduced_end_idx(j+1)
             reduced_tend(i) = 0.25 * coef%curv(j+1) * &
               (state%reduced_u(i,  k,j+1) * state%iap%reduced_u(i,  k,j+1) + &
-               state%reduced_u(i-1,k,j+1) * state%iap%reduced_u(i-1,k,j+1)) / full_reduce_factor(j+1)
+               state%reduced_u(i-1,k,j+1) * state%iap%reduced_u(i-1,k,j+1)) / reduce_factor(j+1)
           end do
-          call append_reduced_tend_to_raw_tend(full_reduce_factor(j+1), k, reduced_tend, tend%cu(:,j))
+          call append_reduced_tend_to_raw_tend(reduce_factor(j+1), k, reduced_tend, tend%cu(:,j))
         end do
         call parallel_overlay_inner_halo(tend%cu(:,j), left_halo=.true.)
       end if
@@ -552,19 +523,19 @@ contains
     integer i, j, k
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      if (full_reduce_factor(j) == 1) then
+      if (reduce_factor(j) == 1) then
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%u_pgf(i,j) = (state%iap%gd(i,j) + state%iap%gd(i+1,j)) / coef%full_dlon(j) * &
             (state%gd(i+1,j) - state%gd(i,j) + static%ghs(i+1,j) - static%ghs(i,j))
         end do
       else
         tend%u_pgf(:,j) = 0.0
-        do k = 1, full_reduce_factor(j)
-          do i = reduced_half_start_idx(j), reduced_half_end_idx(j)
-            reduced_tend(i) = (state%iap%reduced_gd(i,k,j) + state%iap%reduced_gd(i+1,k,j)) / coef%full_dlon(j) / full_reduce_factor(j)**2 * &
+        do k = 1, reduce_factor(j)
+          do i = reduced_start_idx(j), reduced_end_idx(j)
+            reduced_tend(i) = (state%iap%reduced_gd(i,k,j) + state%iap%reduced_gd(i+1,k,j)) / coef%full_dlon(j) / reduce_factor(j)**2 * &
               (state%reduced_gd(i+1,k,j) - state%reduced_gd(i,k,j) + static%reduced_ghs(i+1,k,j) - static%reduced_ghs(i,k,j))
           end do
-          call append_reduced_tend_to_raw_tend(full_reduce_factor(j), k, reduced_tend, tend%u_pgf(:,j))
+          call append_reduced_tend_to_raw_tend(reduce_factor(j), k, reduced_tend, tend%u_pgf(:,j))
         end do
         call parallel_overlay_inner_halo(tend%u_pgf(:,j), left_halo=.true.)
       end if
@@ -597,7 +568,7 @@ contains
     integer i, j, k
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      if (full_reduce_factor(j) == 1) then
+      if (reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%mass_div_lon(i,j) = ((state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%iap%u(i,j) - &
                                     (state%iap%gd(i,j) + state%iap%gd(i-1,j)) * state%iap%u(i-1,j)) &
@@ -605,13 +576,13 @@ contains
         end do
       else
         tend%mass_div_lon(:,j) = 0.0
-        do k = 1, full_reduce_factor(j)
-          do i = reduced_full_start_idx(j), reduced_full_end_idx(j)
+        do k = 1, reduce_factor(j)
+          do i = reduced_start_idx(j), reduced_end_idx(j)
             reduced_tend(i) = ((state%iap%reduced_gd(i,k,j) + state%iap%reduced_gd(i+1,k,j)) * state%iap%reduced_u(i,  k,j) - &
                                (state%iap%reduced_gd(i,k,j) + state%iap%reduced_gd(i-1,k,j)) * state%iap%reduced_u(i-1,k,j)) &
-                              / coef%full_dlon(j) / full_reduce_factor(j)**2
+                              / coef%full_dlon(j) / reduce_factor(j)**2
           end do
-          call append_reduced_tend_to_raw_tend(full_reduce_factor(j), k, reduced_tend, tend%mass_div_lon(:,j))
+          call append_reduced_tend_to_raw_tend(reduce_factor(j), k, reduced_tend, tend%mass_div_lon(:,j))
         end do
         call parallel_overlay_inner_halo(tend%mass_div_lon(:,j), left_halo=.true.)
       end if
@@ -710,8 +681,6 @@ contains
     call parallel_fill_halo(new_state%iap%v(:,:), all_halo=.true.)
     call parallel_fill_halo(new_state%u(:,:), all_halo=.true.)
     call parallel_fill_halo(new_state%v(:,:), all_halo=.true.)
-
-    ! call reduce_test(new_state)
 
   end subroutine update_state
 

@@ -100,7 +100,7 @@ contains
     call io_output('v', v(:,:))
     call io_output('gd', state%gd(:,:))
     call io_output('ghs', static%ghs(:,:))
-    call io_output('rf', full_reduce_factor(:))
+    call io_output('rf', reduce_factor(:))
     call io_end_output()
 
   end subroutine history_write_state

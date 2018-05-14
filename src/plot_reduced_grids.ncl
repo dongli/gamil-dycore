@@ -8,7 +8,7 @@ f = addfile(file_path, "r")
 dlon = 1.0
 dlat = 1.0
 
-rf = f->rf(0,:)
+rf = f->rf(0,:dimsizes(f->lat)-2)
 
 wks = gsn_open_wks("pdf", "reduce_grids")
 
