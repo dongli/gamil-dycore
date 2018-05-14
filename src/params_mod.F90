@@ -46,6 +46,7 @@ module params_mod
   character(30) split_scheme
 
   logical use_zonal_reduce
+  real zonal_reduce_start_lat
   integer zonal_reduce_factors(10)
 
   logical is_restart_run
@@ -73,6 +74,7 @@ module params_mod
     qcon_modified, &
     split_scheme, &
     use_zonal_reduce, &
+    zonal_reduce_start_lat, &
     zonal_reduce_factors
 
 contains
@@ -82,6 +84,7 @@ contains
     character(*), intent(in) :: file_path
 
     use_zonal_reduce = .true.
+    zonal_reduce_start_lat = -999
     zonal_reduce_factors(:) = 0
 
     open(10, file=file_path)

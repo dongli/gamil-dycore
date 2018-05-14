@@ -6,6 +6,7 @@ module history_mod
   use params_mod
   use parallel_mod
   use types_mod
+  use reduce_mod
 
   implicit none
 
@@ -18,6 +19,11 @@ module history_mod
   ! A-grid velocity
   real, allocatable :: u(:,:)
   real, allocatable :: v(:,:)
+
+  interface history_write
+    module procedure history_write_state
+    module procedure history_write_tendency
+  end interface history_write
 
 contains
 
@@ -39,8 +45,22 @@ contains
     call io_add_var('ghs', long_name='surface geopotential', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('rf', long_name='reduce factor', units='1', dim_names=['lat ', 'time'])
 
-    if (.not. allocated(u)) call parallel_allocate(u)
-    if (.not. allocated(v)) call parallel_allocate(v)
+    call io_create_dataset(name='debug', desc=case_desc, file_prefix=case_name // '.debug')
+    call io_add_dim('lon', 'debug', size=mesh%num_full_lon)
+    call io_add_dim('lat', 'debug', size=mesh%num_full_lat)
+    call io_add_dim('ilon', 'debug', size=mesh%num_half_lon)
+    call io_add_dim('ilat', 'debug', size=mesh%num_half_lat)
+    call io_add_dim('time', 'debug')
+    call io_add_var('fv', 'debug', long_name='fv', units='', dim_names=['ilon', 'lat ', 'time'])
+    call io_add_var('fu', 'debug', long_name='fu', units='', dim_names=['lon ', 'ilat', 'time'])
+    call io_add_var('u_pgf', 'debug', long_name='u_pgf', units='', dim_names=['ilon', 'lat ', 'time'])
+    call io_add_var('v_pgf', 'debug', long_name='v_pgf', units='', dim_names=['lon ', 'ilat', 'time'])
+    call io_add_var('du', 'debug', long_name='du', units='', dim_names=['ilon', 'lat ', 'time'])
+    call io_add_var('dv', 'debug', long_name='dv', units='', dim_names=['lon ', 'ilat', 'time'])
+    call io_add_var('dgd', 'debug', long_name='dgd', units='', dim_names=['lon ', 'lat ', 'time'])
+
+    if (.not. allocated(u)) call parallel_allocate(u, extended_halo=.true.)
+    if (.not. allocated(v)) call parallel_allocate(v, extended_halo=.true.)
 
     call log_notice('History module is initialized.')
 
@@ -55,7 +75,7 @@ contains
 
   end subroutine history_final
 
-  subroutine history_write(state, static)
+  subroutine history_write_state(state, static)
 
     type(state_type), intent(in) :: state
     type(static_type), intent(in) :: static
@@ -80,9 +100,29 @@ contains
     call io_output('v', v(:,:))
     call io_output('gd', state%gd(:,:))
     call io_output('ghs', static%ghs(:,:))
-    call io_output('rf', state%reduce_factor(:))
+    call io_output('rf', full_reduce_factor(:))
     call io_end_output()
 
-  end subroutine history_write
+  end subroutine history_write_state
+
+  subroutine history_write_tendency(tend)
+
+    type(tend_type), intent(in) :: tend
+
+    call io_start_output('debug')
+    call io_output('lon', mesh%full_lon_deg, 'debug')
+    call io_output('lat', mesh%full_lat_deg, 'debug')
+    call io_output('ilon', mesh%half_lon_deg, 'debug')
+    call io_output('ilat', mesh%half_lat_deg, 'debug')
+    call io_output('fv', tend%fv, 'debug')
+    call io_output('fu', tend%fu, 'debug')
+    call io_output('u_pgf', tend%u_pgf, 'debug')
+    call io_output('v_pgf', tend%v_pgf, 'debug')
+    call io_output('du', tend%du, 'debug')
+    call io_output('dv', tend%dv, 'debug')
+    call io_output('dgd', tend%dgd, 'debug')
+    call io_end_output('debug')
+
+  end subroutine history_write_tendency
 
 end module history_mod

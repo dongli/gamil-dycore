@@ -182,6 +182,8 @@ contains
     end if
     if (name_(1:4) == 'hist') then
       dataset%file_prefix_or_path = trim(dataset%file_prefix_or_path) // '.' // trim(string_delete(name_, 'ist'))
+    else if (name_ /= 'restart') then
+      dataset%file_prefix_or_path = trim(dataset%file_prefix_or_path) // '.' // trim(name_)
     end if
     dataset%mode = mode_
     if (period_ /= 'once') then
@@ -307,9 +309,9 @@ contains
     dim%name = name
     if (.not. present(long_name)) then
       select case (name)
-      case ('lon')
+      case ('lon', 'ilon')
         dim%long_name = 'longitude'
-      case ('lat')
+      case ('lat', 'ilat')
         dim%long_name = 'latitude'
       case ('time')
         dim%long_name = 'time'
@@ -319,9 +321,9 @@ contains
     end if
     if (.not. present(units)) then
       select case (name)
-      case ('lon')
+      case ('lon', 'ilon')
         dim%units = 'degrees_east'
-      case ('lat')
+      case ('lat', 'ilat')
         dim%units = 'degrees_north'
       case ('time')
         write(dim%units, '(A, " since ", A)') trim(time_units), start_time_format
@@ -518,11 +520,11 @@ contains
         else
           select case (var%dims(i)%ptr%name)
           case ('lon')
-            lb = lbound(array, 1) + parallel%lon_halo_width
-            ub = ubound(array, 1) - parallel%lon_halo_width
+            lb = lbound(array, 1) + parallel%lon_halo_width_for_reduce
+            ub = ubound(array, 1) - parallel%lon_halo_width_for_reduce
           case ('lat')
-            lb = lbound(array, 1) + parallel%lat_halo_width
-            ub = ubound(array, 1) - parallel%lat_halo_width
+            lb = lbound(array, 1) + parallel%lat_halo_width_for_reduce
+            ub = ubound(array, 1) - parallel%lat_halo_width_for_reduce
           end select
           count(i) = var%dims(i)%ptr%size
         end if
@@ -556,10 +558,10 @@ contains
     dataset => get_dataset(dataset_name, 'output')
     var => dataset%get_var(name)
 
-    lb1 = lbound(array, 1) + parallel%lon_halo_width
-    ub1 = ubound(array, 1) - parallel%lon_halo_width
-    lb2 = lbound(array, 2) + parallel%lat_halo_width
-    ub2 = ubound(array, 2) - parallel%lat_halo_width
+    lb1 = lbound(array, 1) + parallel%lon_halo_width_for_reduce
+    ub1 = ubound(array, 1) - parallel%lon_halo_width_for_reduce
+    lb2 = lbound(array, 2) + parallel%lat_halo_width_for_reduce
+    ub2 = ubound(array, 2) - parallel%lat_halo_width_for_reduce
 
     do i = 1, 3
       start(i) = 1
@@ -647,10 +649,10 @@ contains
 
     dataset => get_dataset(dataset_name, 'input')
 
-    lb1 = lbound(array, 1) + parallel%lon_halo_width
-    ub1 = ubound(array, 1) - parallel%lon_halo_width
-    lb2 = lbound(array, 2) + parallel%lat_halo_width
-    ub2 = ubound(array, 2) - parallel%lat_halo_width
+    lb1 = lbound(array, 1) + parallel%lon_halo_width_for_reduce
+    ub1 = ubound(array, 1) - parallel%lon_halo_width_for_reduce
+    lb2 = lbound(array, 2) + parallel%lat_halo_width_for_reduce
+    ub2 = ubound(array, 2) - parallel%lat_halo_width_for_reduce
     allocate(buffer(lb1:ub1,lb2:ub2))
 
     ierr = NF90_INQ_VARID(dataset%id, name, varid)

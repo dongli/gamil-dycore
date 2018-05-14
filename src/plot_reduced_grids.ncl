@@ -27,6 +27,7 @@ res_base@mpGridLineThicknessF = 0.0001
 res_reduce = True
 res_reduce@gsFillColor = "green"
 res_reduce@gsLineColor = "red"
+res_reduce@gsLineThicknessF = 0.4
 
 plot = gsn_csm_map(wks, res_base)
 
