@@ -1,6 +1,6 @@
 &dycore_params
 test_case = 'mountain_zonal_flow'
-case_name = 'mz_test.360x181.no_smth.dt240'
+case_name = 'mz_test.360x181.dt240'
 case_desc = 'Mountain zonal flow test'
 author = 'Li Dong <dongli@lasg.iap.ac.cn>'
 days = 15
@@ -12,7 +12,7 @@ restart_period = '1 days'
 time_scheme = 'predict_correct'
 qcon_modified = .true.
 split_scheme = 'csp2' ! 'csp2' or 'csp1' or 'isp'
-subcycles = 8
+subcycles = 6
 use_zonal_reduce = .true.
 zonal_reduce_factors = 2, 4, 8
 /

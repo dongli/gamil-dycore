@@ -29,6 +29,10 @@ res_u@gsnPolar = "NH"
 res_panel = True
 res_panel@gsnMaximize = True
 
+res_h_zonal = True
+res_h_zonal@trYMinF = 5025
+res_h_zonal@trYMaxF = 5050
+
 f = addfile(file_names(0), "r")
 hs = f->ghs(0,:,:) / 9.80616
 do t = 0, dimsizes(file_names) - 1
@@ -40,7 +44,7 @@ do t = 0, dimsizes(file_names) - 1
   h!1 = "lon"
   h&lat = f->lat
   h&lon = f->lon
-  res_h@gsnRightString = cd_string(f->time, "Day %d Hour %H")
+  res_h@gsnRightString = cd_string(f->time, "Day %d Hour %H Min %M")
   plot0 = gsn_csm_contour_map(wks, h, res_h)
 
   u = f->u(0,::5,::5)
@@ -48,4 +52,7 @@ do t = 0, dimsizes(file_names) - 1
   plot1 = gsn_csm_vector_map(wks, u, v, res_u)
 
   gsn_panel(wks, (/plot0,plot1/), (/2,1/), res_panel)
+
+  ; res_h_zonal@gsnRightString = cd_string(f->time, "Day %d Hour %H Min %M")
+  ; plot = gsn_csm_xy(wks, f->lon, h(179,:), res_h_zonal)
 end do

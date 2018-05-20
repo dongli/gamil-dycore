@@ -31,6 +31,7 @@ module time_mod
   type alert_type
     type(timedelta_type) period
     type(datetime_type) last_time
+    logical :: ring = .false.
   end type alert_type
 
   type(datetime_type) start_time
@@ -101,6 +102,23 @@ contains
   end subroutine time_swap_indices
 
   subroutine time_advance()
+    
+    type(map_iterator_type) iter
+    class(*), pointer :: alert
+
+    ! Update alerts.
+    iter = map_iterator_type(alerts)
+    do while (.not. iter%at_end())
+      alert => iter%value()
+      select type (alert)
+      type is (alert_type)
+        if (alert%ring) then
+          alert%last_time = curr_time
+          alert%ring = .false.
+        end if
+      end select
+      call iter%next()
+    end do
 
     call time_swap_indices(old_time_idx, new_time_idx)
 
@@ -151,7 +169,7 @@ contains
     if (associated(alert)) then
       time = alert%last_time + alert%period
       if (time <= curr_time) then
-        alert%last_time = curr_time
+        alert%ring = .true.
         res = .true.
       else
         res = .false.

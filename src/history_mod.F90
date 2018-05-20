@@ -7,6 +7,7 @@ module history_mod
   use parallel_mod
   use types_mod
   use reduce_mod
+  use string_mod
 
   implicit none
 
@@ -51,10 +52,18 @@ contains
     call io_add_dim('ilon', 'debug', size=mesh%num_half_lon)
     call io_add_dim('ilat', 'debug', size=mesh%num_half_lat)
     call io_add_dim('time', 'debug')
+    call io_add_var('u_adv_lon', 'debug', long_name='u_adv_lon', units='', dim_names=['ilon', 'lat ', 'time'])
+    call io_add_var('u_adv_lat', 'debug', long_name='u_adv_lat', units='', dim_names=['ilon', 'lat ', 'time'])
+    call io_add_var('v_adv_lon', 'debug', long_name='v_adv_lon', units='', dim_names=['lon ', 'ilat', 'time'])
+    call io_add_var('v_adv_lat', 'debug', long_name='v_adv_lat', units='', dim_names=['lon ', 'ilat', 'time'])
     call io_add_var('fv', 'debug', long_name='fv', units='', dim_names=['ilon', 'lat ', 'time'])
+    call io_add_var('cv', 'debug', long_name='cv', units='', dim_names=['ilon', 'lat ', 'time'])
     call io_add_var('fu', 'debug', long_name='fu', units='', dim_names=['lon ', 'ilat', 'time'])
+    call io_add_var('cu', 'debug', long_name='cu', units='', dim_names=['lon ', 'ilat', 'time'])
     call io_add_var('u_pgf', 'debug', long_name='u_pgf', units='', dim_names=['ilon', 'lat ', 'time'])
     call io_add_var('v_pgf', 'debug', long_name='v_pgf', units='', dim_names=['lon ', 'ilat', 'time'])
+    call io_add_var('mass_div_lon', 'debug', long_name='mass_div_lon', units='', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('mass_div_lat', 'debug', long_name='mass_div_lat', units='', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('du', 'debug', long_name='du', units='', dim_names=['ilon', 'lat ', 'time'])
     call io_add_var('dv', 'debug', long_name='dv', units='', dim_names=['lon ', 'ilat', 'time'])
     call io_add_var('dgd', 'debug', long_name='dgd', units='', dim_names=['lon ', 'lat ', 'time'])
@@ -100,24 +109,33 @@ contains
     call io_output('v', v(:,:))
     call io_output('gd', state%gd(:,:))
     call io_output('ghs', static%ghs(:,:))
-    call io_output('rf', reduce_factor(:))
+    call io_output('rf', full_reduce_factor(:))
     call io_end_output()
 
   end subroutine history_write_state
 
-  subroutine history_write_tendency(tend)
+  subroutine history_write_tendency(tend, tag)
 
     type(tend_type), intent(in) :: tend
+    integer, intent(in) :: tag
 
-    call io_start_output('debug')
+    call io_start_output('debug', trim(to_string(tag)))
     call io_output('lon', mesh%full_lon_deg, 'debug')
     call io_output('lat', mesh%full_lat_deg, 'debug')
     call io_output('ilon', mesh%half_lon_deg, 'debug')
     call io_output('ilat', mesh%half_lat_deg, 'debug')
+    call io_output('u_adv_lon', tend%u_adv_lon, 'debug')
+    call io_output('u_adv_lat', tend%u_adv_lat, 'debug')
+    call io_output('v_adv_lon', tend%v_adv_lon, 'debug')
+    call io_output('v_adv_lat', tend%v_adv_lat, 'debug')
+    call io_output('cv', tend%cv, 'debug')
+    call io_output('cu', tend%cu, 'debug')
     call io_output('fv', tend%fv, 'debug')
     call io_output('fu', tend%fu, 'debug')
     call io_output('u_pgf', tend%u_pgf, 'debug')
     call io_output('v_pgf', tend%v_pgf, 'debug')
+    call io_output('mass_div_lon', tend%mass_div_lon, 'debug')
+    call io_output('mass_div_lat', tend%mass_div_lat, 'debug')
     call io_output('du', tend%du, 'debug')
     call io_output('dv', tend%dv, 'debug')
     call io_output('dgd', tend%dgd, 'debug')

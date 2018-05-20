@@ -416,9 +416,10 @@ contains
 
   end subroutine io_add_var
 
-  subroutine io_start_output(dataset_name)
+  subroutine io_start_output(dataset_name, tag)
 
     character(*), intent(in), optional :: dataset_name
+    character(*), intent(in), optional :: tag
 
     character(256) file_path
     type(dataset_type), pointer :: dataset
@@ -429,7 +430,11 @@ contains
 
     dataset => get_dataset(dataset_name, 'output')
 
-    write(file_path, "(A, '.', A, '.nc')") trim(dataset%file_prefix_or_path), trim(curr_time_format)
+    if (present(tag)) then
+      write(file_path, "(A, '.', A, '.', A, '.nc')") trim(dataset%file_prefix_or_path), trim(curr_time_format), tag
+    else
+      write(file_path, "(A, '.', A, '.nc')") trim(dataset%file_prefix_or_path), trim(curr_time_format)
+    end if
 
     ierr = NF90_CREATE(file_path, NF90_CLOBBER, dataset%id)
     if (ierr /= NF90_NOERR) then

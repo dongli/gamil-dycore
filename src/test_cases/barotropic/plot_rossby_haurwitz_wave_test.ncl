@@ -1,3 +1,5 @@
+load "$NCARG_ROOT/lib/ncarg/nclscripts/contrib/cd_string.ncl"
+
 if (.not. isdefined("file_prefix")) then
   system("echo '[Error]: Argument file_prefix should be set!'")
   exit
@@ -16,6 +18,7 @@ res_h@cnMinLevelValF = 8000
 res_h@cnMaxLevelValF = 11000
 res_h@cnLevelSpacingF = 200
 res_h@gsnPolar = "NH"
+res_h@gsnLeftString = "Height (m)"
 
 do t = 0, dimsizes(file_names) - 1
   system("echo '=> " + file_names(t) + "'")
@@ -27,6 +30,7 @@ do t = 0, dimsizes(file_names) - 1
   h&lon = f->lon
   h@long_name = "Height"
   h@units = "m"
+  res_h@gsnRightString = cd_string(f->time, "Day %j Hour %H")
   plot0 = gsn_csm_contour_map(wks, h, res_h)
   draw(plot0)
   frame(wks)

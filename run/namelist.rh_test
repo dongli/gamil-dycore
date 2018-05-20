@@ -12,7 +12,7 @@ restart_period = '1 days'
 time_scheme = 'predict_correct'
 qcon_modified = .true.
 split_scheme = 'csp2' ! 'csp2' or 'csp1' or 'isp'
-subcycles = 8
+subcycles = 6
 use_zonal_reduce = .true.
-zonal_reduce_factors = 5
+zonal_reduce_factors = 2, 4, 8
 /

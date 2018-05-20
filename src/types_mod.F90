@@ -36,7 +36,8 @@ module types_mod
     real, allocatable :: v(:,:)
     real, allocatable :: gd(:,:)
     real, allocatable :: reduced_u(:,:,:)
-    real, allocatable :: reduced_v(:,:,:,:) ! The fourth dimension is due to v is at half meridional grids.
+    real, allocatable :: reduced_v(:,:,:)
+    real, allocatable :: reduced_v4u(:,:,:,:) ! The fourth dimension is due to v is at half meridional grids.
     real, allocatable :: reduced_gd(:,:,:)
   end type iap_type
 
@@ -46,6 +47,7 @@ module types_mod
     real, allocatable :: gd(:,:) ! Geopotential depth
     type(iap_type) iap
     real, allocatable :: reduced_u(:,:,:)
+    real, allocatable :: reduced_u4v(:,:,:,:)
     real, allocatable :: reduced_gd(:,:,:)
   end type state_type
 
@@ -118,13 +120,15 @@ contains
     if (.not. allocated(state%v))                  call parallel_allocate(state%v,                  half_lat=.true., extended_halo=.true.)
     if (.not. allocated(state%gd))                 call parallel_allocate(state%gd,                                  extended_halo=.true.)
     if (.not. allocated(state%reduced_u))          call parallel_allocate(state%reduced_u,          half_lon=.true., dim=2,      size=parallel%lon_halo_width_for_reduce)
+    if (.not. allocated(state%reduced_u4v))        call parallel_allocate(state%reduced_u4v,        half_lat=.true., dim=[2, 4], size=[parallel%lon_halo_width_for_reduce, 2])
     if (.not. allocated(state%reduced_gd))         call parallel_allocate(state%reduced_gd,                          dim=2,      size=parallel%lon_halo_width_for_reduce)
 
     if (.not. allocated(state%iap%u))              call parallel_allocate(state%iap%u,              half_lon=.true., extended_halo=.true.)
     if (.not. allocated(state%iap%v))              call parallel_allocate(state%iap%v,              half_lat=.true., extended_halo=.true.)
     if (.not. allocated(state%iap%gd))             call parallel_allocate(state%iap%gd,                              extended_halo=.true.)
     if (.not. allocated(state%iap%reduced_u))      call parallel_allocate(state%iap%reduced_u,      half_lon=.true., dim=2,      size=parallel%lon_halo_width_for_reduce)
-    if (.not. allocated(state%iap%reduced_v))      call parallel_allocate(state%iap%reduced_v,                  dim=[2, 4], size=[parallel%lon_halo_width_for_reduce, 2])
+    if (.not. allocated(state%iap%reduced_v))      call parallel_allocate(state%iap%reduced_v,      half_lat=.true., dim=2,      size=parallel%lon_halo_width_for_reduce)
+    if (.not. allocated(state%iap%reduced_v4u))    call parallel_allocate(state%iap%reduced_v4u,                     dim=[2, 4], size=[parallel%lon_halo_width_for_reduce, 2])
     if (.not. allocated(state%iap%reduced_gd))     call parallel_allocate(state%iap%reduced_gd,                      dim=2,      size=parallel%lon_halo_width_for_reduce)
 
   end subroutine allocate_state_data
@@ -134,17 +138,17 @@ contains
     type(tend_type), intent(out) :: tend
 
     if (.not. allocated(tend%u_adv_lon))           call parallel_allocate(tend%u_adv_lon,      half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(tend%u_adv_lat))           call parallel_allocate(tend%u_adv_lat,      half_lon=.true.)
+    if (.not. allocated(tend%u_adv_lat))           call parallel_allocate(tend%u_adv_lat,      half_lon=.true., extended_halo=.true.)
     if (.not. allocated(tend%fv))                  call parallel_allocate(tend%fv,             half_lon=.true., extended_halo=.true.)
     if (.not. allocated(tend%cv))                  call parallel_allocate(tend%cv,             half_lon=.true., extended_halo=.true.)
     if (.not. allocated(tend%u_pgf))               call parallel_allocate(tend%u_pgf,          half_lon=.true., extended_halo=.true.)
     if (.not. allocated(tend%v_adv_lon))           call parallel_allocate(tend%v_adv_lon,      half_lat=.true., extended_halo=.true.)
-    if (.not. allocated(tend%v_adv_lat))           call parallel_allocate(tend%v_adv_lat,      half_lat=.true.)
+    if (.not. allocated(tend%v_adv_lat))           call parallel_allocate(tend%v_adv_lat,      half_lat=.true., extended_halo=.true.)
     if (.not. allocated(tend%fu))                  call parallel_allocate(tend%fu,             half_lat=.true., extended_halo=.true.)
     if (.not. allocated(tend%cu))                  call parallel_allocate(tend%cu,             half_lat=.true., extended_halo=.true.)
     if (.not. allocated(tend%v_pgf))               call parallel_allocate(tend%v_pgf,          half_lat=.true., extended_halo=.true.)
     if (.not. allocated(tend%mass_div_lon))        call parallel_allocate(tend%mass_div_lon,                    extended_halo=.true.)
-    if (.not. allocated(tend%mass_div_lat))        call parallel_allocate(tend%mass_div_lat)
+    if (.not. allocated(tend%mass_div_lat))        call parallel_allocate(tend%mass_div_lat,                    extended_halo=.true.)
     if (.not. allocated(tend%du))                  call parallel_allocate(tend%du,             half_lon=.true., extended_halo=.true.)
     if (.not. allocated(tend%dv))                  call parallel_allocate(tend%dv,             half_lat=.true., extended_halo=.true.)
     if (.not. allocated(tend%dgd))                 call parallel_allocate(tend%dgd,                             extended_halo=.true.)
@@ -181,6 +185,7 @@ contains
     if (allocated(state%v)) deallocate(state%v)
     if (allocated(state%gd)) deallocate(state%gd)
     if (allocated(state%reduced_u)) deallocate(state%reduced_u)
+    if (allocated(state%reduced_u4v)) deallocate(state%reduced_u4v)
     if (allocated(state%reduced_gd)) deallocate(state%reduced_gd)
 
     if (allocated(state%iap%u)) deallocate(state%iap%u)
@@ -188,6 +193,7 @@ contains
     if (allocated(state%iap%gd)) deallocate(state%iap%gd)
     if (allocated(state%iap%reduced_u)) deallocate(state%iap%reduced_u)
     if (allocated(state%iap%reduced_v)) deallocate(state%iap%reduced_v)
+    if (allocated(state%iap%reduced_v4u)) deallocate(state%iap%reduced_v4u)
     if (allocated(state%iap%reduced_gd)) deallocate(state%iap%reduced_gd)
 
   end subroutine deallocate_state_data
