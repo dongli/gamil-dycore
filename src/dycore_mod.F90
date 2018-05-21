@@ -803,7 +803,7 @@ contains
 
     subcycle_time_step_size = time_step_size / subcycles
     time_idx1 = 0
-    time_idx2 = new_time_idx
+    time_idx2 = old_time_idx
 
     select case (time_scheme)
     case (1) ! predict_correct
