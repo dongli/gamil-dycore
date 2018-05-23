@@ -32,8 +32,7 @@ contains
 
   subroutine reduce_init()
 
-    real mean_dlon
-    integer i, j, k
+    integer i, j
 
     if (.not. allocated(full_reduce_factor)) allocate(full_reduce_factor(mesh%num_full_lat))
     if (.not. allocated(full_reduce_weight)) allocate(full_reduce_weight(maxval(zonal_reduce_factors),mesh%num_full_lat))
@@ -44,32 +43,21 @@ contains
 
     full_reduce_factor(:) = 1
     half_reduce_factor(:) = 1
-    mean_dlon = sum(coef%full_dlon) / mesh%num_full_lat / 2.0
     if (use_zonal_reduce) then
-      ! do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      !   if (abs(mesh%full_lat_deg(j)) >= zonal_reduce_start_lat) then
-      !     do k = 1, size(zonal_reduce_factors)
-      !       if (mean_dlon / coef%full_dlon(j) < zonal_reduce_factors(k)) then
-      !         full_reduce_factor(j) = zonal_reduce_factors(k)
-      !         exit
-      !       end if
-      !       if (zonal_reduce_factors(k) == 0) then
-      !         full_reduce_factor(j) = zonal_reduce_factors(k-1)
-      !         exit
-      !       end if
-      !     end do
-      !   end if
-      ! end do
-      full_reduce_factor(2) = 6
-      full_reduce_factor(3) = 5
-      full_reduce_factor(4) = 4
-      full_reduce_factor(5) = 3
-      full_reduce_factor(6) = 2
-      full_reduce_factor(177) = 2
-      full_reduce_factor(177) = 3
-      full_reduce_factor(178) = 4
-      full_reduce_factor(179) = 5
-      full_reduce_factor(180) = 6
+      if (parallel%has_south_pole) then
+        do j = 1, size(zonal_reduce_factors)
+          if (zonal_reduce_factors(j) == 0) exit
+          full_reduce_factor(parallel%full_lat_start_idx+j) = zonal_reduce_factors(j)
+          half_reduce_factor(parallel%half_lat_start_idx+j-1) = zonal_reduce_factors(j)
+        end do
+      end if
+      if (parallel%has_north_pole) then
+        do j = 1, size(zonal_reduce_factors)
+          if (zonal_reduce_factors(j) == 0) exit
+          full_reduce_factor(parallel%full_lat_end_idx-j) = zonal_reduce_factors(j)
+          half_reduce_factor(parallel%half_lat_end_idx-j+1) = zonal_reduce_factors(j)
+        end do
+      end if
       do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
         if (full_reduce_factor(j) /= 1) then
           ! do i = 1, full_reduce_factor(j)
@@ -79,30 +67,6 @@ contains
           full_reduce_weight(:,j) = 1.0 / full_reduce_factor(j)
         end if
       end do
-      ! do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
-      !   if (abs(mesh%half_lat_deg(j)) >= zonal_reduce_start_lat) then
-      !     do k = 1, size(zonal_reduce_factors)
-      !       if (mean_dlon / coef%half_dlon(j) < zonal_reduce_factors(k)) then
-      !         half_reduce_factor(j) = zonal_reduce_factors(k)
-      !         exit
-      !       end if
-      !       if (zonal_reduce_factors(k) == 0) then
-      !         half_reduce_factor(j) = zonal_reduce_factors(k-1)
-      !         exit
-      !       end if
-      !     end do
-      !   end if
-      ! end do
-      half_reduce_factor(1) = 6
-      half_reduce_factor(2) = 5
-      half_reduce_factor(3) = 4
-      half_reduce_factor(4) = 3
-      half_reduce_factor(5) = 2
-      half_reduce_factor(176) = 2
-      half_reduce_factor(177) = 3
-      half_reduce_factor(178) = 4
-      half_reduce_factor(179) = 5
-      half_reduce_factor(180) = 6
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         if (half_reduce_factor(j) /= 1) then
           ! do i = 1, half_reduce_factor(j)
