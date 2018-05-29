@@ -71,6 +71,7 @@ module parallel_mod
 
   interface parallel_fill_halo
     module procedure parallel_fill_halo_1
+    module procedure parallel_fill_halo_2
   end interface parallel_fill_halo
 
   interface parallel_overlay_inner_halo
@@ -115,7 +116,7 @@ contains
     parallel%half_lat_lb = parallel%half_lat_start_idx - parallel%lat_halo_width
     parallel%half_lat_ub = parallel%half_lat_end_idx + parallel%lat_halo_width
 
-    parallel%lon_halo_width_for_reduce = 8
+    parallel%lon_halo_width_for_reduce = 16
     parallel%lat_halo_width_for_reduce = 1
 
     parallel%full_lon_lb_for_reduce = parallel%full_lon_start_idx - parallel%lon_halo_width_for_reduce
@@ -556,6 +557,34 @@ contains
     end if
 
   end subroutine parallel_fill_halo_1
+
+  subroutine parallel_fill_halo_2(field, left_halo, right_halo)
+
+    real, intent(inout) :: field(:)
+    logical, intent(in), optional :: left_halo
+    logical, intent(in), optional :: right_halo
+
+    integer i, m, n
+
+    if (present(left_halo) .and. left_halo) then
+      m = lbound(field, 1) - 1
+      n = ubound(field, 1) - 2 * parallel%lon_halo_width_for_reduce
+      do i = 1, parallel%lon_halo_width_for_reduce
+        field(m+i) = field(n+i)
+      end do
+    end if
+
+    ! |             |                             |              |              |
+    ! lb            lb + w                        ub - 2w        ub - w         ub
+    if (present(right_halo) .and. right_halo) then
+      m = ubound(field, 1) - parallel%lon_halo_width_for_reduce
+      n = lbound(field, 1) + parallel%lon_halo_width_for_reduce - 1
+      do i = 1, parallel%lon_halo_width_for_reduce
+        field(m+i) = field(n+i)
+      end do
+    end if
+
+  end subroutine parallel_fill_halo_2
 
   subroutine parallel_overlay_inner_halo_1(array, left_halo, right_halo)
 

@@ -242,12 +242,20 @@ contains
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%du(i,j) = - tend%u_adv_lon(i,j) - tend%u_adv_lat(i,j)
         end do
+        ! if (full_reduce_factor(j) /= 1) then
+        if (abs(mesh%full_lat_deg(j)) > 84) then
+          call test_smooth(tend%du(:,j))
+        end if
       end do
 
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv(i,j) = - tend%v_adv_lon(i,j) - tend%v_adv_lat(i,j)
         end do
+        ! if (half_reduce_factor(j) /= 1) then
+        if (abs(mesh%half_lat_deg(j)) > 84) then
+          call test_smooth(tend%dv(:,j))
+        end if
       end do
 
       tend%dgd = 0.0
@@ -269,29 +277,60 @@ contains
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%du(i,j) =    tend%fv(i,j) + tend%cv(i,j) - tend%u_pgf(i,j)
         end do
+        ! if (full_reduce_factor(j) /= 1) then
+        if (abs(mesh%full_lat_deg(j)) > 84) then
+          call test_smooth(tend%du(:,j))
+        end if
       end do
 
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv(i,j) =  - tend%fu(i,j) - tend%cu(i,j) - tend%v_pgf(i,j)
         end do
+        ! if (half_reduce_factor(j) /= 1) then
+        if (abs(mesh%half_lat_deg(j)) > 84) then
+          call test_smooth(tend%dv(:,j))
+        end if
       end do
 
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dgd(i,j) = - tend%mass_div_lon(i,j) - tend%mass_div_lat(i,j)
         end do
+        ! if (full_reduce_factor(j) /= 1) then
+        if (abs(mesh%full_lat_deg(j)) > 84) then
+          call test_smooth(tend%dgd(:,j))
+        end if
       end do
     end select
 
-    ! tag = tag + 1
-    ! if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6 .or. tag == 27 .or. tag == 30)) then
-    !   call history_write(tend, tag)
-    ! end if
+    tag = tag + 1
+    if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6 .or. tag == 21 .or. tag == 24)) then
+      call history_write(tend, tag)
+    end if
 
     ! call check_antisymmetry(tend, state)
 
   end subroutine space_operators
+
+  subroutine test_smooth(array)
+
+    real, intent(inout) :: array(parallel%full_lon_lb_for_reduce:parallel%full_lon_ub_for_reduce)
+
+    real smoothed_array(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
+    integer i, loop
+
+    do loop = 1, 2
+      call parallel_fill_halo(array, left_halo=.true., right_halo=.true.)
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        smoothed_array(i) = sum(array(i-2:i+2)) / 5
+      end do
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        array(i) = smoothed_array(i)
+      end do
+    end do
+
+  end subroutine test_smooth
 
   subroutine zonal_momentum_advection_operator(state, tend)
 
@@ -606,7 +645,7 @@ contains
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%mass_div_lon(i,j) = ((state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%iap%u(i,j) - &
+          tend%mass_div_lon(i,j) = ((state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%iap%u(i,  j) - &
                                     (state%iap%gd(i,j) + state%iap%gd(i-1,j)) * state%iap%u(i-1,j)) &
                                    / coef%full_dlon(j)
         end do
