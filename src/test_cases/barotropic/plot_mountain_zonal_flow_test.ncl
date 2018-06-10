@@ -46,12 +46,14 @@ do t = 0, dimsizes(file_names) - 1
   h&lon = f->lon
   res_h@gsnRightString = cd_string(f->time, "Day %d Hour %H Min %M")
   plot0 = gsn_csm_contour_map(wks, h, res_h)
+  draw(plot0)
+  frame(wks)
 
-  u = f->u(0,::5,::5)
-  v = f->v(0,::5,::5)
-  plot1 = gsn_csm_vector_map(wks, u, v, res_u)
+  ;u = f->u(0,::5,::5)
+  ;v = f->v(0,::5,::5)
+  ;plot1 = gsn_csm_vector_map(wks, u, v, res_u)
 
-  gsn_panel(wks, (/plot0,plot1/), (/2,1/), res_panel)
+  ;gsn_panel(wks, (/plot0,plot1/), (/2,1/), res_panel)
 
   ; res_h_zonal@gsnRightString = cd_string(f->time, "Day %d Hour %H Min %M")
   ; plot = gsn_csm_xy(wks, f->lon, h(179,:), res_h_zonal)

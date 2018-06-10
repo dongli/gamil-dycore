@@ -46,10 +46,13 @@ module params_mod
   character(30) split_scheme
 
   logical use_zonal_reduce
+  logical :: reduce_adv_lon = .true.
   real zonal_reduce_start_lat
-  integer zonal_reduce_factors(10)
+  integer zonal_reduce_factors(20)
 
   logical is_restart_run
+
+  logical :: test_smooth = .false.
 
   namelist /dycore_params/ &
     num_lon, &
@@ -74,8 +77,10 @@ module params_mod
     qcon_modified, &
     split_scheme, &
     use_zonal_reduce, &
+    reduce_adv_lon, &
     zonal_reduce_start_lat, &
-    zonal_reduce_factors
+    zonal_reduce_factors, &
+    test_smooth
 
 contains
 

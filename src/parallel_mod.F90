@@ -63,6 +63,7 @@ module parallel_mod
 
   interface parallel_allocate
     module procedure parallel_allocate_1
+    module procedure parallel_allocate_1_add_dim_2
     module procedure parallel_allocate_1_i
     module procedure parallel_allocate_2
     module procedure parallel_allocate_2_add_dim_1
@@ -116,7 +117,7 @@ contains
     parallel%half_lat_lb = parallel%half_lat_start_idx - parallel%lat_halo_width
     parallel%half_lat_ub = parallel%half_lat_end_idx + parallel%lat_halo_width
 
-    parallel%lon_halo_width_for_reduce = 16
+    parallel%lon_halo_width_for_reduce = 8
     parallel%lat_halo_width_for_reduce = 1
 
     parallel%full_lon_lb_for_reduce = parallel%full_lon_start_idx - parallel%lon_halo_width_for_reduce
@@ -176,6 +177,104 @@ contains
     field(:) = 0.0
 
   end subroutine parallel_allocate_1
+
+  subroutine parallel_allocate_1_add_dim_2(field, dim, size, full_lon, half_lon, full_lat, half_lat, extended_halo)
+
+    real, intent(out), allocatable ::  field(:,:,:)
+    integer, intent(in) :: dim(2)
+    integer, intent(in) :: size(2)
+    logical, intent(in), optional :: full_lon
+    logical, intent(in), optional :: half_lon
+    logical, intent(in), optional :: full_lat
+    logical, intent(in), optional :: half_lat
+    logical, intent(in), optional :: extended_halo
+
+    if (dim(1) == 1 .and. dim(2) == 2) then
+      if (present(half_lon) .and. half_lon) then
+        if (present(extended_halo) .and. extended_halo) then
+          allocate(field(size(1),size(2),parallel%half_lon_lb_for_reduce:parallel%half_lon_ub_for_reduce))
+        else
+          allocate(field(size(1),size(2),parallel%half_lon_lb:parallel%half_lon_ub))
+        end if
+      else if (present(full_lon) .and. full_lon) then
+        if (present(extended_halo) .and. extended_halo) then
+          allocate(field(size(1),size(2),parallel%full_lon_lb_for_reduce:parallel%full_lon_ub_for_reduce))
+        else
+          allocate(field(size(1),size(2),parallel%full_lon_lb:parallel%full_lon_ub))
+        end if
+      else if (present(half_lat) .and. half_lat) then
+        if (present(extended_halo) .and. extended_halo) then
+          allocate(field(size(1),size(2),parallel%half_lat_lb_for_reduce:parallel%half_lat_ub_for_reduce))
+        else
+          allocate(field(size(1),size(2),parallel%half_lat_lb:parallel%half_lat_ub))
+        end if
+      else if (present(full_lat) .and. full_lat) then
+        if (present(extended_halo) .and. extended_halo) then
+          allocate(field(size(1),size(2),parallel%full_lat_lb_for_reduce:parallel%full_lat_ub_for_reduce))
+        else
+          allocate(field(size(1),size(2),parallel%full_lat_lb:parallel%full_lat_ub))
+        end if
+      end if
+    else if (dim(1) == 1 .and. dim(2) == 3) then
+      if (present(half_lon) .and. half_lon) then
+        if (present(extended_halo) .and. extended_halo) then
+          allocate(field(size(1),parallel%half_lon_lb_for_reduce:parallel%half_lon_ub_for_reduce,size(2)))
+        else
+          allocate(field(size(1),parallel%half_lon_lb:parallel%half_lon_ub,size(2)))
+        end if
+      else if (present(full_lon) .and. full_lon) then
+        if (present(extended_halo) .and. extended_halo) then
+          allocate(field(size(1),parallel%full_lon_lb_for_reduce:parallel%full_lon_ub_for_reduce,size(2)))
+        else
+          allocate(field(size(1),parallel%full_lon_lb:parallel%full_lon_ub,size(2)))
+        end if
+      else if (present(half_lat) .and. half_lat) then
+        if (present(extended_halo) .and. extended_halo) then
+          allocate(field(size(1),parallel%half_lat_lb_for_reduce:parallel%half_lat_ub_for_reduce,size(2)))
+        else
+          allocate(field(size(1),parallel%half_lat_lb:parallel%half_lat_ub,size(2)))
+        end if
+      else if (present(full_lat) .and. full_lat) then
+        if (present(extended_halo) .and. extended_halo) then
+          allocate(field(size(1),parallel%full_lat_lb_for_reduce:parallel%full_lat_ub_for_reduce,size(2)))
+        else
+          allocate(field(size(1),parallel%full_lat_lb:parallel%full_lat_ub,size(2)))
+        end if
+      end if
+    else if (dim(1) == 2 .and. dim(2) == 3) then
+      if (present(half_lon) .and. half_lon) then
+        if (present(extended_halo) .and. extended_halo) then
+          allocate(field(parallel%half_lon_lb_for_reduce:parallel%half_lon_ub_for_reduce,size(1),size(2)))
+        else
+          allocate(field(parallel%half_lon_lb:parallel%half_lon_ub,size(1),size(2)))
+        end if
+      else if (present(full_lon) .and. full_lon) then
+        if (present(extended_halo) .and. extended_halo) then
+          allocate(field(parallel%full_lon_lb_for_reduce:parallel%full_lon_ub_for_reduce,size(1),size(2)))
+        else
+          allocate(field(parallel%full_lon_lb:parallel%full_lon_ub,size(1),size(2)))
+        end if
+      else if (present(half_lat) .and. half_lat) then
+        if (present(extended_halo) .and. extended_halo) then
+          allocate(field(parallel%half_lat_lb_for_reduce:parallel%half_lat_ub_for_reduce,size(1),size(2)))
+        else
+          allocate(field(parallel%half_lat_lb:parallel%half_lat_ub,size(1),size(2)))
+        end if
+      else if (present(full_lat) .and. full_lat) then
+        if (present(extended_halo) .and. extended_halo) then
+          allocate(field(parallel%full_lat_lb_for_reduce:parallel%full_lat_ub_for_reduce,size(1),size(2)))
+        else
+          allocate(field(parallel%full_lat_lb:parallel%full_lat_ub,size(1),size(2)))
+        end if
+      end if
+    else
+      call log_error('Inconsistent dimension arguments!')
+    end if
+
+    ! Initialize field with zeros.
+    field(:,:,:) = 0.0
+
+  end subroutine parallel_allocate_1_add_dim_2
 
   subroutine parallel_allocate_1_i(field, full_lon, half_lon, full_lat, half_lat, extended_halo)
 

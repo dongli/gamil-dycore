@@ -192,9 +192,16 @@ contains
     real, intent(in) :: dt
     integer, intent(in) :: pass
 
-    integer i, j
+    integer i, j, i1, i2
+    real s1, s2
+    real smooth_residue_mass_div_lon(parallel%full_lat_start_idx_no_pole:parallel%full_lat_end_idx_no_pole)
+    real smooth_residue_mass_div_lat(parallel%half_lat_start_idx:parallel%half_lat_end_idx)
 
     call reduce_run(state, static)
+
+    ! Allow me to use i1 and i2 as shorthands.
+    i1 = parallel%full_lon_start_idx
+    i2 = parallel%full_lon_end_idx
 
     select case (pass)
     case (all_pass)
@@ -242,20 +249,32 @@ contains
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%du(i,j) = - tend%u_adv_lon(i,j) - tend%u_adv_lat(i,j)
         end do
-        ! if (full_reduce_factor(j) /= 1) then
-        if (abs(mesh%full_lat_deg(j)) > 84) then
-          call test_smooth(tend%du(:,j))
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (full_reduce_factor(j) /= 1 .and. test_smooth) then
+          s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
+          if (s1 /= 0) then
+            call smooth(tend%du(:,j))
+            s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
+            tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
+          end if
         end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
 
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv(i,j) = - tend%v_adv_lon(i,j) - tend%v_adv_lat(i,j)
         end do
-        ! if (half_reduce_factor(j) /= 1) then
-        if (abs(mesh%half_lat_deg(j)) > 84) then
-          call test_smooth(tend%dv(:,j))
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (half_reduce_factor(j) /= 1 .and. test_smooth) then
+          s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
+          if (s1 /= 0) then
+            call smooth(tend%dv(:,j))
+            s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
+            tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
+          end if
         end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
 
       tend%dgd = 0.0
@@ -273,39 +292,90 @@ contains
       call zonal_mass_divergence_operator(state, tend)
       call meridional_mass_divergence_operator(state, tend)
 
+      smooth_residue_mass_div_lon(:) = 0.0
+      smooth_residue_mass_div_lat(:) = 0.0
+      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (full_reduce_factor(j) /= 1 .and. test_smooth) then
+          s1 = sum(tend%mass_div_lon(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
+          if (s1 /= 0) then
+            call smooth(tend%mass_div_lon(:,j))
+            s2 = sum(tend%mass_div_lon(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
+            smooth_residue_mass_div_lon(j) = s1 - s2
+          end if
+          s1 = sum(tend%mass_div_lat(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j))) * mesh%full_cos_lat(j)
+          if (s1 /= 0) then
+            call smooth(tend%mass_div_lat(:,j))
+            s2 = sum(tend%mass_div_lat(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j))) * mesh%full_cos_lat(j)
+            if (half_reduce_factor(j) == 1 .and. half_reduce_factor(j-1) /= 1) then
+              smooth_residue_mass_div_lat(j-1) = smooth_residue_mass_div_lat(j-1) + s1 - s2
+            else if (half_reduce_factor(j) /= 1 .and. half_reduce_factor(j-1) == 1) then
+              smooth_residue_mass_div_lat(j) = smooth_residue_mass_div_lat(j) + s1 - s2
+            else if (half_reduce_factor(j) /= 1 .and. half_reduce_factor(j-1) /= 1) then
+              smooth_residue_mass_div_lat(j-1) = smooth_residue_mass_div_lat(j-1) + (s1 - s2) * 0.5
+              smooth_residue_mass_div_lat(j) = smooth_residue_mass_div_lat(j) + (s1 - s2) * 0.5
+            end if
+          end if
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+          tend%dgd(i,j) = - tend%mass_div_lon(i,j) - tend%mass_div_lat(i,j)
+        end do
+      end do
+
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-          tend%du(i,j) =    tend%fv(i,j) + tend%cv(i,j) - tend%u_pgf(i,j)
+          tend%du(i,j) = tend%fv(i,j) + tend%cv(i,j)
         end do
-        ! if (full_reduce_factor(j) /= 1) then
-        if (abs(mesh%full_lat_deg(j)) > 84) then
-          call test_smooth(tend%du(:,j))
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (full_reduce_factor(j) /= 1 .and. test_smooth) then
+          s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
+          if (s1 /= 0) then
+            call smooth(tend%du(:,j))
+            s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
+            tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
+          end if
+          s1 = sum(tend%u_pgf(i1:i2,j) * state%iap%u(i1:i2,j))
+          if (s1 /= 0) then
+            call smooth(tend%u_pgf(:,j))
+            s2 = sum(tend%u_pgf(i1:i2,j) * state%iap%u(i1:i2,j))
+            tend%u_pgf(i1:i2,j) = tend%u_pgf(i1:i2,j) * (s1 + smooth_residue_mass_div_lon(j)) / s2
+          end if
         end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+          tend%du(i,j) = tend%du(i,j) - tend%u_pgf(i,j)
+        end do
       end do
 
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%dv(i,j) =  - tend%fu(i,j) - tend%cu(i,j) - tend%v_pgf(i,j)
+          tend%dv(i,j) = - tend%fu(i,j) - tend%cu(i,j)
         end do
-        ! if (half_reduce_factor(j) /= 1) then
-        if (abs(mesh%half_lat_deg(j)) > 84) then
-          call test_smooth(tend%dv(:,j))
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (half_reduce_factor(j) /= 1 .and. test_smooth) then
+          s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
+          if (s1 /= 0) then
+            call smooth(tend%dv(:,j))
+            s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
+            tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
+          end if
+          s1 = sum(tend%v_pgf(i1:i2,j) * state%iap%v(i1:i2,j)) * mesh%half_cos_lat(j)
+          if (s1 /= 0) then
+            call smooth(tend%v_pgf(:,j))
+            s2 = sum(tend%v_pgf(i1:i2,j) * state%iap%v(i1:i2,j)) * mesh%half_cos_lat(j)
+            tend%v_pgf(i1:i2,j) = tend%v_pgf(i1:i2,j) * (s1 + smooth_residue_mass_div_lat(j)) / s2
+          end if
         end if
-      end do
-
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%dgd(i,j) = - tend%mass_div_lon(i,j) - tend%mass_div_lat(i,j)
+          tend%dv(i,j) = tend%dv(i,j) - tend%v_pgf(i,j)
         end do
-        ! if (full_reduce_factor(j) /= 1) then
-        if (abs(mesh%full_lat_deg(j)) > 84) then
-          call test_smooth(tend%dgd(:,j))
-        end if
       end do
     end select
 
     tag = tag + 1
-    if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6 .or. tag == 21 .or. tag == 24)) then
+    if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6 .or. tag == 18 .or. tag == 21)) then
       call history_write(tend, tag)
     end if
 
@@ -313,7 +383,7 @@ contains
 
   end subroutine space_operators
 
-  subroutine test_smooth(array)
+  subroutine smooth(array)
 
     real, intent(inout) :: array(parallel%full_lon_lb_for_reduce:parallel%full_lon_ub_for_reduce)
 
@@ -330,7 +400,7 @@ contains
       end do
     end do
 
-  end subroutine test_smooth
+  end subroutine smooth
 
   subroutine zonal_momentum_advection_operator(state, tend)
 
@@ -342,7 +412,7 @@ contains
 
     ! U
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      if (full_reduce_factor(j) == 1) then
+      if (full_reduce_factor(j) == 1 .or. .not. reduce_adv_lon) then
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%u_adv_lon(i,j) = 0.5 / coef%full_dlon(j) * &
             ((state%u(i,j) + state%u(i+1,j)) * state%iap%u(i+1,j) - &
@@ -353,8 +423,8 @@ contains
         do k = 1, full_reduce_factor(j)
           do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
             reduced_tend(i) = 0.5 / coef%full_dlon(j) / full_reduce_factor(j) * &
-              ((state%reduced_u(i,k,j) + state%reduced_u(i+1,k,j)) * state%iap%reduced_u(i+1,k,j) - &
-               (state%reduced_u(i,k,j) + state%reduced_u(i-1,k,j)) * state%iap%reduced_u(i-1,k,j))
+              ((full_reduced_state(j)%u(i,k,2) + full_reduced_state(j)%u(i+1,k,2)) * full_reduced_state(j)%iap%u(i+1,k,2) - &
+               (full_reduced_state(j)%u(i,k,2) + full_reduced_state(j)%u(i-1,k,2)) * full_reduced_state(j)%iap%u(i-1,k,2))
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%u_adv_lon(:,j))
         end do
@@ -364,7 +434,7 @@ contains
 
     ! V
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
-      if (half_reduce_factor(j) == 1) then
+      if (half_reduce_factor(j) == 1 .or. .not. reduce_adv_lon) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%v_adv_lon(i,j) = 0.5 / coef%half_dlon(j) * &
             ((state%u(i,  j) + state%u(i,  j+1)) * state%iap%v(i+1,j) - &
@@ -375,8 +445,8 @@ contains
         do k = 1, half_reduce_factor(j)
           do i = reduced_start_idx_at_half_lat(j), reduced_end_idx_at_half_lat(j)
             reduced_tend(i) = 0.5 / coef%half_dlon(j) / half_reduce_factor(j) * &
-              ((state%reduced_u4v(i,  k,j,1) + state%reduced_u4v(i,  k,j,2)) * state%iap%reduced_v(i+1,k,j) - &
-               (state%reduced_u4v(i-1,k,j,1) + state%reduced_u4v(i-1,k,j,2)) * state%iap%reduced_v(i-1,k,j))
+              ((half_reduced_state(j)%u(i,  k,2) + half_reduced_state(j)%u(i,  k,3)) * half_reduced_state(j)%iap%v(i+1,k,2) - &
+               (half_reduced_state(j)%u(i-1,k,2) + half_reduced_state(j)%u(i-1,k,3)) * half_reduced_state(j)%iap%v(i-1,k,2))
           end do
           call append_reduced_tend_to_raw_tend_at_half_lat(j, k, reduced_tend, tend%v_adv_lon(:,j))
         end do
@@ -391,24 +461,23 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real vp1, vm1
     integer i, j
 
     ! U
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        vp1 = (state%v(i,j  ) + state%v(i+1,j  )) * mesh%half_cos_lat(j  )
-        vm1 = (state%v(i,j-1) + state%v(i+1,j-1)) * mesh%half_cos_lat(j-1)
-        tend%u_adv_lat(i,j) = 0.5 / coef%full_dlat(j) * (vp1 * state%iap%u(i,j+1) - vm1 * state%iap%u(i,j-1))
+        tend%u_adv_lat(i,j) = (state%iap%u(i,j+1) * (state%v(i,j  ) + state%v(i+1,j  )) * mesh%half_cos_lat(j  ) - &
+                               state%iap%u(i,j-1) * (state%v(i,j-1) + state%v(i+1,j-1)) * mesh%half_cos_lat(j-1)) * &
+                              0.5 / coef%full_dlat(j)
       end do
     end do
 
     ! V
     do j = parallel%half_lat_start_idx_no_pole, parallel%half_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        vp1 = state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j+1) * mesh%half_cos_lat(j+1)
-        vm1 = state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j-1) * mesh%half_cos_lat(j-1)
-        tend%v_adv_lat(i,j) = 0.5 / coef%half_dlat(j) * (vp1 * state%iap%v(i,j+1) - vm1 * state%iap%v(i,j-1))
+        tend%v_adv_lat(i,j) = (state%iap%v(i,j+1) * (state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j+1) * mesh%half_cos_lat(j+1)) - &
+                               state%iap%v(i,j-1) * (state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j-1) * mesh%half_cos_lat(j-1))) * &
+                              0.5 / coef%half_dlat(j)
       end do
     end do
 
@@ -416,8 +485,7 @@ contains
     if (parallel%has_south_pole) then
       j = parallel%half_lat_south_pole_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        vp1 = state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j+1) * mesh%half_cos_lat(j+1)
-        tend%v_adv_lat(i,j) = 0.5 / coef%half_dlat(j) * vp1 * state%iap%v(i,j+1)
+        tend%v_adv_lat(i,j) = state%iap%v(i,j+1) * (state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j+1) * mesh%half_cos_lat(j+1)) * 0.5 / coef%half_dlat(j)
       end do
     end if
 
@@ -425,8 +493,7 @@ contains
     if (parallel%has_north_pole) then
       j = parallel%half_lat_north_pole_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        vm1 = state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j-1) * mesh%half_cos_lat(j-1)
-        tend%v_adv_lat(i,j) = - 0.5 / coef%half_dlat(j) * vm1 * state%iap%v(i,j-1)
+        tend%v_adv_lat(i,j) = - state%iap%v(i,j-1) * (state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j-1) * mesh%half_cos_lat(j-1)) * 0.5 / coef%half_dlat(j)
       end do
     end if
 
@@ -455,8 +522,8 @@ contains
         do k = 1, full_reduce_factor(j)
           do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
             reduced_tend(i) = 0.25 * coef%cori(j) * &
-              (c1 * (state%iap%reduced_v4u(i,k,j,1) + state%iap%reduced_v4u(i+1,k,j,1)) + &
-               c2 * (state%iap%reduced_v4u(i,k,j,2) + state%iap%reduced_v4u(i+1,k,j,2)))
+              (c1 * (full_reduced_state(j)%iap%v(i,k,1) + full_reduced_state(j)%iap%v(i+1,k,1)) + &
+               c2 * (full_reduced_state(j)%iap%v(i,k,2) + full_reduced_state(j)%iap%v(i+1,k,2)))
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%fv(:,j))
         end do
@@ -473,7 +540,7 @@ contains
       else
         do k = 1, full_reduce_factor(j)
           do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
-            reduced_tend(i) = 0.25 * coef%cori(j) * (state%iap%reduced_u(i,k,j) + state%iap%reduced_u(i-1,k,j))
+            reduced_tend(i) = 0.25 * coef%cori(j) * (full_reduced_state(j)%iap%u(i,k,2) + full_reduced_state(j)%iap%u(i-1,k,2))
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%fu(:,j))
         end do
@@ -488,32 +555,13 @@ contains
         tend%fu(parallel%full_lon_end_idx+1:,j) = 0.0
         do k = 1, full_reduce_factor(j+1)
           do i = reduced_start_idx_at_full_lat(j+1), reduced_end_idx_at_full_lat(j+1)
-            reduced_tend(i) = 0.25 * coef%cori(j+1) * (state%iap%reduced_u(i,k,j+1) + state%iap%reduced_u(i-1,k,j+1))
+            reduced_tend(i) = 0.25 * coef%cori(j+1) * (full_reduced_state(j+1)%iap%u(i,k,2) + full_reduced_state(j+1)%iap%u(i-1,k,2))
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j+1, k, reduced_tend, tend%fu(:,j))
         end do
         call parallel_overlay_inner_halo(tend%fu(:,j), left_halo=.true.)
       end if
     end do
-
-#ifndef NDEBUG
-    if (parallel%has_south_pole) then
-      j = parallel%full_lat_south_pole_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        if (state%iap%u(i,j) /= 0.0) then
-          call log_error('U at South Pole should be zero!')
-        end if
-      end do
-    end if
-    if (parallel%has_north_pole) then
-      j = parallel%full_lat_north_pole_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        if (state%iap%u(i,j) /= 0.0) then
-          call log_error('U at North Pole should be zero!')
-        end if
-      end do
-    end if
-#endif
 
   end subroutine coriolis_operator
 
@@ -539,9 +587,9 @@ contains
         tend%cv(:,j) = 0.0
         do k = 1, full_reduce_factor(j)
           do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
-            reduced_tend(i) = 0.25 * coef%curv(j) * state%reduced_u(i,k,j) * &
-              (c1 * (state%iap%reduced_v4u(i,k,j,1) + state%iap%reduced_v4u(i+1,k,j,1)) + &
-               c2 * (state%iap%reduced_v4u(i,k,j,2) + state%iap%reduced_v4u(i+1,k,j,2)))
+            reduced_tend(i) = 0.25 * coef%curv(j) * full_reduced_state(j)%u(i,k,2) * &
+              (c1 * (full_reduced_state(j)%iap%v(i,k,1) + full_reduced_state(j)%iap%v(i+1,k,1)) + &
+               c2 * (full_reduced_state(j)%iap%v(i,k,2) + full_reduced_state(j)%iap%v(i+1,k,2)))
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%cv(:,j))
         end do
@@ -560,8 +608,8 @@ contains
         do k = 1, full_reduce_factor(j)
           do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
             reduced_tend(i) = 0.25 * coef%curv(j) * &
-              (state%reduced_u(i,  k,j) * state%iap%reduced_u(i,  k,j) + &
-               state%reduced_u(i-1,k,j) * state%iap%reduced_u(i-1,k,j))
+              (full_reduced_state(j)%u(i,  k,2) * full_reduced_state(j)%iap%u(i,  k,2) + &
+               full_reduced_state(j)%u(i-1,k,2) * full_reduced_state(j)%iap%u(i-1,k,2))
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%cu(:,j))
         end do
@@ -578,8 +626,8 @@ contains
         do k = 1, full_reduce_factor(j+1)
           do i = reduced_start_idx_at_full_lat(j+1), reduced_end_idx_at_full_lat(j+1)
             reduced_tend(i) = 0.25 * coef%curv(j+1) * &
-              (state%reduced_u(i,  k,j+1) * state%iap%reduced_u(i,  k,j+1) + &
-               state%reduced_u(i-1,k,j+1) * state%iap%reduced_u(i-1,k,j+1))
+              (full_reduced_state(j+1)%u(i,  k,2) * full_reduced_state(j+1)%iap%u(i,  k,2) + &
+               full_reduced_state(j+1)%u(i-1,k,2) * full_reduced_state(j+1)%iap%u(i-1,k,2))
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j+1, k, reduced_tend, tend%cu(:,j))
         end do
@@ -607,8 +655,10 @@ contains
         tend%u_pgf(:,j) = 0.0
         do k = 1, full_reduce_factor(j)
           do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
-            reduced_tend(i) = (state%iap%reduced_gd(i,k,j) + state%iap%reduced_gd(i+1,k,j)) / coef%full_dlon(j) / full_reduce_factor(j) * &
-              (state%reduced_gd(i+1,k,j) - state%reduced_gd(i,k,j) + static%reduced_ghs(i+1,k,j) - static%reduced_ghs(i,k,j))
+            reduced_tend(i) = (full_reduced_state(j)%iap%gd(i,k,2) + full_reduced_state(j)%iap%gd(i+1,k,2)) * &
+              (full_reduced_state(j)%gd(i+1,k,2) - full_reduced_state(j)%gd(i,k,2) + &
+               full_reduced_static(j)%ghs(i+1,k,2) - full_reduced_static(j)%ghs(i,k,2)) / &
+              coef%full_dlon(j) / full_reduce_factor(j)
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%u_pgf(:,j))
         end do
@@ -627,8 +677,9 @@ contains
 
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%v_pgf(i,j) = (state%iap%gd(i,j) + state%iap%gd(i,j+1)) / coef%half_dlat(j) * &
-          (state%gd(i,j+1) - state%gd(i,j) + static%ghs(i,j+1) - static%ghs(i,j)) * mesh%half_cos_lat(j)
+        tend%v_pgf(i,j) = (state%iap%gd(i,j) + state%iap%gd(i,j+1)) * &
+          (state%gd(i,j+1) + static%ghs(i,j+1) - state%gd(i,j) - static%ghs(i,j)) * &
+          mesh%half_cos_lat(j) / coef%half_dlat(j)
       end do
     end do
 
@@ -653,9 +704,9 @@ contains
         tend%mass_div_lon(:,j) = 0.0
         do k = 1, full_reduce_factor(j)
           do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
-            reduced_tend(i) = ((state%iap%reduced_gd(i,k,j) + state%iap%reduced_gd(i+1,k,j)) * state%iap%reduced_u(i,  k,j) - &
-                               (state%iap%reduced_gd(i,k,j) + state%iap%reduced_gd(i-1,k,j)) * state%iap%reduced_u(i-1,k,j)) &
-                              / coef%full_dlon(j) / full_reduce_factor(j)
+            reduced_tend(i) = ((full_reduced_state(j)%iap%gd(i,k,2) + full_reduced_state(j)%iap%gd(i+1,k,2)) * full_reduced_state(j)%iap%u(i,  k,2) - &
+                               (full_reduced_state(j)%iap%gd(i,k,2) + full_reduced_state(j)%iap%gd(i-1,k,2)) * full_reduced_state(j)%iap%u(i-1,k,2)) / &
+                              coef%full_dlon(j) / full_reduce_factor(j)
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%mass_div_lon(:,j))
         end do
@@ -670,18 +721,18 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    integer i, j
     real sp, np, sum
+    integer i, j
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%mass_div_lat(i,j) = 1.0 / coef%full_dlat(j) * ( &
-          (state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%iap%v(i,j  ) * mesh%half_cos_lat(j  ) - &
-          (state%iap%gd(i,j) + state%iap%gd(i,j-1)) * state%iap%v(i,j-1) * mesh%half_cos_lat(j-1))
+        tend%mass_div_lat(i,j) = ((state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%iap%v(i,j  ) * mesh%half_cos_lat(j  ) - &
+                                  (state%iap%gd(i,j) + state%iap%gd(i,j-1)) * state%iap%v(i,j-1) * mesh%half_cos_lat(j-1)) / &
+                                 coef%full_dlat(j)
       end do
     end do
 
-    if (parallel%full_lat_start_idx == parallel%full_lat_south_pole_idx) then
+    if (parallel%has_south_pole) then
       j = parallel%full_lat_south_pole_idx
       sp = 0.0
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
@@ -694,7 +745,7 @@ contains
       end do
     end if
 
-    if (parallel%full_lat_end_idx == parallel%full_lat_north_pole_idx) then
+    if (parallel%has_north_pole) then
       j = parallel%full_lat_north_pole_idx
       np = 0.0
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx

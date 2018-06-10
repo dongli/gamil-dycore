@@ -488,6 +488,9 @@ contains
 
     ! Write time dimension variable.
     if (associated(dataset%time_var)) then
+      ! Update time units because restart may change it.
+      write(dataset%time_var%units, '(A, " since ", A)') trim(time_units), start_time_format
+      ierr = NF90_PUT_ATT(dataset%id, dataset%time_var%id, 'units', trim(dataset%time_var%units))
       ierr = NF90_PUT_VAR(dataset%id, dataset%time_var%id, time_elapsed_seconds() / time_units_in_seconds)
       if (ierr /= NF90_NOERR) then
         call log_error('Failed to write variable time!')
