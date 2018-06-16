@@ -9,6 +9,7 @@ module types_mod
 
   public allocate_data
   public deallocate_data
+  public iap_transform
   public copy_state
   public average_state
   public coef_type
@@ -194,6 +195,37 @@ contains
     if (allocated(tend%dgd)) deallocate(tend%dgd)
 
   end subroutine deallocate_tend_data
+
+  subroutine iap_transform(state)
+
+    type(state_type), intent(inout) :: state
+
+    integer i, j
+
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        state%iap%gd(i,j) = sqrt(state%gd(i,j))
+      end do
+    end do
+
+    call parallel_fill_halo(state%iap%gd(:,:), all_halo=.true.)
+
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+        state%iap%u(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%u(i,j)
+      end do
+    end do
+
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        state%iap%v(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%v(i,j)
+      end do
+    end do
+
+    call parallel_fill_halo(state%iap%u(:,:), all_halo=.true.)
+    call parallel_fill_halo(state%iap%v(:,:), all_halo=.true.)
+
+  end subroutine iap_transform
 
   subroutine copy_state(state1, state2)
 

@@ -6,6 +6,7 @@ module history_mod
   use params_mod
   use parallel_mod
   use types_mod
+  use diag_mod
   use reduce_mod
   use string_mod
 
@@ -45,6 +46,7 @@ contains
     call io_add_var('gd', long_name='geopotential depth', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('ghs', long_name='surface geopotential', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('rf', long_name='reduce factor', units='1', dim_names=['lat ', 'time'])
+    call io_add_var('vor', long_name='relative voriticity', units='s-1', dim_names=['lon ', 'lat ', 'time'])
 
     call io_create_dataset(name='debug', desc=case_desc, file_prefix=case_name // '.debug')
     call io_add_dim('lon', 'debug', size=mesh%num_full_lon)
@@ -84,10 +86,11 @@ contains
 
   end subroutine history_final
 
-  subroutine history_write_state(state, static)
+  subroutine history_write_state(state, static, diag)
 
     type(state_type), intent(in) :: state
     type(static_type), intent(in) :: static
+    type(diag_type), intent(in) :: diag
 
     integer i, j
 
@@ -110,6 +113,7 @@ contains
     call io_output('gd', state%gd(:,:))
     call io_output('ghs', static%ghs(:,:))
     call io_output('rf', full_reduce_factor(:))
+    call io_output('vor', diag%vor(:,:))
     call io_end_output()
 
   end subroutine history_write_state

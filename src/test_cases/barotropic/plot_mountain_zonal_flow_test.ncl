@@ -7,7 +7,6 @@ end if
 
 file_names = systemfunc("ls " + file_prefix + "*h0*.nc")
 
-
 wks = gsn_open_wks("pdf", file_prefix)
 
 res_h = True

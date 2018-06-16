@@ -117,7 +117,7 @@ contains
     parallel%half_lat_lb = parallel%half_lat_start_idx - parallel%lat_halo_width
     parallel%half_lat_ub = parallel%half_lat_end_idx + parallel%lat_halo_width
 
-    parallel%lon_halo_width_for_reduce = 8
+    parallel%lon_halo_width_for_reduce = 16
     parallel%lat_halo_width_for_reduce = 1
 
     parallel%full_lon_lb_for_reduce = parallel%full_lon_start_idx - parallel%lon_halo_width_for_reduce

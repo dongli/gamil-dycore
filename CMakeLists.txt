@@ -36,15 +36,19 @@ set (source_files
   "src/mesh_mod.F90"
   "src/parallel_mod.F90"
   "src/types_mod.F90"
+  "src/diag_mod.F90"
   "src/history_mod.F90"
   "src/restart_mod.F90"
   "src/data_mod.F90"
   "src/reduce_mod.F90"
+  "src/diffusion_mod.F90"
   "src/dycore_mod.F90"
   "src/dycore_test.F90"
   "src/test_cases/barotropic/rossby_haurwitz_wave_test_mod.F90"
   "src/test_cases/barotropic/steady_geostrophic_flow_test_mod.F90"
   "src/test_cases/barotropic/mountain_zonal_flow_test_mod.F90"
+  "src/test_cases/barotropic/jet_zonal_flow_test_mod.F90"
+  "lib/quadpack.f90"
 )
 
 set (CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")

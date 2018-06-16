@@ -1,6 +1,5 @@
 module dycore_mod
 
-  use ieee_arithmetic
   use params_mod, time_scheme_in => time_scheme, split_scheme_in => split_scheme
   use data_mod
   use reduce_mod
@@ -10,8 +9,10 @@ module dycore_mod
   use time_mod
   use parallel_mod
   use io_mod
+  use diag_mod
   use history_mod
   use restart_mod
+  use diffusion_mod
 
   implicit none
 
@@ -54,10 +55,12 @@ contains
     call time_init()
     call parallel_init()
     call io_init()
+    call diag_init()
     call history_init()
     call restart_init()
     call data_init()
     call reduce_init()
+    call diffusion_init()
 
     select case (time_scheme_in)
     case ('predict_correct')
@@ -100,18 +103,20 @@ contains
 
     call iap_transform(state(old_time_idx))
 
+    call diag_run(state(old_time_idx))
     call output(state(old_time_idx))
-    call log_add_diag('total_mass', total_mass(state(old_time_idx)))
-    call log_add_diag('total_energy', total_energy(state(old_time_idx)))
+    call log_add_diag('total_mass', diag%total_mass)
+    call log_add_diag('total_energy', diag%total_energy)
     call log_step()
 
     do while (.not. time_is_finished())
       tag = 0
       call time_integrate()
       call time_advance()
+      call diag_run(state(old_time_idx))
       call output(state(old_time_idx))
-      call log_add_diag('total_mass', total_mass(state(old_time_idx)))
-      call log_add_diag('total_energy', total_energy(state(old_time_idx)))
+      call log_add_diag('total_mass', diag%total_mass)
+      call log_add_diag('total_energy', diag%total_energy)
       call log_step()
     end do
 
@@ -121,9 +126,11 @@ contains
 
     call mesh_final()
     call parallel_final()
+    call diag_final()
     call history_final()
     call data_final()
     call reduce_final()
+    call diffusion_final()
 
     call log_notice('Dycore module is finalized.')
 
@@ -149,41 +156,10 @@ contains
 
     type(state_type), intent(in) :: state
 
-    if (time_is_alerted('hist0.output')) call history_write(state, static)
+    if (time_is_alerted('hist0.output')) call history_write(state, static, diag)
     if (time_is_alerted('restart.output')) call restart_write(state, static)
 
   end subroutine output
-
-  subroutine iap_transform(state)
-
-    type(state_type), intent(inout) :: state
-
-    integer i, j
-
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        state%iap%gd(i,j) = sqrt(state%gd(i,j))
-      end do
-    end do
-
-    call parallel_fill_halo(state%iap%gd(:,:), all_halo=.true.)
-
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        state%iap%u(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%u(i,j)
-      end do
-    end do
-
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        state%iap%v(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%v(i,j)
-      end do
-    end do
-
-    call parallel_fill_halo(state%iap%u(:,:), all_halo=.true.)
-    call parallel_fill_halo(state%iap%v(:,:), all_halo=.true.)
-
-  end subroutine iap_transform
 
   subroutine space_operators(state, tend, dt, pass)
 
@@ -252,7 +228,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (full_reduce_factor(j) /= 1 .and. test_smooth) then
           s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
-          if (s1 /= 0) then
+          if (abs(s1) > 1.0e-16) then
             call smooth(tend%du(:,j))
             s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
             tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
@@ -268,7 +244,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (half_reduce_factor(j) /= 1 .and. test_smooth) then
           s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
-          if (s1 /= 0) then
+          if (abs(s1) > 1.0e-16) then
             call smooth(tend%dv(:,j))
             s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
             tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
@@ -298,13 +274,13 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (full_reduce_factor(j) /= 1 .and. test_smooth) then
           s1 = sum(tend%mass_div_lon(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
-          if (s1 /= 0) then
+          if (abs(s1) > 1.0e-16) then
             call smooth(tend%mass_div_lon(:,j))
             s2 = sum(tend%mass_div_lon(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
             smooth_residue_mass_div_lon(j) = s1 - s2
           end if
           s1 = sum(tend%mass_div_lat(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j))) * mesh%full_cos_lat(j)
-          if (s1 /= 0) then
+          if (abs(s1) > 1.0e-16) then
             call smooth(tend%mass_div_lat(:,j))
             s2 = sum(tend%mass_div_lat(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j))) * mesh%full_cos_lat(j)
             if (half_reduce_factor(j) == 1 .and. half_reduce_factor(j-1) /= 1) then
@@ -330,13 +306,13 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (full_reduce_factor(j) /= 1 .and. test_smooth) then
           s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
-          if (s1 /= 0) then
+          if (abs(s1) > 1.0e-16) then
             call smooth(tend%du(:,j))
             s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
             tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
           end if
           s1 = sum(tend%u_pgf(i1:i2,j) * state%iap%u(i1:i2,j))
-          if (s1 /= 0) then
+          if (abs(s1) > 1.0e-16) then
             call smooth(tend%u_pgf(:,j))
             s2 = sum(tend%u_pgf(i1:i2,j) * state%iap%u(i1:i2,j))
             tend%u_pgf(i1:i2,j) = tend%u_pgf(i1:i2,j) * (s1 + smooth_residue_mass_div_lon(j)) / s2
@@ -355,13 +331,13 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (half_reduce_factor(j) /= 1 .and. test_smooth) then
           s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
-          if (s1 /= 0) then
+          if (abs(s1) > 1.0e-16) then
             call smooth(tend%dv(:,j))
             s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
             tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
           end if
           s1 = sum(tend%v_pgf(i1:i2,j) * state%iap%v(i1:i2,j)) * mesh%half_cos_lat(j)
-          if (s1 /= 0) then
+          if (abs(s1) > 1.0e-16) then
             call smooth(tend%v_pgf(:,j))
             s2 = sum(tend%v_pgf(i1:i2,j) * state%iap%v(i1:i2,j)) * mesh%half_cos_lat(j)
             tend%v_pgf(i1:i2,j) = tend%v_pgf(i1:i2,j) * (s1 + smooth_residue_mass_div_lat(j)) / s2
@@ -837,55 +813,6 @@ contains
 
   end function inner_product
 
-  real function total_mass(state)
-
-    type(state_type), intent(in) :: state
-
-    integer i, j
-
-    total_mass = 0.0
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        total_mass = total_mass + mesh%full_cos_lat(j) * mesh%dlon * mesh%dlat * state%gd(i,j)
-      end do
-    end do
-    total_mass = total_mass * radius**2
-
-    if (ieee_is_nan(total_mass)) then
-      call log_error('Total mass is NaN!')
-    end if
-
-  end function total_mass
-
-  real function total_energy(state)
-
-    type(state_type), intent(in) :: state
-
-    integer i, j
-
-    total_energy = 0.0
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        total_energy = total_energy + state%iap%u(i,j)**2 * mesh%full_cos_lat(j)
-      end do
-    end do
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        total_energy = total_energy + state%iap%v(i,j)**2 * mesh%half_cos_lat(j)
-      end do
-    end do
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        total_energy = total_energy + (state%gd(i,j) + static%ghs(i,j))**2 * mesh%full_cos_lat(j)
-      end do
-    end do
-
-    if (ieee_is_nan(total_energy)) then
-      call log_error('Total energy is NaN!')
-    end if
-
-  end function total_energy
-
   subroutine time_integrate()
 
     real subcycle_time_step_size
@@ -916,6 +843,8 @@ contains
       call middle_point(time_step_size)
     end select
 
+    call diffusion_run(state(new_time_idx))
+
   end subroutine time_integrate
 
   subroutine middle_point(time_step_size, old_time_idx_, new_time_idx_, pass_)
@@ -936,12 +865,12 @@ contains
 
     call copy_state(state(old), state(new))
 
-    e1 = total_energy(state(old))
+    e1 = diag_total_energy(state(old))
     do iteration = 1, 8
       call average_state(state(old), state(new), state(half))
       call space_operators(state(half), tend(old), dt, pass)
       call update_state(dt, tend(old), state(old), state(new))
-      e2 = total_energy(state(new))
+      e2 = diag_total_energy(state(new))
       if (abs(e2 - e1) * 2 / (e2 + e1) < 5.0e-15) then
         exit
       end if

@@ -14,6 +14,7 @@ module params_mod
   integer num_lat
   integer :: subcycles = 4
   real(8) time_step_size
+  real diffusion_coef
  
   integer :: days = 0
   integer :: hours = 0
@@ -80,7 +81,8 @@ module params_mod
     reduce_adv_lon, &
     zonal_reduce_start_lat, &
     zonal_reduce_factors, &
-    test_smooth
+    test_smooth, &
+    diffusion_coef
 
 contains
 
