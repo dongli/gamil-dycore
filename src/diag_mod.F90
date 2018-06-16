@@ -5,6 +5,7 @@ module diag_mod
   use mesh_mod
   use data_mod
   use types_mod
+  use log_mod
   use params_mod
 
   implicit none
@@ -33,6 +34,8 @@ contains
 
     if (.not. allocated(diag%vor)) call parallel_allocate(diag%vor, extended_halo=.true.)
     if (.not. allocated(diag%div)) call parallel_allocate(diag%div, extended_halo=.true.)
+
+    call log_notice('Diag module is initialized.')
 
   end subroutine diag_init
 

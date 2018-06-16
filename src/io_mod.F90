@@ -103,6 +103,8 @@ contains
       call log_error('Invalid time_units ' // trim(time_units) // '!')
     end select
 
+    call log_notice('IO module is initialized.')
+
   end subroutine io_init
 
   subroutine io_create_dataset(name, desc, file_prefix, file_path, mode, period)
