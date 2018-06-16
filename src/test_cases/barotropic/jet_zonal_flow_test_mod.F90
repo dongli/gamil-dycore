@@ -71,7 +71,7 @@ contains
         ! Add perturbation.
         state(1)%gd(i,j) = state(1)%gd(i,j) + ghd * &
           cos(mesh%full_lat(j)) * &
-          exp(-((mesh%full_lon(i) - pi)  / alpha)**2) * &
+          exp(-(mesh%full_lon(i)  / alpha)**2) * &
           exp(-((lat2 - mesh%full_lat(j)) / beta)**2)
       end do
     end do

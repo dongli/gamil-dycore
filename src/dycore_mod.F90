@@ -843,7 +843,7 @@ contains
       call middle_point(time_step_size)
     end select
 
-    call diffusion_run(state(new_time_idx))
+    call diffusion_run(time_step_size, state(new_time_idx))
 
   end subroutine time_integrate
 

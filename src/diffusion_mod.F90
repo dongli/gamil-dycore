@@ -35,8 +35,9 @@ contains
 
   end subroutine diffusion_init
 
-  subroutine diffusion_run(state)
+  subroutine diffusion_run(dt, state)
 
+    real, intent(in) :: dt
     type(state_type), intent(inout) :: state
 
     real reduced_tend(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
@@ -53,13 +54,13 @@ contains
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       if (full_reduce_factor(j) == 1) then
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-          ud_lon(i,j) = (state%u(i+1,j) - state%u(i-1,j)) / (0.5 * coef%full_dlon(j))**2
+          ud_lon(i,j) = (state%u(i+1,j) - 2 * state%u(i,j) + state%u(i-1,j)) / (0.5 * coef%full_dlon(j))**2
         end do
       else
         ud_lon(:,j) = 0.0
         do k = 1, full_reduce_factor(j)
           do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
-            reduced_tend(i) = (full_reduced_state(j)%u(i+1,k,2) - full_reduced_state(j)%u(i-1,k,2)) / &
+            reduced_tend(i) = (full_reduced_state(j)%u(i+1,k,2) - 2 * full_reduced_state(j)%u(i,k,2) + full_reduced_state(j)%u(i-1,k,2)) / &
               (0.5 * coef%full_dlon(j) * full_reduce_factor(j))**2
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, ud_lon(:,j))
@@ -74,7 +75,7 @@ contains
     end do
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        state%u(i,j) = state%u(i,j) + diffusion_coef * (ud_lon(i,j) + ud_lat(i,j))
+        state%u(i,j) = state%u(i,j) + dt * diffusion_coef * (ud_lon(i,j) + ud_lat(i,j))
       end do
     end do
 
@@ -84,13 +85,13 @@ contains
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       if (half_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          vd_lon(i,j) = (state%v(i+1,j) - state%v(i-1,j)) / (0.5 * coef%half_dlon(j))**2
+          vd_lon(i,j) = (state%v(i+1,j) - 2 * state%v(i,j) + state%v(i-1,j)) / (0.5 * coef%half_dlon(j))**2
         end do
       else
         vd_lon(:,j) = 0.0
         do k = 1, half_reduce_factor(j)
           do i = reduced_start_idx_at_half_lat(j), reduced_end_idx_at_half_lat(j)
-            reduced_tend(i) = (half_reduced_state(j)%v(i+1,k,2) - half_reduced_state(j)%v(i-1,k,2)) / &
+            reduced_tend(i) = (half_reduced_state(j)%v(i+1,k,2) - 2 * half_reduced_state(j)%v(i,k,2) + half_reduced_state(j)%v(i-1,k,2)) / &
               (0.5 * coef%half_dlon(j) * half_reduce_factor(j))**2
           end do
           call append_reduced_tend_to_raw_tend_at_half_lat(j, k, reduced_tend, vd_lon(:,j))
@@ -121,7 +122,7 @@ contains
     end if
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        state%v(i,j) = state%v(i,j) + diffusion_coef * (vd_lon(i,j) + vd_lat(i,j))
+        state%v(i,j) = state%v(i,j) + dt * diffusion_coef * (vd_lon(i,j) + vd_lat(i,j))
       end do
     end do
 
@@ -131,13 +132,13 @@ contains
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          gdd_lon(i,j) = (state%gd(i+1,j) - state%gd(i-1,j)) / (0.5 * coef%full_dlon(j))**2
+          gdd_lon(i,j) = (state%gd(i+1,j) - 2 * state%gd(i,j) + state%gd(i-1,j)) / (0.5 * coef%full_dlon(j))**2
         end do
       else
         gdd_lon(:,j) = 0.0
         do k = 1, full_reduce_factor(j)
           do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
-            reduced_tend(i) = (full_reduced_state(j)%gd(i+1,k,2) - full_reduced_state(j)%gd(i-1,k,2)) / &
+            reduced_tend(i) = (full_reduced_state(j)%gd(i+1,k,2) - 2 * full_reduced_state(j)%gd(i,k,2) + full_reduced_state(j)%gd(i-1,k,2)) / &
               (0.5 * coef%full_dlon(j) * full_reduce_factor(j))**2
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, gdd_lon(:,j))
@@ -176,7 +177,7 @@ contains
     end if
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        state%gd(i,j) = state%gd(i,j) + diffusion_coef * (gdd_lon(i,j) + gdd_lat(i,j))
+        state%gd(i,j) = state%gd(i,j) + dt * diffusion_coef * (gdd_lon(i,j) + gdd_lat(i,j))
       end do
     end do
 

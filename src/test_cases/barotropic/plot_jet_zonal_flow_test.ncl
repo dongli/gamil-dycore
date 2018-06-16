@@ -12,10 +12,13 @@ wks = gsn_open_wks("pdf", file_prefix)
 res_common = True
 res_common@gsnDraw = False
 res_common@gsnFrame = False
-res_common@mpCenterLonF = 180
+res_common@mpCenterLonF = 270
+res_common@pmTickMarkDisplayMode = "Always"
 res_common@cnLineLabelsOn = False
 
 res_vor = res_common
+res_vor@mpMinLatF = 10
+res_vor@mpMaxLatF = 80
 res_vor@cnLevelSelectionMode = "ManualLevels"
 res_vor@cnMinLevelValF = -0.001
 res_vor@cnMaxLevelValF = 0.001
