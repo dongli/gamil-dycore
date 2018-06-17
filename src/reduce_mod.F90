@@ -5,6 +5,7 @@ module reduce_mod
   use params_mod
   use parallel_mod
   use types_mod
+  use time_mod
 
   implicit none
 
@@ -151,6 +152,7 @@ contains
     if (use_zonal_reduce) then
       do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
         if (full_reduce_factor(j) > 1) then
+          ! print *, j, sqrt(maxval(state%gd(:,j))) * time_step_size / radius / mesh%dlon / full_reduce_factor(j) / mesh%full_cos_lat(j)
           do k = 1, full_reduce_factor(j)
             call average_raw_array_to_reduced_array_at_full_lat(j, k, state%gd(:,j-1),    full_reduced_state(j)%gd(:,k,1))
             call average_raw_array_to_reduced_array_at_full_lat(j, k, state%gd(:,j  ),    full_reduced_state(j)%gd(:,k,2))

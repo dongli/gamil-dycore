@@ -14,6 +14,8 @@ module params_mod
   integer num_lat
   integer :: subcycles = 4
   real(8) time_step_size
+
+  logical :: use_diffusion = .false.
   real diffusion_coef
  
   integer :: days = 0
@@ -53,7 +55,7 @@ module params_mod
 
   logical is_restart_run
 
-  logical :: test_smooth = .false.
+  logical :: use_reduce_tend_smooth = .false.
 
   namelist /dycore_params/ &
     num_lon, &
@@ -81,7 +83,8 @@ module params_mod
     reduce_adv_lon, &
     zonal_reduce_start_lat, &
     zonal_reduce_factors, &
-    test_smooth, &
+    use_reduce_tend_smooth, &
+    use_diffusion, &
     diffusion_coef
 
 contains

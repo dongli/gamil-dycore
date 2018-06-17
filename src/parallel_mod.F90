@@ -5,6 +5,7 @@ module parallel_mod
 #endif
   use log_mod
   use mesh_mod
+  use params_mod
 
   implicit none
 
@@ -117,7 +118,7 @@ contains
     parallel%half_lat_lb = parallel%half_lat_start_idx - parallel%lat_halo_width
     parallel%half_lat_ub = parallel%half_lat_end_idx + parallel%lat_halo_width
 
-    parallel%lon_halo_width_for_reduce = 16
+    parallel%lon_halo_width_for_reduce = maxval(zonal_reduce_factors)
     parallel%lat_halo_width_for_reduce = 1
 
     parallel%full_lon_lb_for_reduce = parallel%full_lon_start_idx - parallel%lon_halo_width_for_reduce

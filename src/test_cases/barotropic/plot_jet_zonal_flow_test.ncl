@@ -12,13 +12,13 @@ wks = gsn_open_wks("pdf", file_prefix)
 res_common = True
 res_common@gsnDraw = False
 res_common@gsnFrame = False
-res_common@mpCenterLonF = 270
+res_common@mpCenterLonF = 90
+res_common@mpFillOn = False
+res_common@mpOutlineOn = False
 res_common@pmTickMarkDisplayMode = "Always"
 res_common@cnLineLabelsOn = False
 
 res_vor = res_common
-res_vor@mpMinLatF = 10
-res_vor@mpMaxLatF = 80
 res_vor@cnLevelSelectionMode = "ManualLevels"
 res_vor@cnMinLevelValF = -0.001
 res_vor@cnMaxLevelValF = 0.001
@@ -31,9 +31,10 @@ res_h = res_common
 res_pannel = True
 res_pannel@gsnPanelRowSpec = True
 
+f = addfile(file_names(0), "r")
+gd0 = f->gd
+
 ; Minus perturbation.
-; f = addfile(file_names(0), "r")
-; gd0 = f->gd
 ; g = 9.80616
 ; pi = atan(1.0) * 4.0
 ; ghd = g * 120

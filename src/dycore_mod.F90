@@ -226,7 +226,7 @@ contains
           tend%du(i,j) = - tend%u_adv_lon(i,j) - tend%u_adv_lat(i,j)
         end do
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if (full_reduce_factor(j) /= 1 .and. test_smooth) then
+        if (full_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
           s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
             call smooth(tend%du(:,j))
@@ -242,7 +242,7 @@ contains
           tend%dv(i,j) = - tend%v_adv_lon(i,j) - tend%v_adv_lat(i,j)
         end do
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if (half_reduce_factor(j) /= 1 .and. test_smooth) then
+        if (half_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
           s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
             call smooth(tend%dv(:,j))
@@ -272,7 +272,7 @@ contains
       smooth_residue_mass_div_lat(:) = 0.0
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if (full_reduce_factor(j) /= 1 .and. test_smooth) then
+        if (full_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
           s1 = sum(tend%mass_div_lon(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
           if (abs(s1) > 1.0e-16) then
             call smooth(tend%mass_div_lon(:,j))
@@ -304,7 +304,7 @@ contains
           tend%du(i,j) = tend%fv(i,j) + tend%cv(i,j)
         end do
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if (full_reduce_factor(j) /= 1 .and. test_smooth) then
+        if (full_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
           s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
             call smooth(tend%du(:,j))
@@ -329,7 +329,7 @@ contains
           tend%dv(i,j) = - tend%fu(i,j) - tend%cu(i,j)
         end do
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if (half_reduce_factor(j) /= 1 .and. test_smooth) then
+        if (half_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
           s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
             call smooth(tend%dv(:,j))
@@ -843,7 +843,9 @@ contains
       call middle_point(time_step_size)
     end select
 
-    call diffusion_run(time_step_size, state(new_time_idx))
+    if (use_diffusion) then
+      call diffusion_run(time_step_size, state(new_time_idx))
+    end if
 
   end subroutine time_integrate
 
