@@ -31,9 +31,9 @@ res_h = res_common
 res_pannel = True
 res_pannel@gsnPanelRowSpec = True
 
-f = addfile(file_names(0), "r")
-gd0 = f->gd
-; ; Minus perturbation.
+; Minus perturbation.
+; f = addfile(file_names(0), "r")
+; gd0 = f->gd
 ; g = 9.80616
 ; pi = atan(1.0) * 4.0
 ; ghd = g * 120
