@@ -46,7 +46,7 @@ contains
     call io_add_var('gd', long_name='geopotential depth', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('ghs', long_name='surface geopotential', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('rf', long_name='reduce factor', units='1', dim_names=['lat ', 'time'])
-    call io_add_var('vor', long_name='relative voriticity', units='s-1', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('vor', long_name='relative vorticity', units='s-1', dim_names=['lon ', 'lat ', 'time'])
 
     call io_create_dataset(name='debug', desc=case_desc, file_prefix=case_name // '.debug')
     call io_add_dim('lon', 'debug', size=mesh%num_full_lon)
