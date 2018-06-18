@@ -26,6 +26,8 @@ program dycore_test
     call dycore_restart()
   else
     select case (test_case)
+    case ('steady_geostrophic_flow')
+      call steady_geostrophic_flow_test_set_initial_condition()
     case ('rossby_haurwitz_wave')
       call rossby_haurwitz_wave_test_set_initial_condition()
     case ('mountain_zonal_flow')

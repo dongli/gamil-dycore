@@ -1,20 +1,22 @@
 &dycore_params
-test_case = 'mountain_zonal_flow'
-case_name = 'mz_test.360x181.dt240'
-case_desc = 'Mountain zonal flow test'
+test_case = 'jet_zonal_flow'
+case_name = 'jz_test.360x181.diffused.dt240'
+case_desc = 'Jet zonal flow test'
 author = 'Li Dong <dongli@lasg.iap.ac.cn>'
-days = 20
+days = 6
 num_lon = 360
 num_lat = 181
 time_step_size = 240
-history_periods = '1 days'
-restart_period = '1 days'
+history_periods = '1 hours'
+restart_period = '6 hours'
 time_scheme = 'predict_correct'
 qcon_modified = .true.
 split_scheme = 'csp2' ! 'csp2' or 'csp1' or 'isp'
 subcycles = 5
 use_zonal_reduce = .true.
 reduce_adv_lon = .true.
-zonal_reduce_factors = 4, 4, 4, 2, 2
+zonal_reduce_factors = 12, 12, 8, 8, 4, 2, 2
 use_reduce_tend_smooth = .true.
+use_diffusion = .true.
+diffusion_coef = 1.0e5
 /

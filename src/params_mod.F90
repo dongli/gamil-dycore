@@ -54,7 +54,7 @@ module params_mod
 
   logical is_restart_run
 
-  logical :: use_reduce_tend_smooth = .false.
+  logical :: use_reduce_tend_smooth = .true.
 
   namelist /dycore_params/ &
     num_lon, &

@@ -10,7 +10,7 @@ considerations ordered by priority from high to low:
 - Deep atmosphere
 - Good extendability
 
-**Currently, only a barotropic dycore is implemented, and we are working on a reduced tendency scheme to improve numerical stability around Poles.**
+**Currently, only a barotropic dycore is implemented, and we are working on a moving reduced tendency scheme to improve numerical stability around Poles.**
 
 # Prerequistes
 
@@ -60,6 +60,11 @@ $ ncl -Q ../src/test_cases/barotropic/plot_mountain_zonal_flow_test.ncl file_pre
 ```
 
 There should be `mz_test.360x181.dt240.pdf`.
+
+Other test cases:
+
+- `jet_zonal_flow`
+- `steady_geostrophic_flow`
 
 # Authors
 
