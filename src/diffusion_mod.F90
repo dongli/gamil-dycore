@@ -116,7 +116,7 @@ contains
     if (parallel%has_north_pole) then
       j = parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        vd_lat(i,j) = (state%v(i,j) - state%v(i,j-1)) * mesh%full_cos_lat(j+1) / &
+        vd_lat(i,j) = (state%v(i,j) - state%v(i,j-1)) * mesh%full_cos_lat(j) / &
           (0.5 * coef%half_dlat(j))**2 * mesh%half_cos_lat(j)
       end do
     end if
