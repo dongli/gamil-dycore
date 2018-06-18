@@ -72,14 +72,15 @@ contains
     if (.not. allocated(full_reduced_static)) allocate(full_reduced_static(parallel%full_lat_start_idx_no_pole:parallel%full_lat_end_idx_no_pole))
     if (.not. allocated(half_reduced_static)) allocate(half_reduced_static(parallel%half_lat_start_idx:parallel%half_lat_end_idx))
 
-    if (zonal_reduce_start_lat == -999) zonal_reduce_start_lat = 85.0
-
     full_reduce_factor(:) = 1
     half_reduce_factor(:) = 1
     if (use_zonal_reduce) then
       if (parallel%has_south_pole) then
         do j = 1, size(zonal_reduce_factors)
           if (zonal_reduce_factors(j) == 0) exit
+          if (mod(mesh%num_full_lon, zonal_reduce_factors(j)) /= 0) then
+            call log_error('Zonal reduce factor ' // trim(to_string(zonal_reduce_factors(j))) // ' cannot divide zonal grid number ' // trim(to_string(mesh%num_full_lon)) // '!')
+          end if
           full_reduce_factor(parallel%full_lat_start_idx+j) = zonal_reduce_factors(j)
           half_reduce_factor(parallel%half_lat_start_idx+j-1) = zonal_reduce_factors(j)
         end do
@@ -87,6 +88,9 @@ contains
       if (parallel%has_north_pole) then
         do j = 1, size(zonal_reduce_factors)
           if (zonal_reduce_factors(j) == 0) exit
+          if (mod(mesh%num_full_lon, zonal_reduce_factors(j)) /= 0) then
+            call log_error('Zonal reduce factor ' // trim(to_string(zonal_reduce_factors(j))) // ' cannot divide zonal grid number ' // trim(to_string(mesh%num_full_lon)) // '!')
+          end if
           full_reduce_factor(parallel%full_lat_end_idx-j) = zonal_reduce_factors(j)
           half_reduce_factor(parallel%half_lat_end_idx-j+1) = zonal_reduce_factors(j)
         end do

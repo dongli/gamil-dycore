@@ -48,10 +48,9 @@ module params_mod
   ! - none
   character(30) split_scheme
 
-  logical use_zonal_reduce
+  logical :: use_zonal_reduce = .true.
   logical :: reduce_adv_lon = .true.
-  real zonal_reduce_start_lat
-  integer zonal_reduce_factors(20)
+  integer :: zonal_reduce_factors(20) = 0
 
   logical is_restart_run
 
@@ -81,7 +80,6 @@ module params_mod
     split_scheme, &
     use_zonal_reduce, &
     reduce_adv_lon, &
-    zonal_reduce_start_lat, &
     zonal_reduce_factors, &
     use_reduce_tend_smooth, &
     use_diffusion, &
@@ -92,10 +90,6 @@ contains
   subroutine params_read(file_path)
 
     character(*), intent(in) :: file_path
-
-    use_zonal_reduce = .true.
-    zonal_reduce_start_lat = -999
-    zonal_reduce_factors(:) = 0
 
     open(10, file=file_path)
     read(10, nml=dycore_params)

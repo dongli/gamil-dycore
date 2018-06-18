@@ -5,8 +5,8 @@ end if
 
 f = addfile(file_path, "r")
 
-dlon = 1.0
-dlat = 1.0
+dlon = 360.0 / dimsizes(f->lon)
+dlat = 180.0 / (dimsizes(f->lat) - 1)
 
 rf = f->rf(0,:dimsizes(f->lat)-2)
 
@@ -20,8 +20,8 @@ res_base@mpCenterLonF = 0
 res_base@mpCenterLatF = 45
 res_base@mpPerimOn = False
 res_base@mpGridAndLimbOn = True
-res_base@mpGridLonSpacingF = 1
-res_base@mpGridLatSpacingF = 1
+res_base@mpGridLonSpacingF = dlon
+res_base@mpGridLatSpacingF = dlat
 res_base@mpGridLineThicknessF = 0.0001
 
 res_reduce = True

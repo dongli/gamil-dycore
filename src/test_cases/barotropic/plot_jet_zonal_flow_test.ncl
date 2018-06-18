@@ -25,6 +25,7 @@ res_vor@cnMaxLevelValF = 0.001
 res_vor@cnLevelSpacingF = 2.0e-5
 res_vor@gsnContourNegLineDashPattern = 11
 res_vor@gsnContourZeroLineThicknessF = 0
+res_vor@gsnLeftString = "relative vorticity"
 
 res_h = res_common
 

@@ -155,10 +155,10 @@ contains
       j = parallel%full_lat_start_idx
       sp = 0.0
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        sp = sp + (state%gd(i,j+1) - state%gd(i,j)) / mesh%dlat
+        sp = sp + state%gd(i,j+1) - state%gd(i,j)
       end do
       call parallel_zonal_sum(sp, sum)
-      sum = sum * mesh%half_cos_lat(j) / radius**2 * mesh%dlon / pi / (0.5 * mesh%dlat)**2 
+      sum = sum * mesh%half_cos_lat(j) / (0.5 * coef%full_dlat(j))**2 * mesh%full_cos_lat(j) / mesh%num_full_lon
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         gdd_lat(i,j) = sum
       end do
@@ -167,10 +167,10 @@ contains
       j = parallel%full_lat_end_idx
       np = 0.0
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        np = np + (state%gd(i,j) - state%gd(i,j-1)) / mesh%dlat
+        np = np + state%gd(i,j) - state%gd(i,j-1)
       end do
       call parallel_zonal_sum(np, sum)
-      sum = sum * mesh%half_cos_lat(j-1) / radius**2 * mesh%dlon / pi / (0.5 * mesh%dlat)**2
+      sum = sum * mesh%half_cos_lat(j-1) / (0.5 * coef%full_dlat(j))**2 * mesh%full_cos_lat(j) / mesh%num_full_lon
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         gdd_lat(i,j) = sum
       end do
