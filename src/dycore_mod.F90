@@ -697,7 +697,7 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real sp, np, sum
+    real sp, np
     integer i, j
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
@@ -714,10 +714,10 @@ contains
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         sp = sp + (state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%iap%v(i,j) * mesh%half_cos_lat(j)
       end do
-      call parallel_zonal_sum(sp, sum)
-      sum = sum / mesh%num_full_lon / coef%full_dlat(j)
+      call parallel_zonal_sum(sp)
+      sp = sp / mesh%num_full_lon / coef%full_dlat(j)
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%mass_div_lat(i,j) = sum
+        tend%mass_div_lat(i,j) = sp
       end do
     end if
 
@@ -727,10 +727,10 @@ contains
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         np = np - (state%iap%gd(i,j) + state%iap%gd(i,j-1)) * state%iap%v(i,j-1) * mesh%half_cos_lat(j-1)
       end do
-      call parallel_zonal_sum(np, sum)
-      sum = sum / mesh%num_full_lon / coef%full_dlat(j)
+      call parallel_zonal_sum(np)
+      np = np / mesh%num_full_lon / coef%full_dlat(j)
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%mass_div_lat(i,j) = sum
+        tend%mass_div_lat(i,j) = np
       end do
     end if
 

@@ -712,12 +712,11 @@ contains
 
   end subroutine parallel_overlay_inner_halo_1
 
-  subroutine parallel_zonal_sum(send_buf, recv_buf)
+  subroutine parallel_zonal_sum(send_buf)
 
-    real, intent(in) :: send_buf
-    real, intent(out) :: recv_buf
+    real, intent(inout) :: send_buf
 
-    recv_buf = send_buf
+    real recv_buf
 
   end subroutine parallel_zonal_sum
 

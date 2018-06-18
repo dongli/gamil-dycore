@@ -41,7 +41,7 @@ contains
     type(state_type), intent(inout) :: state
 
     real reduced_tend(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
-    real sp, np, sum
+    real sp, np
     integer i, j, k
 
     !
@@ -157,10 +157,10 @@ contains
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         sp = sp + state%gd(i,j+1) - state%gd(i,j)
       end do
-      call parallel_zonal_sum(sp, sum)
-      sum = sum * mesh%half_cos_lat(j) / (0.5 * coef%full_dlat(j))**2 * mesh%full_cos_lat(j) / mesh%num_full_lon
+      call parallel_zonal_sum(sp)
+      sp = sp * mesh%half_cos_lat(j) / (0.5 * coef%full_dlat(j))**2 * mesh%full_cos_lat(j) / mesh%num_full_lon
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        gdd_lat(i,j) = sum
+        gdd_lat(i,j) = sp
       end do
     end if
     if (parallel%has_north_pole) then
@@ -169,10 +169,10 @@ contains
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         np = np + state%gd(i,j) - state%gd(i,j-1)
       end do
-      call parallel_zonal_sum(np, sum)
-      sum = sum * mesh%half_cos_lat(j-1) / (0.5 * coef%full_dlat(j))**2 * mesh%full_cos_lat(j) / mesh%num_full_lon
+      call parallel_zonal_sum(np)
+      np = np * mesh%half_cos_lat(j-1) / (0.5 * coef%full_dlat(j))**2 * mesh%full_cos_lat(j) / mesh%num_full_lon
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        gdd_lat(i,j) = sum
+        gdd_lat(i,j) = np
       end do
     end if
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
