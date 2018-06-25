@@ -7,12 +7,12 @@ days = 33
 num_lon = 360
 num_lat = 181
 time_step_size = 240
-history_periods = '6 hours'
+history_periods = '1 days'
 restart_period = '1 days'
 time_scheme = 'predict_correct'
 qcon_modified = .true.
 split_scheme = 'csp2' ! 'csp2' or 'csp1' or 'isp'
 subcycles = 6
 use_zonal_reduce = .true.
-zonal_reduce_factors = 2, 4, 8
+zonal_reduce_factors = 4, 4, 4, 2, 2
 /
