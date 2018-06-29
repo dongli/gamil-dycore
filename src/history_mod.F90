@@ -33,7 +33,7 @@ contains
 
     call io_create_dataset(desc=case_desc, file_prefix=case_name // '.h0')
     call io_add_meta('use_zonal_reduce', use_zonal_reduce)
-    call io_add_meta('zonal_reduce_factors', pack(zonal_reduce_factors, zonal_reduce_factors /= 0))
+    call io_add_meta('zonal_reduce_factors', to_string(pack(zonal_reduce_factors, zonal_reduce_factors /= 0)))
     call io_add_meta('time_step_size', time_step_size)
     call io_add_meta('time_scheme', time_scheme)
     call io_add_meta('split_scheme', split_scheme)

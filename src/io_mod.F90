@@ -2,7 +2,7 @@ module io_mod
 
   use netcdf
   use log_mod
-  use hash_table_mod
+  use hash_table_mod, hash_table_iterator => hash_table_iterator
   use params_mod, start_time_in => start_time
   use time_mod
   use string_mod
@@ -66,14 +66,6 @@ module io_mod
 
   type(hash_table_type) datasets
   real time_units_in_seconds
-
-  interface io_add_meta
-    module procedure io_add_meta_integer
-    module procedure io_add_meta_real
-    module procedure io_add_meta_string
-    module procedure io_add_meta_logical
-    module procedure io_add_meta_integer_array
-  end interface io_add_meta
 
   interface io_output
     module procedure io_output_1d
@@ -220,10 +212,10 @@ contains
 
   end subroutine io_create_dataset
 
-  subroutine io_add_meta_integer(name, value, dataset_name)
+  subroutine io_add_meta(name, value, dataset_name)
 
     character(*), intent(in) :: name
-    integer, intent(in) :: value
+    class(*), intent(in) :: value
     character(*), intent(in), optional :: dataset_name
 
     type(dataset_type), pointer :: dataset
@@ -232,63 +224,7 @@ contains
 
     call dataset%metas%insert(name, value)
 
-  end subroutine io_add_meta_integer
-
-  subroutine io_add_meta_real(name, value, dataset_name)
-
-    character(*), intent(in) :: name
-    real, intent(in) :: value
-    character(*), intent(in), optional :: dataset_name
-
-    type(dataset_type), pointer :: dataset
-
-    dataset => get_dataset(dataset_name, 'output')
-
-    call dataset%metas%insert(name, value)
-
-  end subroutine io_add_meta_real
-
-  subroutine io_add_meta_string(name, value, dataset_name)
-
-    character(*), intent(in) :: name
-    character(*), intent(in) :: value
-    character(*), intent(in), optional :: dataset_name
-
-    type(dataset_type), pointer :: dataset
-
-    dataset => get_dataset(dataset_name, 'output')
-
-    call dataset%metas%insert(name, value)
-
-  end subroutine io_add_meta_string
-
-  subroutine io_add_meta_logical(name, value, dataset_name)
-
-    character(*), intent(in) :: name
-    logical, intent(in) :: value
-    character(*), intent(in), optional :: dataset_name
-
-    type(dataset_type), pointer :: dataset
-
-    dataset => get_dataset(dataset_name, 'output')
-
-    call dataset%metas%insert(name, value)
-
-  end subroutine io_add_meta_logical
-
-  subroutine io_add_meta_integer_array(name, values, dataset_name)
-
-    character(*), intent(in) :: name
-    integer, intent(in) :: values(:)
-    character(*), intent(in), optional :: dataset_name
-
-    type(dataset_type), pointer :: dataset
-
-    dataset => get_dataset(dataset_name, 'output')
-
-    call dataset%metas%insert(name, to_string(values))
-
-  end subroutine io_add_meta_integer_array
+  end subroutine io_add_meta
 
   subroutine io_add_dim(name, dataset_name, long_name, units, size)
 
