@@ -33,7 +33,10 @@ else ()
   endif ()
 endif ()
 
-add_subdirectory (${PROJECT_SOURCE_DIR}/lib/datetime)
+add_subdirectory (lib/datetime)
+
+add_subdirectory (lib/container)
+include_directories (${CMAKE_BINARY_DIR}/lib/container)
 
 set (source_files
   "src/string_mod.F90"
@@ -41,7 +44,6 @@ set (source_files
   "src/io_mod.F90"
   "src/log_mod.F90"
   "src/params_mod.F90"
-  "src/map_mod.F90"
   "src/mesh_mod.F90"
   "src/parallel_mod.F90"
   "src/types_mod.F90"
@@ -63,7 +65,7 @@ set (source_files
 set (CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")
 
 add_executable (dycore_test.exe ${source_files})
-target_link_libraries (dycore_test.exe ${MPI_Fortran_LIBRARIES} fortran_datetime netcdf netcdff)
+target_link_libraries (dycore_test.exe ${MPI_Fortran_LIBRARIES} fortran_datetime fortran_container netcdf netcdff)
 if (MPI_Fortran_FOUND)
   set_target_properties (dycore_test.exe PROPERTIES
     LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}"

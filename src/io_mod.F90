@@ -2,7 +2,7 @@ module io_mod
 
   use netcdf
   use log_mod
-  use map_mod
+  use hash_table_mod
   use params_mod, start_time_in => start_time
   use time_mod
   use string_mod
@@ -33,9 +33,9 @@ module io_mod
     character(256) file_prefix_or_path
     character(10) mode
     type(var_type), pointer :: time_var => null()
-    type(map_type) metas
-    type(map_type) dims
-    type(map_type) vars
+    type(hash_table_type) metas
+    type(hash_table_type) dims
+    type(hash_table_type) vars
     real period
     integer :: time_step = 0
   contains
@@ -64,7 +64,7 @@ module io_mod
     type(var_dim_type), allocatable :: dims(:)
   end type var_type
 
-  type(map_type) datasets
+  type(hash_table_type) datasets
   real time_units_in_seconds
 
   interface io_add_meta
@@ -170,7 +170,7 @@ contains
       end if
     end if
 
-    if (datasets%mapped(name_)) then
+    if (datasets%hashed(name_)) then
       call log_error('Already created dataset ' // trim(name_) // '!')
     end if
 
@@ -304,7 +304,7 @@ contains
 
     dataset => get_dataset(dataset_name, 'output')
 
-    if (dataset%dims%mapped(name)) then
+    if (dataset%dims%hashed(name)) then
       call log_error('Already added dimension ' // trim(name) // ' in dataset ' // trim(dataset%name) // '!')
     end if
 
@@ -357,7 +357,7 @@ contains
 
     type(dataset_type), pointer :: dataset
     type(var_type) :: var
-    type(map_iterator_type) iter
+    type(hash_table_iterator_type) iter
     type(dim_type), pointer :: dim
     integer i
     logical found
@@ -365,7 +365,7 @@ contains
 
     dataset => get_dataset(dataset_name, 'output')
 
-    if (dataset%vars%mapped(name)) then
+    if (dataset%vars%hashed(name)) then
       call log_error('Already added variable ' // trim(name) // ' in dataset ' // trim(dataset%name) // '!')
     end if
 
@@ -398,9 +398,9 @@ contains
     allocate(var%dims(size(dim_names)))
     do i = 1, size(dim_names)
       found = .false.
-      iter = map_iterator_type(dataset%dims)
-      do while (.not. iter%at_end())
-        dim => dataset%get_dim(iter%key())
+      iter = hash_table_iterator(dataset%dims)
+      do while (.not. iter%ended())
+        dim => dataset%get_dim(iter%key)
         if (dim%name == trim(dim_names(i))) then
           var%dims(i)%ptr => dim
           found = .true.
@@ -425,7 +425,7 @@ contains
 
     character(256) file_path
     type(dataset_type), pointer :: dataset
-    type(map_iterator_type) iter
+    type(hash_table_iterator_type) iter
     type(dim_type), pointer :: dim
     type(var_type), pointer :: var
     integer i, ierr, dimids(10)
@@ -446,24 +446,24 @@ contains
     ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, 'desc', dataset%desc)
     ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, 'author', dataset%author)
 
-    iter = map_iterator_type(dataset%metas)
-    do while (.not. iter%at_end())
-      select type (value => iter%value())
+    iter = hash_table_iterator(dataset%metas)
+    do while (.not. iter%ended())
+      select type (value => iter%value)
       type is (integer)
-        ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key(), value)
+        ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key, value)
       type is (real)
-        ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key(), value)
+        ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key, value)
       type is (character(*))
-        ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key(), value)
+        ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key, value)
       type is (logical)
-        ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key(), to_string(value))
+        ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key, to_string(value))
       end select
       call iter%next()
     end do
 
-    iter = map_iterator_type(dataset%dims)
-    do while (.not. iter%at_end())
-      dim => dataset%get_dim(iter%key())
+    iter = hash_table_iterator(dataset%dims)
+    do while (.not. iter%ended())
+      dim => dataset%get_dim(iter%key)
       ierr = NF90_DEF_DIM(dataset%id, dim%name, dim%size, dim%id)
       if (ierr /= NF90_NOERR) then
         call log_error('Failed to define dimension ' // trim(dim%name) // '!')
@@ -471,9 +471,9 @@ contains
       call iter%next()
     end do
 
-    iter = map_iterator_type(dataset%vars)
-    do while (.not. iter%at_end())
-      var => dataset%get_var(iter%key())
+    iter = hash_table_iterator(dataset%vars)
+    do while (.not. iter%ended())
+      var => dataset%get_var(iter%key)
       do i = 1, size(var%dims)
         dimids(i) = var%dims(i)%ptr%id
       end do
@@ -701,7 +701,6 @@ contains
     type(dataset_type), pointer :: res
 
     character(30) name_, mode_
-    class(*), pointer :: value
 
     if (present(name)) then
       name_ = name
@@ -713,8 +712,7 @@ contains
     else
       mode_ = 'output'
     end if
-    value => datasets%value(trim(name_) // '.' // trim(mode_))
-    select type (value)
+    select type (value => datasets%value(trim(name_) // '.' // trim(mode_)))
     type is (dataset_type)
       res => value
     end select
@@ -727,10 +725,7 @@ contains
     character(*), intent(in) :: name
     type(dim_type), pointer :: res
 
-    class(*), pointer :: value
-
-    value => this%dims%value(name)
-    select type (value)
+    select type (value => this%dims%value(name))
     type is (dim_type)
       res => value
     end select
@@ -743,10 +738,7 @@ contains
     character(*), intent(in) :: name
     type(var_type), pointer :: res
 
-    class(*), pointer :: value
-
-    value => this%vars%value(name)
-    select type (value)
+    select type (value => this%vars%value(name))
     type is (var_type)
       res => value
     end select

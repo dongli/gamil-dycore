@@ -2,7 +2,7 @@ module time_mod
 
   use datetime_mod
   use timedelta_mod
-  use map_mod
+  use hash_table_mod
   use params_mod, &
     start_time_in => start_time, &
     end_time_in => end_time, &
@@ -39,7 +39,7 @@ module time_mod
   type(datetime_type) curr_time
   type(timedelta_type) time_step_size
   real(8) elapsed_seconds
-  type(map_type) alerts
+  type(hash_table_type) alerts
   integer time_step
   integer old_time_idx
   integer new_time_idx
@@ -103,13 +103,13 @@ contains
 
   subroutine time_advance()
     
-    type(map_iterator_type) iter
+    type(hash_table_iterator_type) iter
     class(*), pointer :: alert
 
     ! Update alerts.
-    iter = map_iterator_type(alerts)
-    do while (.not. iter%at_end())
-      alert => iter%value()
+    iter = hash_table_iterator(alerts)
+    do while (.not. iter%ended())
+      alert => iter%value
       select type (alert)
       type is (alert_type)
         if (alert%ring) then
@@ -187,7 +187,7 @@ contains
 
     class(*), pointer :: value
 
-    if (alerts%mapped(name)) then
+    if (alerts%hashed(name)) then
       value => alerts%value(name)
       select type (value)
       type is (alert_type)

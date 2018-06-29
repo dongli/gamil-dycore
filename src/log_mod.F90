@@ -1,12 +1,12 @@
 module log_mod
 
-  use map_mod
+  use hash_table_mod
   use time_mod
   use string_mod
 
   implicit none
 
-  type(map_type) diags
+  type(hash_table_type) diags
 
   interface log_add_diag
     module procedure log_add_diag_1
@@ -78,15 +78,13 @@ contains
 
   subroutine log_step()
 
-    type(map_iterator_type) iter
-    class(*), pointer :: value
+    type(hash_table_iterator_type) iter
 
     write(6, '(" => ", A)', advance='no') trim(curr_time_format)
 
-    iter = map_iterator_type(diags)
-    do while (.not. iter%at_end())
-      value => iter%value()
-      select type(value)
+    iter = hash_table_iterator(diags)
+    do while (.not. iter%ended())
+      select type(value => iter%value)
       type is (integer)
         write(6, '(X, A)', advance='no') trim(to_string(value))
       type is (real)
