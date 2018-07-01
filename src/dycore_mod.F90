@@ -51,6 +51,7 @@ contains
       call log_error('case_name is not set!')
     end if
 
+    call log_init()
     call mesh_init()
     call time_init()
     call parallel_init()
@@ -859,10 +860,22 @@ contains
     integer old, new, half, pass, iteration
     real dt, e1, e2
 
-    old = merge(old_time_idx_, old_time_idx, present(old_time_idx_))
-    new = merge(new_time_idx_, new_time_idx, present(new_time_idx_))
+    if (present(old_time_idx_)) then
+      old = old_time_idx_
+    else
+      old = old_time_idx
+    end if
+    if (present(new_time_idx_)) then
+      new = new_time_idx_
+    else
+      new = new_time_idx
+    end if
+    if (present(pass_)) then
+      pass = pass_
+    else
+      pass = all_pass
+    end if
     half = half_time_idx
-    pass = merge(pass_, all_pass, present(pass_))
     dt = time_step_size
 
     call copy_state(state(old), state(new))
@@ -890,9 +903,21 @@ contains
     integer old, new, pass
     real dt, ip1, ip2
 
-    old = merge(old_time_idx_, old_time_idx, present(old_time_idx_))
-    new = merge(new_time_idx_, new_time_idx, present(new_time_idx_))
-    pass = merge(pass_, all_pass, present(pass_))
+    if (present(old_time_idx_)) then
+      old = old_time_idx_
+    else
+      old = old_time_idx
+    end if
+    if (present(new_time_idx_)) then
+      new = new_time_idx_
+    else
+      new = new_time_idx
+    end if
+    if (present(pass_)) then
+      pass = pass_
+    else
+      pass = all_pass
+    end if
     dt = time_step_size * 0.5
 
     ! Do first predict step.

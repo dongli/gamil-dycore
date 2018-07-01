@@ -79,9 +79,13 @@ contains
   function logical_to_string(x) result(res)
 
     logical, intent(in) :: x
-    character(5), allocatable :: res
+    character(:), allocatable :: res
 
-    res = merge('true ', 'false', x)
+    if (x) then
+      res = 'true'
+    else
+      res = 'false'
+    end if
 
   end function logical_to_string
 

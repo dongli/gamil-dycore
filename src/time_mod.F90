@@ -74,6 +74,8 @@ contains
     start_time_format = start_time%isoformat()
     curr_time_format = curr_time%isoformat()
 
+    alerts = hash_table()
+
   end subroutine time_init
 
   subroutine time_reset_start_time(time)
@@ -144,14 +146,39 @@ contains
   subroutine time_add_alert(name, days, hours, minutes, seconds)
 
     character(*), intent(in) :: name
-    class(*), intent(in), optional :: days
-    class(*), intent(in), optional :: hours
-    class(*), intent(in), optional :: minutes
-    class(*), intent(in), optional :: seconds
+    real, intent(in), optional :: days
+    real, intent(in), optional :: hours
+    real, intent(in), optional :: minutes
+    real, intent(in), optional :: seconds
 
+    real days_
+    real hours_
+    real minutes_
+    real seconds_
     type(alert_type) alert
 
-    alert%period = timedelta(days, hours, minutes, seconds)
+    if (present(days)) then
+      days_ = days
+    else
+      days_ = 0.0
+    end if
+    if (present(hours)) then
+      hours_ = hours
+    else
+      hours_ = 0.0
+    end if
+    if (present(minutes)) then
+      minutes_ = minutes
+    else
+      minutes_ = 0.0
+    end if
+    if (present(seconds)) then
+      seconds_ = seconds
+    else
+      seconds_ = 0.0
+    end if
+
+    alert%period = timedelta(days_, hours_, minutes_, seconds_)
     alert%last_time = start_time - alert%period
     call alerts%insert(trim(name), alert)
 

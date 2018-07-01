@@ -2,7 +2,7 @@ module io_mod
 
   use netcdf
   use log_mod
-  use hash_table_mod, hash_table_iterator => hash_table_iterator
+  use hash_table_mod, hash_table_iterator => hash_table_iterator, hash_table => hash_table
   use params_mod, start_time_in => start_time
   use time_mod
   use string_mod
@@ -95,6 +95,8 @@ contains
       call log_error('Invalid time_units ' // trim(time_units) // '!')
     end select
 
+    datasets = hash_table()
+
     call log_notice('IO module is initialized.')
 
   end subroutine io_init
@@ -169,6 +171,9 @@ contains
     dataset%name = name_
     dataset%desc = desc_
     dataset%author = author
+    dataset%metas = hash_table()
+    dataset%dims = hash_table()
+    dataset%vars = hash_table()
     if (file_prefix_ /= '' .and. file_path_ == '') then
       dataset%file_prefix_or_path = file_prefix_
     else if (file_prefix_ == '' .and. file_path_ /= '') then
@@ -220,7 +225,11 @@ contains
 
     type(dataset_type), pointer :: dataset
 
-    dataset => get_dataset(dataset_name, 'output')
+    if (present(dataset_name)) then
+      dataset => get_dataset(name=dataset_name, mode='output')
+    else
+      dataset => get_dataset(mode='output')
+    end if
 
     call dataset%metas%insert(name, value)
 
@@ -238,7 +247,11 @@ contains
     type(dim_type) dim
     integer i
 
-    dataset => get_dataset(dataset_name, 'output')
+    if (present(dataset_name)) then
+      dataset => get_dataset(name=dataset_name, mode='output')
+    else
+      dataset => get_dataset(mode='output')
+    end if
 
     if (dataset%dims%hashed(name)) then
       call log_error('Already added dimension ' // trim(name) // ' in dataset ' // trim(dataset%name) // '!')
@@ -299,7 +312,11 @@ contains
     logical found
     real real
 
-    dataset => get_dataset(dataset_name, 'output')
+    if (present(dataset_name)) then
+      dataset => get_dataset(name=dataset_name, mode='output')
+    else
+      dataset => get_dataset(mode='output')
+    end if
 
     if (dataset%vars%hashed(name)) then
       call log_error('Already added variable ' // trim(name) // ' in dataset ' // trim(dataset%name) // '!')
@@ -366,7 +383,11 @@ contains
     type(var_type), pointer :: var
     integer i, ierr, dimids(10)
 
-    dataset => get_dataset(dataset_name, 'output')
+    if (present(dataset_name)) then
+      dataset => get_dataset(name=dataset_name, mode='output')
+    else
+      dataset => get_dataset(mode='output')
+    end if
 
     if (present(tag)) then
       write(file_path, "(A, '.', A, '.', A, '.nc')") trim(dataset%file_prefix_or_path), trim(curr_time_format), tag
@@ -450,7 +471,11 @@ contains
     integer i, ierr
     integer start(2), count(2)
 
-    dataset => get_dataset(dataset_name, 'output')
+    if (present(dataset_name)) then
+      dataset => get_dataset(name=dataset_name, mode='output')
+    else
+      dataset => get_dataset(mode='output')
+    end if
     var => dataset%get_var(name)
 
     if (size(var%dims) == 1) then
@@ -501,7 +526,11 @@ contains
     integer i, ierr
     integer start(3), count(3)
 
-    dataset => get_dataset(dataset_name, 'output')
+    if (present(dataset_name)) then
+      dataset => get_dataset(name=dataset_name, mode='output')
+    else
+      dataset => get_dataset(mode='output')
+    end if
     var => dataset%get_var(name)
 
     lb1 = lbound(array, 1) + parallel%lon_halo_width_for_reduce
@@ -537,7 +566,11 @@ contains
     type(dataset_type), pointer :: dataset
     integer ierr
 
-    dataset => get_dataset(dataset_name, 'output')
+    if (present(dataset_name)) then
+      dataset => get_dataset(name=dataset_name, mode='output')
+    else
+      dataset => get_dataset(mode='output')
+    end if
 
     ierr = NF90_CLOSE(dataset%id)
     if (ierr /= NF90_NOERR) then
@@ -553,7 +586,11 @@ contains
     type(dataset_type), pointer :: dataset
     integer ierr
 
-    dataset => get_dataset(dataset_name, 'input')
+    if (present(dataset_name)) then
+      dataset => get_dataset(name=dataset_name, mode='input')
+    else
+      dataset => get_dataset(mode='input')
+    end if
 
     ierr = NF90_OPEN(dataset%file_prefix_or_path, NF90_NOWRITE, dataset%id)
     if (ierr /= NF90_NOERR) then
@@ -572,7 +609,11 @@ contains
     character(256) meta
     integer ierr
 
-    dataset => get_dataset(dataset_name, 'input')
+    if (present(dataset_name)) then
+      dataset => get_dataset(name=dataset_name, mode='input')
+    else
+      dataset => get_dataset(mode='input')
+    end if
 
     ierr = NF90_GET_ATT(dataset%id, NF90_GLOBAL, name, meta)
     if (ierr /= NF90_NOERR) then
@@ -593,7 +634,11 @@ contains
     integer i, j, ierr, varid
     real, allocatable :: buffer(:,:)
 
-    dataset => get_dataset(dataset_name, 'input')
+    if (present(dataset_name)) then
+      dataset => get_dataset(name=dataset_name, mode='input')
+    else
+      dataset => get_dataset(mode='input')
+    end if
 
     lb1 = lbound(array, 1) + parallel%lon_halo_width_for_reduce
     ub1 = ubound(array, 1) - parallel%lon_halo_width_for_reduce
@@ -624,7 +669,11 @@ contains
     type(dataset_type), pointer :: dataset
     integer ierr
 
-    dataset => get_dataset(dataset_name, 'input')
+    if (present(dataset_name)) then
+      dataset => get_dataset(name=dataset_name, mode='input')
+    else
+      dataset => get_dataset(mode='input')
+    end if
 
     ierr = NF90_CLOSE(dataset%id)
 

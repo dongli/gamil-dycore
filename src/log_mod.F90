@@ -8,30 +8,31 @@ module log_mod
 
   type(hash_table_type) diags
 
-  interface log_add_diag
-    module procedure log_add_diag_1
-    module procedure log_add_diag_2
-  end interface log_add_diag
-
 contains
 
-  subroutine log_add_diag_1(name, value)
+  subroutine log_init()
+
+    diags = hash_table()
+
+    call log_notice('Log module is initialized.')
+
+  end subroutine log_init
+
+  subroutine log_add_diag(name, value)
 
     character(*), intent(in) :: name
-    integer, intent(in) :: value
+    class(*), intent(in) :: value
 
-    call diags%insert(name, value)
+    select type (value)
+    type is (integer)
+      call diags%insert(name, value)
+    type is (real)
+      call diags%insert(name, value)
+    class default
+      call log_error('Unsupported diagnostic value type!')
+    end select
 
-  end subroutine log_add_diag_1
-
-  subroutine log_add_diag_2(name, value)
-
-    character(*), intent(in) :: name
-    real, intent(in) :: value
-
-    call diags%insert(name, value)
-
-  end subroutine log_add_diag_2
+  end subroutine log_add_diag
 
   subroutine log_notice(message, file, line)
 
@@ -84,11 +85,14 @@ contains
 
     iter = hash_table_iterator(diags)
     do while (.not. iter%ended())
-      select type(value => iter%value)
+      print *, iter%key, associated(iter%value)
+      select type (value => iter%value)
       type is (integer)
         write(6, '(X, A)', advance='no') trim(to_string(value))
       type is (real)
         write(6, '(X, A)', advance='no') trim(to_string(value, 20))
+      class default
+        write(6, '(X, A)', advance='no') iter%key
       end select
       call iter%next()
     end do
