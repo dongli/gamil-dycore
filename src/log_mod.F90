@@ -23,11 +23,11 @@ contains
     character(*), intent(in) :: name
     class(*), intent(in) :: value
 
+    call diags%insert(name, value)
+
     select type (value)
     type is (integer)
-      call diags%insert(name, value)
     type is (real)
-      call diags%insert(name, value)
     class default
       call log_error('Unsupported diagnostic value type!')
     end select

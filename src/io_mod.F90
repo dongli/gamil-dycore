@@ -2,7 +2,7 @@ module io_mod
 
   use netcdf
   use log_mod
-  use hash_table_mod
+  use hash_table_mod, hash_table => hash_table, hash_table_iterator => hash_table_iterator
   use params_mod, start_time_in => start_time
   use time_mod
   use string_mod
