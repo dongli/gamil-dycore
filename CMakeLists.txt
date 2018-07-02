@@ -10,9 +10,9 @@ else ()
 endif ()
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -ffpe-summary=none -ffree-line-length-none -Ofast -flto")
+  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -ffpe-summary=none -ffree-line-length-none -Ofast")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "PGI")
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -r8 -traceback -g")
+  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -r8 -fPIC")
 endif ()
 
 if (NOT $ENV{NETCDF_ROOT} STREQUAL "")
@@ -36,30 +36,30 @@ endif ()
 add_subdirectory (lib/datetime)
 
 add_subdirectory (lib/container)
-include_directories (${CMAKE_BINARY_DIR}/lib/container)
+include_directories (${CMAKE_BINARY_DIR}/fortran_container)
 
 set (source_files
-  "src/string_mod.F90"
-  "src/time_mod.F90"
-  "src/io_mod.F90"
-  "src/log_mod.F90"
-  "src/params_mod.F90"
-  "src/mesh_mod.F90"
-  "src/parallel_mod.F90"
-  "src/types_mod.F90"
-  "src/diag_mod.F90"
-  "src/history_mod.F90"
-  "src/restart_mod.F90"
-  "src/data_mod.F90"
-  "src/reduce_mod.F90"
-  "src/diffusion_mod.F90"
-  "src/dycore_mod.F90"
-  "src/dycore_test.F90"
-  "src/test_cases/barotropic/rossby_haurwitz_wave_test_mod.F90"
-  "src/test_cases/barotropic/steady_geostrophic_flow_test_mod.F90"
-  "src/test_cases/barotropic/mountain_zonal_flow_test_mod.F90"
-  "src/test_cases/barotropic/jet_zonal_flow_test_mod.F90"
-  "lib/quadpack.f90"
+  src/string_mod.F90
+  src/time_mod.F90
+  src/io_mod.F90
+  src/log_mod.F90
+  src/params_mod.F90
+  src/mesh_mod.F90
+  src/parallel_mod.F90
+  src/types_mod.F90
+  src/diag_mod.F90
+  src/history_mod.F90
+  src/restart_mod.F90
+  src/data_mod.F90
+  src/reduce_mod.F90
+  src/diffusion_mod.F90
+  src/dycore_mod.F90
+  src/dycore_test.F90
+  src/test_cases/barotropic/rossby_haurwitz_wave_test_mod.F90
+  src/test_cases/barotropic/steady_geostrophic_flow_test_mod.F90
+  src/test_cases/barotropic/mountain_zonal_flow_test_mod.F90
+  src/test_cases/barotropic/jet_zonal_flow_test_mod.F90
+  lib/quadpack.f90
 )
 
 set (CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")

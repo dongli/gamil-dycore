@@ -85,7 +85,6 @@ contains
 
     iter = hash_table_iterator(diags)
     do while (.not. iter%ended())
-      print *, iter%key, associated(iter%value)
       select type (value => iter%value)
       type is (integer)
         write(6, '(X, A)', advance='no') trim(to_string(value))
