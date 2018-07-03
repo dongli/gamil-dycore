@@ -2,6 +2,9 @@
 
 ROOT=$(cd $(dirname $BASH_SOURCE) && pwd)
 
+cd ${ROOT}/build
+make
+
 echo "========================================================================"
 echo "                       Rossby-Haurwitz test                             "
 if [[ ! -d ${ROOT}/test/rh_01 ]]; then
