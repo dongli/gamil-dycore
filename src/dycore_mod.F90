@@ -836,10 +836,23 @@ contains
       case default
         call predict_correct(time_step_size)
       end select
+      
     case (2) ! runge_kutta
-      call runge_kutta()
+      select case (split_scheme)
+      case (2) ! csp2
+        call runge_kutta(0.5 * time_step_size, old_time_idx, time_idx1, slow_pass)
+        do subcycle = 1, subcycles
+          call runge_kutta(subcycle_time_step_size, time_idx1, time_idx2, fast_pass)
+          call time_swap_indices(time_idx1, time_idx2)
+        end do
+        call runge_kutta(0.5 * time_step_size, time_idx1, new_time_idx, slow_pass)
+      case default
+        call runge_kutta(time_step_size)
+      end select
+      
     case (3) ! leap_frog
       call leap_frog()
+      
     case (4) ! middle_point
       call middle_point(time_step_size)
     end select
@@ -938,8 +951,63 @@ contains
 
   end subroutine predict_correct
 
-  subroutine runge_kutta()
+  subroutine runge_kutta(time_step_size, old_time_idx_, new_time_idx_, pass_)
+    ! Implement RK4
+    implicit none
+    real   , intent(in)           :: time_step_size
+    integer, intent(in), optional :: old_time_idx_
+    integer, intent(in), optional :: new_time_idx_
+    integer, intent(in), optional :: pass_
 
+    integer old, new, pass
+    real dt, tau_n, beta_n
+    real phi_4_norm,R1R2,R2R3,R3R4
+    
+    if (present(old_time_idx_)) then
+      old = old_time_idx_
+    else
+      old = old_time_idx
+    end if
+    if (present(new_time_idx_)) then
+      new = new_time_idx_
+    else
+      new = new_time_idx
+    end if
+    if (present(pass_)) then
+      pass = pass_
+    else
+      pass = all_pass
+    end if
+    dt = time_step_size * 0.5d0
+    
+    ! Compute RK1
+    call space_operators(state(old) , RK(1), dt, pass)
+    
+    ! Compute RK2
+    call update_state(dt            , RK(1), state(old), state(-1))
+    call space_operators(state(-1)  , RK(2), dt, pass)
+    
+    ! Compute RK3
+    call update_state(dt            , RK(2), state(old), state(-1))
+    call space_operators(state(-1)  , RK(3), dt, pass)
+    
+    ! Compute RK4
+    call update_state(time_step_size, RK(3), state(old), state(-1))
+    call space_operators(state(-1)  , RK(4), dt, pass)
+    
+    call compute_RK_phi_4(RK_phi_4,RK)
+    
+    phi_4_norm = inner_product(RK_phi_4, RK_phi_4)
+    R1R2       = inner_product(RK(1)   , RK(2))
+    R2R3       = inner_product(RK(2)   , RK(3))
+    R3R4       = inner_product(RK(3)   , RK(4))
+    
+    beta_n     = 1.d0/(3.d0*phi_4_norm)*(R1R2+R2R3+R3R4)
+    
+    tau_n      = beta_n*time_step_size
+    
+    call update_state(tau_n, RK_phi_4, state(old), state(new))
+        
   end subroutine runge_kutta
 
   subroutine leap_frog()
@@ -1013,5 +1081,32 @@ contains
       ip_v_pgf + ip_mass_div_lat
 
   end subroutine check_antisymmetry
+  
+  subroutine compute_RK_phi_4(RK_phi_4,RK)
+    implicit none
+    type(tend_type),intent(inout) :: RK_phi_4
+    type(tend_type),intent(in)    :: RK(1:4)
 
+    integer i, j
+
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        RK_phi_4%dgd(i,j) = RK(1)%dgd(i,j)/6.d0 + RK(2)%dgd(i,j)/3.d0 + RK(3)%dgd(i,j)/3.d0 + RK(4)%dgd(i,j)/6.d0
+      end do
+    end do
+
+    ! Update IAP wind state.
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+        RK_phi_4%du(i,j) = RK(1)%du(i,j)/6.d0 + RK(2)%du(i,j)/3.d0 + RK(3)%du(i,j)/3.d0 + RK(4)%du(i,j)/6.d0
+      end do
+    end do
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        RK_phi_4%dv(i,j) = RK(1)%dv(i,j)/6.d0 + RK(2)%dv(i,j)/3.d0 + RK(3)%dv(i,j)/3.d0 + RK(4)%dv(i,j)/6.d0
+      end do
+    end do
+    
+  end subroutine compute_RK_phi_4
+  
 end module dycore_mod
