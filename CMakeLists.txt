@@ -12,7 +12,7 @@ endif ()
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -ffpe-summary=none -ffree-line-length-none -Ofast")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "PGI")
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -r8 -fPIC")
+  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -r8 -fast -fPIC")
 endif ()
 
 if (NOT $ENV{NETCDF_ROOT} STREQUAL "")
