@@ -15,11 +15,18 @@ module data_mod
   public tend
   public data_init
   public data_final
+  
+  ! For RK4
+  public RK_phi_4
+  public RK
 
-  type(coef_type) coef
-  type(state_type) state(-1:2)
+  type(coef_type)   coef
+  type(state_type)  state(-1:2)
   type(static_type) static
-  type(tend_type) tend(0:2)
+  type(tend_type)   tend(0:2)
+  
+  ! For RK4
+  type(tend_type)   RK_phi_4,RK(1:4)
 
 contains
 
@@ -44,21 +51,29 @@ contains
       coef%half_dlat(j) = 2.0 * radius * mesh%dlat * mesh%half_cos_lat(j)
     end do
 
-    do time_idx = 0, 2
+    do time_idx = -1, 2
       call allocate_data(state(time_idx))
     end do
     do time_idx = 0, 2
       call allocate_data(tend(time_idx))
     end do
     call allocate_data(static)
-
+    
+    if(time_scheme=='runge_kutta')then
+      call allocate_data(RK_phi_4)
+      
+      do i=1,4
+        call allocate_data(RK(i))
+      enddo
+    end if
+    
     call log_notice('Data module is initialized.')
 
   end subroutine data_init
 
   subroutine data_final()
 
-    integer time_idx
+    integer i,time_idx
 
     call deallocate_data(coef)
     do time_idx = lbound(state, 1), ubound(state, 1)
@@ -69,6 +84,14 @@ contains
     end do
     call deallocate_data(static)
 
+    if(time_scheme=='runge_kutta')then
+      call deallocate_data(RK_phi_4)
+      
+      do i=1,4
+        call deallocate_data(RK(i))
+      enddo
+    end if
+    
     call log_notice('Data module is finalized.')
 
   end subroutine data_final
