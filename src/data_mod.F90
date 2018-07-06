@@ -17,16 +17,15 @@ module data_mod
   public data_final
   
   ! For RK4
-  public RK_phi_4
-  public RK
+  public tend_rk
 
-  type(coef_type)   coef
-  type(state_type)  state(-1:2)
+  type(coef_type) coef
+  type(state_type) state(-1:2)
   type(static_type) static
-  type(tend_type)   tend(0:2)
+  type(tend_type) tend(0:2)
   
   ! For RK4
-  type(tend_type)   RK_phi_4,RK(1:4)
+  type(tend_type) tend_rk(0:4)
 
 contains
 
@@ -59,12 +58,10 @@ contains
     end do
     call allocate_data(static)
     
-    if(time_scheme=='runge_kutta')then
-      call allocate_data(RK_phi_4)
-      
-      do i=1,4
-        call allocate_data(RK(i))
-      enddo
+    if (time_scheme == 'runge_kutta') then
+      do i = 0, 4
+        call allocate_data(tend_rk(i))
+      end do
     end if
     
     call log_notice('Data module is initialized.')
@@ -84,12 +81,10 @@ contains
     end do
     call deallocate_data(static)
 
-    if(time_scheme=='runge_kutta')then
-      call deallocate_data(RK_phi_4)
-      
-      do i=1,4
-        call deallocate_data(RK(i))
-      enddo
+    if (time_scheme == 'runge_kutta') then
+      do i = 0, 4
+        call deallocate_data(tend_rk(i))
+      end do
     end if
     
     call log_notice('Data module is finalized.')
