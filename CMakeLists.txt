@@ -1,47 +1,47 @@
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
 
-project (gamil-dycore Fortran)
+project(gamil-dycore LANGUAGES Fortran)
 
-find_package (MPI)
+find_package(MPI)
 if (NOT MPI_Fortran_FOUND)
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DNO_MPI")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DNO_MPI")
 else ()
-  include_directories (${MPI_Fortran_INCLUDE_PATH})
+  include_directories(${MPI_Fortran_INCLUDE_PATH})
 endif ()
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -ffpe-summary=none -ffree-line-length-none -Ofast")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fdefault-real-8 -ffpe-summary=none -ffree-line-length-none -Ofast")
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "PGI")
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -r8 -fast -fPIC")
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -r8 -fast -fPIC")
 endif ()
 
 if (DEFINED ENV{NETCDF} AND (NOT DEFINED ENV{NETCDF_ROOT}))
-  set (ENV{NETCDF_ROOT} $ENV{NETCDF})
+  set(ENV{NETCDF_ROOT} $ENV{NETCDF})
 endif ()
 if (DEFINED ENV{NETCDF_ROOT})
-  include_directories ("$ENV{NETCDF_ROOT}/include")
-  link_directories ("$ENV{NETCDF_ROOT}/lib")
+  include_directories("$ENV{NETCDF_ROOT}/include")
+  link_directories("$ENV{NETCDF_ROOT}/lib")
 else ()
-  find_package (PkgConfig)
+  find_package(PkgConfig)
   if (PKG_CONFIG_FOUND)
-    pkg_search_module (NETCDF REQUIRED netcdf)
+    pkg_search_module(NETCDF REQUIRED netcdf)
     if (NETCDF_FOUND)
-      include_directories (${NETCDF_INCLUDEDIR})
-      link_directories (${NETCDF_LIBDIR})
+      include_directories(${NETCDF_INCLUDEDIR})
+      link_directories(${NETCDF_LIBDIR})
     else ()
-      message (FATAL_ERROR "Pkg-config could not find netcdf library!")
+      message(FATAL_ERROR "Pkg-config could not find netcdf library!")
     endif ()
   else ()
-    message (FATAL_ERROR "Unable to find pkg-config library!")
+    message(FATAL_ERROR "Unable to find pkg-config library!")
   endif ()
 endif ()
 
-add_subdirectory (lib/datetime)
+add_subdirectory(lib/datetime)
 
-add_subdirectory (lib/container)
-include_directories (${CMAKE_BINARY_DIR}/fortran_container)
+add_subdirectory(lib/container)
+include_directories(${CMAKE_BINARY_DIR}/fortran_container)
 
-set (source_files
+set(source_files
   src/string_mod.F90
   src/time_mod.F90
   src/io_mod.F90
@@ -65,12 +65,13 @@ set (source_files
   lib/quadpack.f90
 )
 
-set (CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")
+set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")
 
-add_executable (dycore_test.exe ${source_files})
-target_link_libraries (dycore_test.exe ${MPI_Fortran_LIBRARIES} fortran_datetime fortran_container netcdf netcdff)
+add_executable(dycore_test.exe ${source_files})
+target_link_libraries(dycore_test.exe
+  ${MPI_Fortran_LIBRARIES} fortran_datetime fortran_container netcdf netcdff)
 if (MPI_Fortran_FOUND)
-  set_target_properties (dycore_test.exe PROPERTIES
+  set_target_properties(dycore_test.exe PROPERTIES
     LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}"
   )
 endif ()
