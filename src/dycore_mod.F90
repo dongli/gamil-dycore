@@ -22,8 +22,6 @@ module dycore_mod
   public dycore_restart
   public dycore_run
   public dycore_final
-  public state
-  public static
 
   ! 1: predict_correct
   ! 2: runge_kutta

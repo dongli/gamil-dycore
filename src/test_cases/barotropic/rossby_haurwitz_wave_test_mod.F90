@@ -3,7 +3,7 @@ module rossby_haurwitz_wave_test_mod
   use mesh_mod
   use parallel_mod
   use params_mod
-  use dycore_mod
+  use data_mod
 
   implicit none
 
