@@ -38,6 +38,17 @@ module dycore_mod
 
   integer, parameter :: half_time_idx = 0
 
+  interface
+    subroutine integrator_interface(time_step_size, old_time_idx, new_time_idx, pass)
+      real, intent(in) :: time_step_size
+      integer, intent(in), optional :: old_time_idx
+      integer, intent(in), optional :: new_time_idx
+      integer, intent(in), optional :: pass
+    end subroutine
+  end interface
+
+  procedure(integrator_interface), pointer :: integrator
+
   ! For debug
   integer :: tag = 0
 
@@ -86,6 +97,19 @@ contains
       call log_notice('No fast-slow split.')
     end select
 
+    select case (time_scheme)
+    case (1)
+      integrator => predict_correct
+    case (2)
+      integrator => runge_kutta
+    case (3)
+      integrator => leap_frog
+    case (4)
+      integrator => middle_point
+    case default
+      call log_error('Unknown time scheme!')
+    end select
+
     call log_notice('Dycore module is initialized.')
 
   end subroutine dycore_init
@@ -110,16 +134,7 @@ contains
 
     do while (.not. time_is_finished())
       tag = 0
-      select case (time_scheme)
-      case (1)
-        call time_integrate(predict_correct)
-      case (2)
-        call time_integrate(runge_kutta)
-      case (3)
-        call time_integrate(leap_frog)
-      case (4)
-        call time_integrate(middle_point)
-      end select
+      call time_integrate()
       call time_advance()
       call diag_run(state(old_time_idx))
       call output(state(old_time_idx))
@@ -821,16 +836,7 @@ contains
 
   end function inner_product
 
-  subroutine time_integrate(integrator)
-
-    interface
-      subroutine integrator(time_step_size, old_time_idx, new_time_idx, pass)
-        real, intent(in) :: time_step_size
-        integer, intent(in), optional :: old_time_idx
-        integer, intent(in), optional :: new_time_idx
-        integer, intent(in), optional :: pass
-      end subroutine
-    end interface
+  subroutine time_integrate()
 
     real subcycle_time_step_size
     integer subcycle, time_idx1, time_idx2
