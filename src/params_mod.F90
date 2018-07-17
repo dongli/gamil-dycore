@@ -32,6 +32,7 @@ module params_mod
   character(30) :: history_periods(1) = ['6 hours']
   character(30) :: restart_period = ''
 
+  character(256) namelist_file
   character(256) :: restart_file = ''
 
   ! Options:
@@ -90,6 +91,8 @@ contains
   subroutine params_read(file_path)
 
     character(*), intent(in) :: file_path
+
+    namelist_file = file_path
 
     open(10, file=file_path)
     read(10, nml=dycore_params)

@@ -1,6 +1,6 @@
 &dycore_params
 test_case = 'jet_zonal_flow'
-case_name = 'jz_test.360x181.diffused.dt240'
+case_name = 'jz_test.360x181.pc.dt240.diffused'
 case_desc = 'Jet zonal flow test'
 author = 'Li Dong <dongli@lasg.iap.ac.cn>'
 days = 6
@@ -9,7 +9,7 @@ num_lat = 181
 time_step_size = 240
 history_periods = '1 hours'
 restart_period = '6 hours'
-time_scheme = 'runge_kutta' ! 'predict_correct' or 'runge_kutta'
+time_scheme = 'predict_correct' ! 'predict_correct' or 'runge_kutta'
 qcon_modified = .true.
 split_scheme = 'csp2' ! 'csp2' or 'csp1' or 'isp'
 subcycles = 6

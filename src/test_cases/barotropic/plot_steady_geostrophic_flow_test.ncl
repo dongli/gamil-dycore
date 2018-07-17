@@ -1,3 +1,5 @@
+load "$NCARG_ROOT/lib/ncarg/nclscripts/contrib/cd_string.ncl"
+
 if (.not. isdefined("file_prefix")) then
   system("echo '[Error]: Argument file_prefix should be set!'")
   exit
@@ -11,7 +13,10 @@ wks = gsn_open_wks("pdf", file_prefix)
 res = True
 res@gsnDraw = False
 res@gsnFrame = False
+res@mpOutlineOn = False
+res@mpFillOn = False
 res@cnConstFEnableFill = True
+res@gsnLeftString = "Height (m)"
 
 res_panel = True
 
@@ -23,6 +28,7 @@ do t = 0, dimsizes(file_names) - 1
   f = addfile(file_names(t), "r")
   gd = f->gd(0,:,:)
   gd = gd / 9.80616
+  res@gsnRightString = cd_string(f->time, "Day %j Hour %H")
   plot0 = gsn_csm_contour_map(wks, gd, res)
   error = gd - gd0
   copy_VarCoords(gd, error)

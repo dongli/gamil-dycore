@@ -11,9 +11,11 @@ module rossby_haurwitz_wave_test_mod
 
   public rossby_haurwitz_wave_test_set_initial_condition
 
-  real, parameter :: R = 4.0
-  real, parameter :: omg = 7.848e-6
-  real, parameter :: gd0 = 8.0e3 * g
+  real :: R = 4.0
+  real :: omg = 7.848e-6
+  real :: gd0 = 8.0e3 * g
+
+  namelist /rossby_haurwitz_wave_test_params/ R, omg, gd0
 
 contains
 
@@ -35,6 +37,10 @@ contains
     integer i, j
 
     write(6, *) '[Notice]: Use Rossby-Haurwitz wave initial condition.'
+
+    open(10, file=namelist_file)
+    read(10, nml=rossby_haurwitz_wave_test_params)
+    close(10)
 
     static%ghs(:,:) = 0.0
 

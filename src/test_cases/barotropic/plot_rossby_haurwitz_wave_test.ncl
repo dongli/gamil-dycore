@@ -13,11 +13,14 @@ wks = gsn_open_wks("pdf", file_prefix)
 res_h = True
 res_h@gsnDraw = False
 res_h@gsnFrame = False
+res_h@mpOutlineOn = False
+res_h@mpFillOn = False
 res_h@cnLevelSelectionMode = "ManualLevels"
 res_h@cnMinLevelValF = 8000
 res_h@cnMaxLevelValF = 11000
 res_h@cnLevelSpacingF = 200
 res_h@gsnPolar = "NH"
+res_h@cnLineLabelsOn = False
 res_h@gsnLeftString = "Height (m)"
 
 do t = 0, dimsizes(file_names) - 1

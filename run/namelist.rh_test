@@ -1,6 +1,6 @@
 &dycore_params
 test_case = 'rossby_haurwitz_wave'
-case_name = 'rh_test.360x181.dt240'
+case_name = 'rh_test.360x181.pc.dt240.base'
 case_desc = 'Rossby-Haurwitz wave test'
 author = 'Li Dong <dongli@lasg.iap.ac.cn>'
 days = 33
@@ -9,10 +9,15 @@ num_lat = 181
 time_step_size = 240
 history_periods = '1 days'
 restart_period = '1 days'
-time_scheme = 'runge_kutta' ! 'predict_correct' or 'runge_kutta'
+time_scheme = 'predict_correct' ! 'predict_correct' or 'runge_kutta'
 qcon_modified = .true.
 split_scheme = 'csp2' ! 'csp2' or 'csp1' or 'isp'
 subcycles = 6
 use_zonal_reduce = .true.
-zonal_reduce_factors = 4, 4, 4, 2, 2
+zonal_reduce_factors = 4, 4, 2, 2, 2
+use_reduce_tend_smooth = .true.
+/
+
+&rossby_haurwitz_wave_test_params
+!omg = 3.924e-6
 /
