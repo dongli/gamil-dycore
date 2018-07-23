@@ -507,6 +507,7 @@ contains
     real c1, c2
     integer i, j, k
 
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(c1, c2, i, k, reduced_tend)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       c1 = mesh%half_cos_lat(j-1) / mesh%full_cos_lat(j)
       c2 = mesh%half_cos_lat(j  ) / mesh%full_cos_lat(j)
@@ -529,7 +530,9 @@ contains
         call parallel_overlay_inner_halo(tend%fv(:,j), left_halo=.true.)
       end if
     end do
+!$OMP END PARALLEL DO
 
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       tend%fu(:,j) = 0.0
       if (full_reduce_factor(j) == 1) then
@@ -561,6 +564,7 @@ contains
         call parallel_overlay_inner_halo(tend%fu(:,j), left_halo=.true.)
       end if
     end do
+!$OMP END PARALLEL DO
 
   end subroutine coriolis_operator
 
@@ -573,6 +577,7 @@ contains
     real c1, c2
     integer i, j, k
 
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(c1, c2, i, k, reduced_tend)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       c1 = mesh%half_cos_lat(j-1) / mesh%full_cos_lat(j)
       c2 = mesh%half_cos_lat(j  ) / mesh%full_cos_lat(j)
@@ -595,7 +600,9 @@ contains
         call parallel_overlay_inner_halo(tend%cv(:,j), left_halo=.true.)
       end if
     end do
+!$OMP END PARALLEL DO
 
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       tend%cu(:,j) = 0.0
       if (full_reduce_factor(j) == 1) then
@@ -633,6 +640,7 @@ contains
         call parallel_overlay_inner_halo(tend%cu(:,j), left_halo=.true.)
       end if
     end do
+!$OMP END PARALLEL DO
 
   end subroutine curvature_operator
 
@@ -644,6 +652,7 @@ contains
     real reduced_tend(parallel%half_lon_start_idx:parallel%half_lon_end_idx)
     integer i, j, k
 
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       if (full_reduce_factor(j) == 1) then
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
@@ -664,6 +673,7 @@ contains
         call parallel_overlay_inner_halo(tend%u_pgf(:,j), left_halo=.true.)
       end if
     end do
+!$OMP END PARALLEL DO
 
   end subroutine zonal_pressure_gradient_force_operator
 
@@ -692,6 +702,7 @@ contains
     real reduced_tend(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
     integer i, j, k
 
+!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
@@ -712,6 +723,7 @@ contains
         call parallel_overlay_inner_halo(tend%mass_div_lon(:,j), left_halo=.true.)
       end if
     end do
+!$OMP END PARALLEL DO
 
   end subroutine zonal_mass_divergence_operator
 

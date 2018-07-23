@@ -47,6 +47,7 @@ contains
     call io_add_var('ghs', long_name='surface geopotential', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('rf', long_name='reduce factor', units='1', dim_names=['lat ', 'time'])
     call io_add_var('vor', long_name='relative vorticity', units='s-1', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('div', long_name='divergence', units='s-1', dim_names=['lon ', 'lat ', 'time'])
 
     call io_create_dataset(name='debug', desc=case_desc, file_prefix=case_name // '.debug')
     call io_add_dim('lon', 'debug', size=mesh%num_full_lon)
@@ -114,6 +115,7 @@ contains
     call io_output('ghs', static%ghs(:,:))
     call io_output('rf', full_reduce_factor(:))
     call io_output('vor', diag%vor(:,:))
+    call io_output('div', diag%div(:,:))
     call io_end_output()
 
   end subroutine history_write_state
