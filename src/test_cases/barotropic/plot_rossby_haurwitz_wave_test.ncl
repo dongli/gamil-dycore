@@ -20,7 +20,7 @@ res_h@cnMinLevelValF = 8000
 res_h@cnMaxLevelValF = 11000
 res_h@cnLevelSpacingF = 200
 res_h@cnLineLabelsOn = False
-;res_h@gsnPolar = "NH"
+res_h@gsnPolar = "NH"
 res_h@gsnLeftString = "Height (m)"
 
 do t = 0, dimsizes(file_names) - 1

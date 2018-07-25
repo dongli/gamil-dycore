@@ -18,9 +18,11 @@ module history_mod
   public history_final
   public history_write
 
-  ! A-grid velocity
+  ! A-grid variables
   real, allocatable :: u(:,:)
   real, allocatable :: v(:,:)
+  real, allocatable :: gd(:,:)
+  real, allocatable :: ghs(:,:)
 
   interface history_write
     module procedure history_write_state
@@ -55,24 +57,26 @@ contains
     call io_add_dim('ilon', 'debug', size=mesh%num_half_lon)
     call io_add_dim('ilat', 'debug', size=mesh%num_half_lat)
     call io_add_dim('time', 'debug')
-    call io_add_var('u_adv_lon', 'debug', long_name='u_adv_lon', units='', dim_names=['ilon', 'lat ', 'time'])
-    call io_add_var('u_adv_lat', 'debug', long_name='u_adv_lat', units='', dim_names=['ilon', 'lat ', 'time'])
-    call io_add_var('v_adv_lon', 'debug', long_name='v_adv_lon', units='', dim_names=['lon ', 'ilat', 'time'])
-    call io_add_var('v_adv_lat', 'debug', long_name='v_adv_lat', units='', dim_names=['lon ', 'ilat', 'time'])
-    call io_add_var('fv', 'debug', long_name='fv', units='', dim_names=['ilon', 'lat ', 'time'])
-    call io_add_var('cv', 'debug', long_name='cv', units='', dim_names=['ilon', 'lat ', 'time'])
-    call io_add_var('fu', 'debug', long_name='fu', units='', dim_names=['lon ', 'ilat', 'time'])
-    call io_add_var('cu', 'debug', long_name='cu', units='', dim_names=['lon ', 'ilat', 'time'])
-    call io_add_var('u_pgf', 'debug', long_name='u_pgf', units='', dim_names=['ilon', 'lat ', 'time'])
-    call io_add_var('v_pgf', 'debug', long_name='v_pgf', units='', dim_names=['lon ', 'ilat', 'time'])
-    call io_add_var('mass_div_lon', 'debug', long_name='mass_div_lon', units='', dim_names=['lon ', 'lat ', 'time'])
-    call io_add_var('mass_div_lat', 'debug', long_name='mass_div_lat', units='', dim_names=['lon ', 'lat ', 'time'])
-    call io_add_var('du', 'debug', long_name='du', units='', dim_names=['ilon', 'lat ', 'time'])
-    call io_add_var('dv', 'debug', long_name='dv', units='', dim_names=['lon ', 'ilat', 'time'])
-    call io_add_var('dgd', 'debug', long_name='dgd', units='', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('u_adv_lon', 'debug', long_name='u_adv_lon', units='', dim_names=['ilon', 'ilat', 'time'])
+    call io_add_var('u_adv_lat', 'debug', long_name='u_adv_lat', units='', dim_names=['ilon', 'ilat', 'time'])
+    call io_add_var('v_adv_lon', 'debug', long_name='v_adv_lon', units='', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('v_adv_lat', 'debug', long_name='v_adv_lat', units='', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('fv', 'debug', long_name='fv', units='', dim_names=['ilon', 'ilat', 'time'])
+    call io_add_var('cv', 'debug', long_name='cv', units='', dim_names=['ilon', 'ilat', 'time'])
+    call io_add_var('fu', 'debug', long_name='fu', units='', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('cu', 'debug', long_name='cu', units='', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('u_pgf', 'debug', long_name='u_pgf', units='', dim_names=['ilon', 'ilat', 'time'])
+    call io_add_var('v_pgf', 'debug', long_name='v_pgf', units='', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('mass_div_lon', 'debug', long_name='mass_div_lon', units='', dim_names=['lon ', 'ilat', 'time'])
+    call io_add_var('mass_div_lat', 'debug', long_name='mass_div_lat', units='', dim_names=['lon ', 'ilat', 'time'])
+    call io_add_var('du', 'debug', long_name='du', units='', dim_names=['ilon', 'ilat', 'time'])
+    call io_add_var('dv', 'debug', long_name='dv', units='', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('dgd', 'debug', long_name='dgd', units='', dim_names=['lon ', 'ilat', 'time'])
 
     if (.not. allocated(u)) call parallel_allocate(u, extended_halo=.true.)
     if (.not. allocated(v)) call parallel_allocate(v, extended_halo=.true.)
+    if (.not. allocated(gd)) call parallel_allocate(gd, extended_halo=.true.)
+    if (.not. allocated(ghs)) call parallel_allocate(ghs, extended_halo=.true.)
 
     call log_notice('History module is initialized.')
 
@@ -101,9 +105,15 @@ contains
         u(i,j) = 0.5 * (state%u(i,j) + state%u(i-1,j))
       end do
     end do
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        v(i,j) = 0.5 * (state%v(i,j) + state%v(i,j-1))
+        v(i,j) = state%v(i,j)
+      end do
+    end do
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        gd(i,j) = 0.5 * (state%gd(i,j) + state%gd(i,j-1))
+        ghs(i,j) = 0.5 * (static%ghs(i,j) + static%ghs(i,j-1))
       end do
     end do
     call io_start_output()
@@ -111,8 +121,8 @@ contains
     call io_output('lat', mesh%full_lat_deg(:))
     call io_output('u', u(:,:))
     call io_output('v', v(:,:))
-    call io_output('gd', state%gd(:,:))
-    call io_output('ghs', static%ghs(:,:))
+    call io_output('gd', gd(:,:))
+    call io_output('ghs', ghs(:,:))
     call io_output('rf', full_reduce_factor(:))
     call io_output('vor', diag%vor(:,:))
     call io_output('div', diag%div(:,:))

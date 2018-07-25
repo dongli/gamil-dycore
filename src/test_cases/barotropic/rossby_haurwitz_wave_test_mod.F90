@@ -44,9 +44,9 @@ contains
 
     static%ghs(:,:) = 0.0
 
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      cos_lat = mesh%full_cos_lat(j)
-      sin_lat = mesh%full_sin_lat(j)
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      cos_lat = mesh%half_cos_lat(j)
+      sin_lat = mesh%half_sin_lat(j)
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         lon = mesh%half_lon(i)
         a = cos_lat
@@ -58,9 +58,9 @@ contains
 
     call parallel_fill_halo(state(1)%u, all_halo=.true.)
 
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
-      cos_lat = mesh%half_cos_lat(j)
-      sin_lat = mesh%half_sin_lat(j)
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      cos_lat = mesh%full_cos_lat(j)
+      sin_lat = mesh%full_sin_lat(j)
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         lon = mesh%full_lon(i)
         a = R * cos_lat**(R - 1) * sin_lat * sin(R * lon)
@@ -70,8 +70,8 @@ contains
 
     call parallel_fill_halo(state(1)%v, all_halo=.true.)
 
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      cos_lat = mesh%full_cos_lat(j)
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      cos_lat = mesh%half_cos_lat(j)
       a = 0.5 * omg * (2 * omega + omg) * cos_lat**2 + &
         0.25 * omg**2 * ((R + 1) * cos_lat**(2 * R + 2) + (2 * R**2 - R - 2) * cos_lat**(2 * R) - 2 * R**2 * cos_lat**(2 * R - 2))
       b = 2 * (omega + omg) * omg * cos_lat**R * &

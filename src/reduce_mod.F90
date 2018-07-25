@@ -115,7 +115,6 @@ contains
           call parallel_allocate(full_reduced_state(j)%iap%u,  dim=[2,3], size=[full_reduce_factor(j),3], half_lon=.true.)
           call parallel_allocate(full_reduced_state(j)%iap%v,  dim=[2,3], size=[full_reduce_factor(j),3], full_lon=.true.)
           call parallel_allocate(full_reduced_state(j)%iap%gd, dim=[2,3], size=[full_reduce_factor(j),3], full_lon=.true.)
-          call parallel_allocate(full_reduced_static(j)%ghs,   dim=[2,3], size=[full_reduce_factor(j),3], full_lon=.true.)
         end if
       end do
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
@@ -126,7 +125,7 @@ contains
           call parallel_allocate(half_reduced_state(j)%iap%u,  dim=[2,3], size=[half_reduce_factor(j),3], half_lon=.true.)
           call parallel_allocate(half_reduced_state(j)%iap%v,  dim=[2,3], size=[half_reduce_factor(j),3], full_lon=.true.)
           call parallel_allocate(half_reduced_state(j)%iap%gd, dim=[2,3], size=[half_reduce_factor(j),3], full_lon=.true.)
-          ! call parallel_allocate(half_reduced_static(j)%ghs,   dim=[2,3], size=[half_reduce_factor(j),3], full_lon=.true.)
+          call parallel_allocate(half_reduced_static(j)%ghs,   dim=[2,3], size=[half_reduce_factor(j),3], full_lon=.true.)
         end if
       end do
     end if
@@ -135,6 +134,48 @@ contains
 
   subroutine reduce_final()
 
+    integer j
+
+    if (use_zonal_reduce) then
+      if (allocated(full_reduced_state)) then
+        do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+          if (full_reduce_factor(j) /= 1) then
+            if (allocated(full_reduced_state(j)%u)) deallocate(full_reduced_state(j)%u)
+            if (allocated(full_reduced_state(j)%v)) deallocate(full_reduced_state(j)%v)
+            if (allocated(full_reduced_state(j)%gd)) deallocate(full_reduced_state(j)%gd)
+            if (allocated(full_reduced_state(j)%iap%u)) deallocate(full_reduced_state(j)%iap%u)
+            if (allocated(full_reduced_state(j)%iap%v)) deallocate(full_reduced_state(j)%iap%v)
+            if (allocated(full_reduced_state(j)%iap%gd)) deallocate(full_reduced_state(j)%iap%gd)
+          end if
+        end do
+      end if
+      if (allocated(full_reduced_static)) then
+        do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+          if (full_reduce_factor(j) /= 1) then
+            if (allocated(full_reduced_static(j)%ghs)) deallocate(full_reduced_static(j)%ghs)
+          end if
+        end do
+      end if
+      if (allocated(half_reduced_state)) then
+        do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+          if (half_reduce_factor(j) /= 1) then
+            if (allocated(half_reduced_state(j)%u)) deallocate(half_reduced_state(j)%u)
+            if (allocated(half_reduced_state(j)%v)) deallocate(half_reduced_state(j)%v)
+            if (allocated(half_reduced_state(j)%gd)) deallocate(half_reduced_state(j)%gd)
+            if (allocated(half_reduced_state(j)%iap%u)) deallocate(half_reduced_state(j)%iap%u)
+            if (allocated(half_reduced_state(j)%iap%v)) deallocate(half_reduced_state(j)%iap%v)
+            if (allocated(half_reduced_state(j)%iap%gd)) deallocate(half_reduced_state(j)%iap%gd)
+          end if
+        end do
+      end if
+      if (allocated(half_reduced_static)) then
+        do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+          if (half_reduce_factor(j) /= 1) then
+            if (allocated(half_reduced_static(j)%ghs)) deallocate(half_reduced_static(j)%ghs)
+          end if
+        end do
+      end if
+    end if
     if (allocated(full_reduce_factor)) deallocate(full_reduce_factor)
     if (allocated(full_reduce_weight)) deallocate(full_reduce_weight)
     if (allocated(half_reduce_factor)) deallocate(half_reduce_factor)
@@ -167,9 +208,6 @@ contains
             call average_raw_array_to_reduced_array_at_full_lat(j, k, state%iap%v(:,j-1), full_reduced_state(j)%iap%v(:,k,1))
             call average_raw_array_to_reduced_array_at_full_lat(j, k, state%iap%v(:,j  ), full_reduced_state(j)%iap%v(:,k,2))
             call average_raw_array_to_reduced_array_at_full_lat(j, k, state%iap%v(:,j+1), full_reduced_state(j)%iap%v(:,k,3))
-            call average_raw_array_to_reduced_array_at_full_lat(j, k, static%ghs(:,j-1),  full_reduced_static(j)%ghs(:,k,1))
-            call average_raw_array_to_reduced_array_at_full_lat(j, k, static%ghs(:,j  ),  full_reduced_static(j)%ghs(:,k,2))
-            call average_raw_array_to_reduced_array_at_full_lat(j, k, static%ghs(:,j+1),  full_reduced_static(j)%ghs(:,k,3))
             full_reduced_state(j)%iap%gd(:,k,:) = sqrt(full_reduced_state(j)%gd(:,k,:))
             full_reduced_state(j)%u(:,k,:) = full_reduced_state(j)%iap%u(:,k,:) / full_reduced_state(j)%iap%gd(:,k,:)
             full_reduced_state(j)%v(:,k,:) = full_reduced_state(j)%iap%v(:,k,:) / full_reduced_state(j)%iap%gd(:,k,:)
@@ -188,9 +226,9 @@ contains
             call average_raw_array_to_reduced_array_at_half_lat(j, k, state%iap%v(:,j-1), half_reduced_state(j)%iap%v(:,k,1))
             call average_raw_array_to_reduced_array_at_half_lat(j, k, state%iap%v(:,j  ), half_reduced_state(j)%iap%v(:,k,2))
             call average_raw_array_to_reduced_array_at_half_lat(j, k, state%iap%v(:,j+1), half_reduced_state(j)%iap%v(:,k,3))
-            ! call average_raw_array_to_reduced_array_at_half_lat(j, k, static%ghs(:,j-1),  half_reduced_static(j)%ghs(:,k,1))
-            ! call average_raw_array_to_reduced_array_at_half_lat(j, k, static%ghs(:,j  ),  half_reduced_static(j)%ghs(:,k,2))
-            ! call average_raw_array_to_reduced_array_at_half_lat(j, k, static%ghs(:,j+1),  half_reduced_static(j)%ghs(:,k,3))
+            call average_raw_array_to_reduced_array_at_half_lat(j, k, static%ghs(:,j-1),  half_reduced_static(j)%ghs(:,k,1))
+            call average_raw_array_to_reduced_array_at_half_lat(j, k, static%ghs(:,j  ),  half_reduced_static(j)%ghs(:,k,2))
+            call average_raw_array_to_reduced_array_at_half_lat(j, k, static%ghs(:,j+1),  half_reduced_static(j)%ghs(:,k,3))
             half_reduced_state(j)%iap%gd(:,k,:) = sqrt(half_reduced_state(j)%gd(:,k,:))
             half_reduced_state(j)%u(:,k,:) = half_reduced_state(j)%iap%u(:,k,:) / half_reduced_state(j)%iap%gd(:,k,:)
             half_reduced_state(j)%v(:,k,:) = half_reduced_state(j)%iap%v(:,k,:) / half_reduced_state(j)%iap%gd(:,k,:)
