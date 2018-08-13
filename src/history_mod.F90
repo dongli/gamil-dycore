@@ -100,17 +100,17 @@ contains
     integer i, j
 
     ! Convert wind from C grid to A grid.
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         u(i,j) = 0.5 * (state%u(i,j) + state%u(i-1,j))
       end do
     end do
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         v(i,j) = state%v(i,j)
       end do
     end do
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         gd(i,j) = 0.5 * (state%gd(i,j) + state%gd(i,j-1))
         ghs(i,j) = 0.5 * (static%ghs(i,j) + static%ghs(i,j-1))
