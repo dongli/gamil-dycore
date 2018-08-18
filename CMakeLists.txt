@@ -41,6 +41,8 @@ add_subdirectory(lib/datetime)
 add_subdirectory(lib/container)
 include_directories(${CMAKE_BINARY_DIR}/fortran_container)
 
+add_subdirectory(lib/fft)
+
 set(source_files
   src/string_mod.F90
   src/time_mod.F90
@@ -56,6 +58,7 @@ set(source_files
   src/data_mod.F90
   src/reduce_mod.F90
   src/diffusion_mod.F90
+  src/filter_mod.F90
   src/dycore_mod.F90
   src/dycore_test.F90
   src/test_cases/barotropic/rossby_haurwitz_wave_test_mod.F90
@@ -69,7 +72,7 @@ set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")
 
 add_executable(dycore_test.exe ${source_files})
 target_link_libraries(dycore_test.exe
-  ${MPI_Fortran_LIBRARIES} fortran_datetime fortran_container netcdf netcdff)
+  ${MPI_Fortran_LIBRARIES} fortran_datetime fortran_container fftpack netcdf netcdff)
 if (MPI_Fortran_FOUND)
   set_target_properties(dycore_test.exe PROPERTIES
     LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}"
