@@ -13,6 +13,7 @@ module dycore_mod
   use history_mod
   use restart_mod
   use diffusion_mod
+  use filter_mod
 
   implicit none
 
@@ -71,6 +72,7 @@ contains
     call data_init()
     call reduce_init()
     call diffusion_init()
+    call filter_init()
 
     select case (time_scheme_in)
     case ('predict_correct')
@@ -152,6 +154,7 @@ contains
     call data_final()
     call reduce_final()
     call diffusion_final()
+    call filter_final()
 
     call log_notice('Dycore module is finalized.')
 
@@ -173,9 +176,16 @@ contains
     real, intent(in) :: dt
     integer, intent(in) :: pass
 
-    integer i, j
+    integer i, j, i1, i2
+    real s1, s2
+    real smooth_residue_mass_div_lon(parallel%full_lat_start_idx_no_pole:parallel%full_lat_end_idx_no_pole)
+    real smooth_residue_mass_div_lat(parallel%half_lat_start_idx:parallel%half_lat_end_idx)
 
     call reduce_run(state, static)
+
+    ! Allow me to use i1 and i2 as shorthands.
+    i1 = parallel%full_lon_start_idx
+    i2 = parallel%full_lon_end_idx
 
     select case (pass)
     case (all_pass)
@@ -223,12 +233,32 @@ contains
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%du(i,j) = - tend%u_adv_lon(i,j) - tend%u_adv_lat(i,j)
         end do
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (full_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
+          s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
+          if (abs(s1) > 1.0e-16) then
+            call filter_run(tend%du(:,j))
+            s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
+            tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
+          end if
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
 
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv(i,j) = - tend%v_adv_lon(i,j) - tend%v_adv_lat(i,j)
         end do
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (half_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
+          s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
+          if (abs(s1) > 1.0e-16) then
+            call filter_run(tend%dv(:,j))
+            s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
+            tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
+          end if
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
 
       tend%dgd = 0.0
@@ -247,6 +277,29 @@ contains
       call meridional_mass_divergence_operator(state, tend)
 
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (full_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
+          s1 = sum(tend%mass_div_lon(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
+          if (abs(s1) > 1.0e-16) then
+            call filter_run(tend%mass_div_lon(:,j))
+            s2 = sum(tend%mass_div_lon(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
+            smooth_residue_mass_div_lon(j) = s1 - s2
+          end if
+          s1 = sum(tend%mass_div_lat(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j))) * mesh%full_cos_lat(j)
+          if (abs(s1) > 1.0e-16) then
+            call filter_run(tend%mass_div_lat(:,j))
+            s2 = sum(tend%mass_div_lat(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j))) * mesh%full_cos_lat(j)
+            if (half_reduce_factor(j) == 1 .and. half_reduce_factor(j-1) /= 1) then
+              smooth_residue_mass_div_lat(j-1) = smooth_residue_mass_div_lat(j-1) + s1 - s2
+            else if (half_reduce_factor(j) /= 1 .and. half_reduce_factor(j-1) == 1) then
+              smooth_residue_mass_div_lat(j) = smooth_residue_mass_div_lat(j) + s1 - s2
+            else if (half_reduce_factor(j) /= 1 .and. half_reduce_factor(j-1) /= 1) then
+              smooth_residue_mass_div_lat(j-1) = smooth_residue_mass_div_lat(j-1) + (s1 - s2) * 0.5
+              smooth_residue_mass_div_lat(j) = smooth_residue_mass_div_lat(j) + (s1 - s2) * 0.5
+            end if
+          end if
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dgd(i,j) = - tend%mass_div_lon(i,j) - tend%mass_div_lat(i,j)
         end do
@@ -254,13 +307,51 @@ contains
 
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-          tend%du(i,j) = tend%fv(i,j) + tend%cv(i,j) - tend%u_pgf(i,j)
+          tend%du(i,j) = tend%fv(i,j) + tend%cv(i,j)
+        end do
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (full_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
+          s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
+          if (abs(s1) > 1.0e-16) then
+            call filter_run(tend%du(:,j))
+            s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
+            tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
+          end if
+          s1 = sum(tend%u_pgf(i1:i2,j) * state%iap%u(i1:i2,j))
+          if (abs(s1) > 1.0e-16) then
+            call filter_run(tend%u_pgf(:,j))
+            s2 = sum(tend%u_pgf(i1:i2,j) * state%iap%u(i1:i2,j))
+            tend%u_pgf(i1:i2,j) = tend%u_pgf(i1:i2,j) * (s1 + smooth_residue_mass_div_lon(j)) / s2
+          end if
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+          tend%du(i,j) = tend%du(i,j) - tend%u_pgf(i,j)
         end do
       end do
 
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%dv(i,j) = - tend%fu(i,j) - tend%cu(i,j) - tend%v_pgf(i,j)
+          tend%dv(i,j) = - tend%fu(i,j) - tend%cu(i,j)
+        end do
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (half_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
+          s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
+          if (abs(s1) > 1.0e-16) then
+            call filter_run(tend%dv(:,j))
+            s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
+            tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
+          end if
+          s1 = sum(tend%v_pgf(i1:i2,j) * state%iap%v(i1:i2,j)) * mesh%half_cos_lat(j)
+          if (abs(s1) > 1.0e-16) then
+            call filter_run(tend%v_pgf(:,j))
+            s2 = sum(tend%v_pgf(i1:i2,j) * state%iap%v(i1:i2,j)) * mesh%half_cos_lat(j)
+            tend%v_pgf(i1:i2,j) = tend%v_pgf(i1:i2,j) * (s1 + smooth_residue_mass_div_lat(j)) / s2
+          end if
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+          tend%dv(i,j) = tend%dv(i,j) - tend%v_pgf(i,j)
         end do
       end do
     end select
