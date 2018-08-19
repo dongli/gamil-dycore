@@ -13,6 +13,7 @@ module dycore_mod
   use history_mod
   use restart_mod
   use diffusion_mod
+  use filter_mod
 
   implicit none
 
@@ -71,6 +72,7 @@ contains
     call data_init()
     call reduce_init()
     call diffusion_init()
+    call filter_init()
 
     select case (time_scheme_in)
     case ('predict_correct')
@@ -154,6 +156,7 @@ contains
     call data_final()
     call reduce_final()
     call diffusion_final()
+    call filter_final()
 
     call log_notice('Dycore module is finalized.')
 
@@ -252,7 +255,7 @@ contains
         if (full_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
           s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call smooth(tend%du(:,j))
+            call filter_run(tend%du(:,j))
             s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
             tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
           end if
@@ -268,7 +271,7 @@ contains
         if (half_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
           s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call smooth(tend%dv(:,j))
+            call filter_run(tend%dv(:,j))
             s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
             tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
           end if
@@ -298,13 +301,13 @@ contains
         if (full_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
           s1 = sum(tend%mass_div_lon(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
           if (abs(s1) > 1.0e-16) then
-            call smooth(tend%mass_div_lon(:,j))
+            call filter_run(tend%mass_div_lon(:,j))
             s2 = sum(tend%mass_div_lon(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
             smooth_residue_mass_div_lon(j) = s1 - s2
           end if
           s1 = sum(tend%mass_div_lat(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j))) * mesh%full_cos_lat(j)
           if (abs(s1) > 1.0e-16) then
-            call smooth(tend%mass_div_lat(:,j))
+            call filter_run(tend%mass_div_lat(:,j))
             s2 = sum(tend%mass_div_lat(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j))) * mesh%full_cos_lat(j)
             if (half_reduce_factor(j) == 1 .and. half_reduce_factor(j-1) /= 1) then
               smooth_residue_mass_div_lat(j-1) = smooth_residue_mass_div_lat(j-1) + s1 - s2
@@ -330,13 +333,13 @@ contains
         if (full_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
           s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call smooth(tend%du(:,j))
+            call filter_run(tend%du(:,j))
             s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
             tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
           end if
           s1 = sum(tend%u_pgf(i1:i2,j) * state%iap%u(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call smooth(tend%u_pgf(:,j))
+            call filter_run(tend%u_pgf(:,j))
             s2 = sum(tend%u_pgf(i1:i2,j) * state%iap%u(i1:i2,j))
             tend%u_pgf(i1:i2,j) = tend%u_pgf(i1:i2,j) * (s1 + smooth_residue_mass_div_lon(j)) / s2
           end if
@@ -355,13 +358,13 @@ contains
         if (half_reduce_factor(j) /= 1 .and. use_reduce_tend_smooth) then
           s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call smooth(tend%dv(:,j))
+            call filter_run(tend%dv(:,j))
             s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
             tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
           end if
           s1 = sum(tend%v_pgf(i1:i2,j) * state%iap%v(i1:i2,j)) * mesh%half_cos_lat(j)
           if (abs(s1) > 1.0e-16) then
-            call smooth(tend%v_pgf(:,j))
+            call filter_run(tend%v_pgf(:,j))
             s2 = sum(tend%v_pgf(i1:i2,j) * state%iap%v(i1:i2,j)) * mesh%half_cos_lat(j)
             tend%v_pgf(i1:i2,j) = tend%v_pgf(i1:i2,j) * (s1 + smooth_residue_mass_div_lat(j)) / s2
           end if
@@ -381,25 +384,6 @@ contains
     ! call check_antisymmetry(tend, state)
 
   end subroutine space_operators
-
-  subroutine smooth(array)
-
-    real, intent(inout) :: array(parallel%full_lon_lb_for_reduce:parallel%full_lon_ub_for_reduce)
-
-    real smoothed_array(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
-    integer i, loop
-
-    do loop = 1, 2
-      call parallel_fill_halo(array, left_halo=.true., right_halo=.true.)
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        smoothed_array(i) = sum(array(i-2:i+2)) / 5
-      end do
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        array(i) = smoothed_array(i)
-      end do
-    end do
-
-  end subroutine smooth
 
   subroutine zonal_momentum_advection_operator(state, tend)
 

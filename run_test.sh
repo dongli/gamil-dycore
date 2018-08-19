@@ -7,10 +7,10 @@ make
 
 echo "========================================================================"
 echo "                       Rossby-Haurwitz test                             "
-if [[ ! -d ${ROOT}/test/rh_01 ]]; then
-  mkdir -p ${ROOT}/test/rh_01
+if [[ ! -d ${ROOT}/test/rh_00 ]]; then
+  mkdir -p ${ROOT}/test/rh_00
 fi
-cd ${ROOT}/test/rh_01
+cd ${ROOT}/test/rh_00
 cp ${ROOT}/run/namelist.rh_test .
 rh_start_time=$(date '+%s')
 ${ROOT}/build/dycore_test.exe namelist.rh_test
@@ -20,10 +20,10 @@ ncl -Q ${ROOT}/src/test_cases/barotropic/plot_rossby_haurwitz_wave_test.ncl \
 
 echo "========================================================================"
 echo "                      Mountain zonal flow test                          "
-if [[ ! -d ${ROOT}/test/mz_01 ]]; then
-  mkdir -p ${ROOT}/test/mz_01
+if [[ ! -d ${ROOT}/test/mz_00 ]]; then
+  mkdir -p ${ROOT}/test/mz_00
 fi
-cd ${ROOT}/test/mz_01
+cd ${ROOT}/test/mz_00
 cp ${ROOT}/run/namelist.mz_test .
 mz_start_time=$(date '+%s')
 ${ROOT}/build/dycore_test.exe namelist.mz_test
@@ -33,10 +33,10 @@ ncl -Q ${ROOT}/src/test_cases/barotropic/plot_mountain_zonal_flow_test.ncl \
 
 echo "========================================================================"
 echo "                          Jet zonal flow test                           "
-if [[ ! -d ${ROOT}/test/jz_01 ]]; then
-  mkdir -p ${ROOT}/test/jz_01
+if [[ ! -d ${ROOT}/test/jz_00 ]]; then
+  mkdir -p ${ROOT}/test/jz_00
 fi
-cd ${ROOT}/test/jz_01
+cd ${ROOT}/test/jz_00
 cp ${ROOT}/run/namelist.jz_test .
 jz_start_time=$(date '+%s')
 ${ROOT}/build/dycore_test.exe namelist.jz_test
