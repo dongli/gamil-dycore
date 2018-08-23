@@ -16,7 +16,7 @@ res_h@cnLevelSelectionMode = "ManualLevels"
 res_h@cnMinLevelValF = 5050
 res_h@cnMaxLevelValF = 5950
 res_h@cnLevelSpacingF = 50
-; res_h@gsnPolar = "NH"
+res_h@gsnPolar = "NH"
 res_h@gsnLeftString = "Height (m)"
 
 res_u = True
