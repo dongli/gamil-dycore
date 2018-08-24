@@ -1,8 +1,8 @@
 load "$NCARG_ROOT/lib/ncarg/nclscripts/contrib/cd_string.ncl"
 
 if (.not. isdefined("file_prefix")) then
-  system("echo '[Error]: Argument file_prefix should be set!'")
-  exit
+  file_prefix = systemfunc("a=$(ls *.h0.*.nc | head -n1) && echo ${a/\.h0.*/}")
+  system("echo '[Notice]: Use file_prefix " + file_prefix + ".'")
 end if
 
 file_names = systemfunc("ls " + file_prefix + "*h0*.nc")

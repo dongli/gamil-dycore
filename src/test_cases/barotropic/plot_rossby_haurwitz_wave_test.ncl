@@ -49,8 +49,7 @@ do t = 0, dimsizes(file_names) - 1
   f = addfile(file_names(t), "r")
 
   time = f->time
-  time = (/time - 1/)
-  
+
   h = f->gd(0,:,:) / 9.80616
   h!0 = "lat"
   h!1 = "lon"
