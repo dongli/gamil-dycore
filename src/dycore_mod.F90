@@ -376,10 +376,10 @@ contains
       end do
     end select
 
-    tag = tag + 1
-    if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6 .or. tag == 18 .or. tag == 21)) then
-      call history_write(tend, tag)
-    end if
+    !tag = tag + 1
+    !if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6 .or. tag == 18 .or. tag == 21)) then
+    !  call history_write(tend, tag)
+    !end if
 
     ! call check_antisymmetry(tend, state)
 
