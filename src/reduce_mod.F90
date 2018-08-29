@@ -75,6 +75,13 @@ contains
     full_reduce_factor(:) = 1
     half_reduce_factor(:) = 1
     if (use_zonal_reduce) then
+      ! Sync with zonal tend filter.
+      if (use_zonal_tend_filter) then
+        do j = 1, size(zonal_reduce_factors)
+          zonal_tend_filter_tags(j) = merge(1, 0, zonal_reduce_factors(j) /= 0)
+        end do
+      end if
+
       if (parallel%has_south_pole) then
         do j = 1, size(zonal_reduce_factors)
           if (zonal_reduce_factors(j) == 0) exit

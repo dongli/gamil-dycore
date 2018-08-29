@@ -55,7 +55,9 @@ module params_mod
 
   logical is_restart_run
 
-  logical :: use_reduce_tend_smooth = .true.
+  logical :: use_zonal_tend_filter = .true.
+  integer :: zonal_tend_filter_tags(20) = 0
+  integer :: zonal_tend_filter_cutoff_wavenumber = 4
 
   namelist /dycore_params/ &
     num_lon, &
@@ -82,7 +84,9 @@ module params_mod
     use_zonal_reduce, &
     reduce_adv_lon, &
     zonal_reduce_factors, &
-    use_reduce_tend_smooth, &
+    use_zonal_tend_filter, &
+    zonal_tend_filter_tags, &
+    zonal_tend_filter_cutoff_wavenumber, &
     use_diffusion, &
     diffusion_coef
 
