@@ -6,6 +6,7 @@ module diffusion_mod
   use types_mod
   use data_mod
   use reduce_mod
+  use filter_mod
 
   implicit none
 
@@ -73,6 +74,15 @@ contains
                       (0.5 * coef%full_dlat(j))**2 * mesh%full_cos_lat(j)
       end do
     end do
+
+    ! Do FFT filter.
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+      if (filter_full_zonal_tend(j)) then
+        call filter_run(ud_lon(:,j))
+        call filter_run(ud_lat(:,j))
+      end if
+    end do
+
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         state%u(i,j) = state%u(i,j) + dt * diffusion_coef * (ud_lon(i,j) + ud_lat(i,j))
@@ -120,6 +130,15 @@ contains
           (0.5 * coef%half_dlat(j))**2 * mesh%half_cos_lat(j)
       end do
     end if
+
+    ! Do FFT filter.
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      if (filter_half_zonal_tend(j)) then
+        call filter_run(vd_lon(:,j))
+        call filter_run(vd_lat(:,j))
+      end if
+    end do
+
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         state%v(i,j) = state%v(i,j) + dt * diffusion_coef * (vd_lon(i,j) + vd_lat(i,j))
@@ -175,6 +194,15 @@ contains
         gdd_lat(i,j) = np
       end do
     end if
+
+    ! Do FFT filter.
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+      if (filter_full_zonal_tend(j)) then
+        call filter_run(gdd_lon(:,j))
+        call filter_run(gdd_lat(:,j))
+      end if
+    end do
+
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         state%gd(i,j) = state%gd(i,j) + dt * diffusion_coef * (gdd_lon(i,j) + gdd_lat(i,j))
