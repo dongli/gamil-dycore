@@ -78,8 +78,8 @@ contains
     ! Do FFT filter.
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       if (filter_full_zonal_tend(j)) then
-        call filter_run(ud_lon(:,j))
-        call filter_run(ud_lat(:,j))
+        call filter_array_at_full_lat(j, ud_lon(:,j))
+        call filter_array_at_full_lat(j, ud_lat(:,j))
       end if
     end do
 
@@ -134,8 +134,8 @@ contains
     ! Do FFT filter.
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       if (filter_half_zonal_tend(j)) then
-        call filter_run(vd_lon(:,j))
-        call filter_run(vd_lat(:,j))
+        call filter_array_at_half_lat(j, vd_lon(:,j))
+        call filter_array_at_half_lat(j, vd_lat(:,j))
       end if
     end do
 
@@ -198,8 +198,8 @@ contains
     ! Do FFT filter.
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       if (filter_full_zonal_tend(j)) then
-        call filter_run(gdd_lon(:,j))
-        call filter_run(gdd_lat(:,j))
+        call filter_array_at_full_lat(j, gdd_lon(:,j))
+        call filter_array_at_full_lat(j, gdd_lat(:,j))
       end if
     end do
 

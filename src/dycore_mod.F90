@@ -255,7 +255,7 @@ contains
         if (filter_full_zonal_tend(j)) then
           s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call filter_run(tend%du(:,j))
+            call filter_array_at_full_lat(j, tend%du(:,j))
             s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
             tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
           end if
@@ -271,7 +271,7 @@ contains
         if (filter_half_zonal_tend(j)) then
           s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call filter_run(tend%dv(:,j))
+            call filter_array_at_half_lat(j, tend%dv(:,j))
             s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
             tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
           end if
@@ -301,21 +301,21 @@ contains
         if (filter_full_zonal_tend(j)) then
           s1 = sum(tend%mass_div_lon(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
           if (abs(s1) > 1.0e-16) then
-            call filter_run(tend%mass_div_lon(:,j))
+            call filter_array_at_full_lat(j, tend%mass_div_lon(:,j))
             s2 = sum(tend%mass_div_lon(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
             filter_residue_mass_div_lon(j) = s1 - s2
           end if
           s1 = sum(tend%mass_div_lat(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j))) * mesh%full_cos_lat(j)
           if (abs(s1) > 1.0e-16) then
-            call filter_run(tend%mass_div_lat(:,j))
+            call filter_array_at_full_lat(j, tend%mass_div_lat(:,j))
             s2 = sum(tend%mass_div_lat(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j))) * mesh%full_cos_lat(j)
-            if (half_reduce_factor(j) == 1 .and. half_reduce_factor(j-1) /= 1) then
-              filter_residue_mass_div_lat(j-1) = filter_residue_mass_div_lat(j-1) + s1 - s2
-            else if (half_reduce_factor(j) /= 1 .and. half_reduce_factor(j-1) == 1) then
-              filter_residue_mass_div_lat(j) = filter_residue_mass_div_lat(j) + s1 - s2
-            else if (half_reduce_factor(j) /= 1 .and. half_reduce_factor(j-1) /= 1) then
+            if (filter_half_zonal_tend(j) .and. filter_half_zonal_tend(j-1)) then
               filter_residue_mass_div_lat(j-1) = filter_residue_mass_div_lat(j-1) + (s1 - s2) * 0.5
               filter_residue_mass_div_lat(j) = filter_residue_mass_div_lat(j) + (s1 - s2) * 0.5
+            else if (filter_half_zonal_tend(j)) then
+              filter_residue_mass_div_lat(j) = filter_residue_mass_div_lat(j) + s1 - s2
+            else if (filter_half_zonal_tend(j-1)) then
+              filter_residue_mass_div_lat(j-1) = filter_residue_mass_div_lat(j-1) + s1 - s2
             end if
           end if
         end if
@@ -333,13 +333,13 @@ contains
         if (filter_full_zonal_tend(j)) then
           s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call filter_run(tend%du(:,j))
+            call filter_array_at_full_lat(j, tend%du(:,j))
             s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
             tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
           end if
           s1 = sum(tend%u_pgf(i1:i2,j) * state%iap%u(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call filter_run(tend%u_pgf(:,j))
+            call filter_array_at_full_lat(j, tend%u_pgf(:,j))
             s2 = sum(tend%u_pgf(i1:i2,j) * state%iap%u(i1:i2,j))
             tend%u_pgf(i1:i2,j) = tend%u_pgf(i1:i2,j) * (s1 + filter_residue_mass_div_lon(j)) / s2
           end if
@@ -358,13 +358,13 @@ contains
         if (filter_half_zonal_tend(j)) then
           s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call filter_run(tend%dv(:,j))
+            call filter_array_at_half_lat(j, tend%dv(:,j))
             s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
             tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
           end if
           s1 = sum(tend%v_pgf(i1:i2,j) * state%iap%v(i1:i2,j)) * mesh%half_cos_lat(j)
           if (abs(s1) > 1.0e-16) then
-            call filter_run(tend%v_pgf(:,j))
+            call filter_array_at_half_lat(j, tend%v_pgf(:,j))
             s2 = sum(tend%v_pgf(i1:i2,j) * state%iap%v(i1:i2,j)) * mesh%half_cos_lat(j)
             tend%v_pgf(i1:i2,j) = tend%v_pgf(i1:i2,j) * (s1 + filter_residue_mass_div_lat(j)) / s2
           end if
