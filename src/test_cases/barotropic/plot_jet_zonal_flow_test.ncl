@@ -29,8 +29,8 @@ res_vor@gsnLeftString = "relative vorticity"
 
 res_h = res_common
 
-res_pannel = True
-res_pannel@gsnPanelRowSpec = True
+res_panel = True
+res_panel@gsnPanelRowSpec = True
 
 f = addfile(file_names(0), "r")
 gd0 = f->gd

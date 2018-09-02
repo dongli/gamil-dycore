@@ -37,7 +37,7 @@ contains
 
     filter_full_zonal_tend(:) = .false.
     filter_half_zonal_tend(:) = .false.
-    if (parallel%has_south_pole) then
+    if (parallel%has_south_pole .and. use_zonal_tend_filter) then
       do j = 1, size(zonal_tend_filter_cutoff_wavenumber)
         if (zonal_tend_filter_cutoff_wavenumber(j) /= 0) then
           filter_full_zonal_tend(parallel%full_lat_start_idx+j) = .true.
@@ -45,7 +45,7 @@ contains
         end if
       end do
     end if
-    if (parallel%has_north_pole) then
+    if (parallel%has_north_pole .and. use_zonal_tend_filter) then
       do j = 1, size(zonal_tend_filter_cutoff_wavenumber)
         if (zonal_tend_filter_cutoff_wavenumber(j) /= 0) then
           filter_full_zonal_tend(parallel%full_lat_end_idx-j) = .true.

@@ -22,15 +22,26 @@ res_h@gsnLeftString = "Height (m)"
 res_u = True
 res_u@gsnDraw = False
 res_u@gsnFrame = False
-res_u@vcGlyphStyle = "CurlyVector"
+res_u@cnLevelSelectionMode = "ManualLevels"
+res_u@cnMinLevelValF = -20
+res_u@cnMaxLevelValF =  20
+res_u@cnLevelSpacingF = 2
 res_u@gsnPolar = "NH"
+res_u@gsnLeftString = "U (m/s)"
+
+res_v = True
+res_v@gsnDraw = False
+res_v@gsnFrame = False
+res_v@cnLevelSelectionMode = "ManualLevels"
+res_v@cnMinLevelValF = -20
+res_v@cnMaxLevelValF =  20
+res_v@cnLevelSpacingF = 2
+res_v@gsnPolar = "NH"
+res_v@gsnLeftString = "V (m/s)"
 
 res_panel = True
 res_panel@gsnMaximize = True
-
-res_h_zonal = True
-res_h_zonal@trYMinF = 5025
-res_h_zonal@trYMaxF = 5050
+res_panel@gsnPanelRowSpec = True
 
 f = addfile(file_names(0), "r")
 hs = f->ghs(0,:,:) / 9.80616
@@ -45,15 +56,12 @@ do t = 0, dimsizes(file_names) - 1
   h&lon = f->lon
   res_h@gsnRightString = cd_string(f->time, "Day %d Hour %H Min %M")
   plot0 = gsn_csm_contour_map(wks, h, res_h)
-  draw(plot0)
-  frame(wks)
 
-  ;u = f->u(0,::5,::5)
-  ;v = f->v(0,::5,::5)
-  ;plot1 = gsn_csm_vector_map(wks, u, v, res_u)
+  res_u@gsnRightString = cd_string(f->time, "Day %d Hour %H Min %M")
+  plot1 = gsn_csm_contour_map(wks, f->u(0,:,:), res_u)
 
-  ;gsn_panel(wks, (/plot0,plot1/), (/2,1/), res_panel)
+  res_v@gsnRightString = cd_string(f->time, "Day %d Hour %H Min %M")
+  plot2 = gsn_csm_contour_map(wks, f->v(0,:,:), res_v)
 
-  ; res_h_zonal@gsnRightString = cd_string(f->time, "Day %d Hour %H Min %M")
-  ; plot = gsn_csm_xy(wks, f->lon, h(179,:), res_h_zonal)
+  gsn_panel(wks, (/plot0,plot1,plot2/), (/1,2/), res_panel)
 end do

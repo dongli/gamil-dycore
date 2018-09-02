@@ -109,24 +109,13 @@ contains
       ! Allocate reduced data arrays.
       do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
         if (full_reduce_factor(j) /= 1) then
-          call parallel_allocate(full_reduced_state(j)%u,      dim=[2,3], size=[full_reduce_factor(j),3], half_lon=.true.)
+          call parallel_allocate(full_reduced_state(j)%u,      dim=[2,3], size=[full_reduce_factor(j),3], full_lon=.true.)
           call parallel_allocate(full_reduced_state(j)%v,      dim=[2,3], size=[full_reduce_factor(j),3], full_lon=.true.)
           call parallel_allocate(full_reduced_state(j)%gd,     dim=[2,3], size=[full_reduce_factor(j),3], full_lon=.true.)
-          call parallel_allocate(full_reduced_state(j)%iap%u,  dim=[2,3], size=[full_reduce_factor(j),3], half_lon=.true.)
+          call parallel_allocate(full_reduced_state(j)%iap%u,  dim=[2,3], size=[full_reduce_factor(j),3], full_lon=.true.)
           call parallel_allocate(full_reduced_state(j)%iap%v,  dim=[2,3], size=[full_reduce_factor(j),3], full_lon=.true.)
           call parallel_allocate(full_reduced_state(j)%iap%gd, dim=[2,3], size=[full_reduce_factor(j),3], full_lon=.true.)
           call parallel_allocate(full_reduced_static(j)%ghs,   dim=[2,3], size=[full_reduce_factor(j),3], full_lon=.true.)
-        end if
-      end do
-      do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
-        if (half_reduce_factor(j) /= 1) then
-          call parallel_allocate(half_reduced_state(j)%u,      dim=[2,3], size=[half_reduce_factor(j),3], half_lon=.true.)
-          call parallel_allocate(half_reduced_state(j)%v,      dim=[2,3], size=[half_reduce_factor(j),3], full_lon=.true.)
-          call parallel_allocate(half_reduced_state(j)%gd,     dim=[2,3], size=[half_reduce_factor(j),3], full_lon=.true.)
-          call parallel_allocate(half_reduced_state(j)%iap%u,  dim=[2,3], size=[half_reduce_factor(j),3], half_lon=.true.)
-          call parallel_allocate(half_reduced_state(j)%iap%v,  dim=[2,3], size=[half_reduce_factor(j),3], full_lon=.true.)
-          call parallel_allocate(half_reduced_state(j)%iap%gd, dim=[2,3], size=[half_reduce_factor(j),3], full_lon=.true.)
-          ! call parallel_allocate(half_reduced_static(j)%ghs,   dim=[2,3], size=[half_reduce_factor(j),3], full_lon=.true.)
         end if
       end do
     end if
@@ -173,27 +162,6 @@ contains
             full_reduced_state(j)%iap%gd(:,k,:) = sqrt(full_reduced_state(j)%gd(:,k,:))
             full_reduced_state(j)%u(:,k,:) = full_reduced_state(j)%iap%u(:,k,:) / full_reduced_state(j)%iap%gd(:,k,:)
             full_reduced_state(j)%v(:,k,:) = full_reduced_state(j)%iap%v(:,k,:) / full_reduced_state(j)%iap%gd(:,k,:)
-          end do
-        end if
-      end do
-      do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
-        if (half_reduce_factor(j) > 1) then
-          do k = 1, half_reduce_factor(j)
-            call average_raw_array_to_reduced_array_at_half_lat(j, k, state%gd(:,j-1),    half_reduced_state(j)%gd(:,k,1))
-            call average_raw_array_to_reduced_array_at_half_lat(j, k, state%gd(:,j  ),    half_reduced_state(j)%gd(:,k,2))
-            call average_raw_array_to_reduced_array_at_half_lat(j, k, state%gd(:,j+1),    half_reduced_state(j)%gd(:,k,3))
-            call average_raw_array_to_reduced_array_at_half_lat(j, k, state%iap%u(:,j-1), half_reduced_state(j)%iap%u(:,k,1))
-            call average_raw_array_to_reduced_array_at_half_lat(j, k, state%iap%u(:,j  ), half_reduced_state(j)%iap%u(:,k,2))
-            call average_raw_array_to_reduced_array_at_half_lat(j, k, state%iap%u(:,j+1), half_reduced_state(j)%iap%u(:,k,3))
-            call average_raw_array_to_reduced_array_at_half_lat(j, k, state%iap%v(:,j-1), half_reduced_state(j)%iap%v(:,k,1))
-            call average_raw_array_to_reduced_array_at_half_lat(j, k, state%iap%v(:,j  ), half_reduced_state(j)%iap%v(:,k,2))
-            call average_raw_array_to_reduced_array_at_half_lat(j, k, state%iap%v(:,j+1), half_reduced_state(j)%iap%v(:,k,3))
-            ! call average_raw_array_to_reduced_array_at_half_lat(j, k, static%ghs(:,j-1),  half_reduced_static(j)%ghs(:,k,1))
-            ! call average_raw_array_to_reduced_array_at_half_lat(j, k, static%ghs(:,j  ),  half_reduced_static(j)%ghs(:,k,2))
-            ! call average_raw_array_to_reduced_array_at_half_lat(j, k, static%ghs(:,j+1),  half_reduced_static(j)%ghs(:,k,3))
-            half_reduced_state(j)%iap%gd(:,k,:) = sqrt(half_reduced_state(j)%gd(:,k,:))
-            half_reduced_state(j)%u(:,k,:) = half_reduced_state(j)%iap%u(:,k,:) / half_reduced_state(j)%iap%gd(:,k,:)
-            half_reduced_state(j)%v(:,k,:) = half_reduced_state(j)%iap%v(:,k,:) / half_reduced_state(j)%iap%gd(:,k,:)
           end do
         end if
       end do
