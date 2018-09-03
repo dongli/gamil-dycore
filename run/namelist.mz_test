@@ -1,20 +1,20 @@
 &dycore_params
 test_case = 'mountain_zonal_flow'
-case_name = 'mz_test.360x181.pc.dt240.base'
+case_name = 'mz_c_u_01.180x90.dt480'
 case_desc = 'Mountain zonal flow test'
 author = 'Li Dong <dongli@lasg.iap.ac.cn>'
 days = 20
-num_lon = 360
-num_lat = 181
-time_step_size = 240
+num_lon = 180
+num_lat = 90
+time_step_size = 480
 history_periods = '6 hours'
 restart_period = '6 hours'
 time_scheme = 'predict_correct' ! 'predict_correct' or 'runge_kutta'
 qcon_modified = .true.
 split_scheme = 'csp2' ! 'csp2' or 'csp1' or 'isp'
 subcycles = 6
-use_zonal_reduce = .true.
-reduce_adv_lon = .true.
-zonal_reduce_factors = 4, 4, 2, 2, 2
-use_reduce_tend_smooth = .true.
+use_zonal_reduce = .false.
+zonal_reduce_factors = 4, 2, 2
+use_zonal_tend_filter = .true.
+zonal_tend_filter_cutoff_wavenumber = 4, 4, 4
 /
