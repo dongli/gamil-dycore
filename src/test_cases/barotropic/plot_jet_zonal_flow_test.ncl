@@ -63,5 +63,5 @@ do t = 0, dimsizes(file_names) - 1
   h@long_name = "height"
   plot1 = gsn_csm_contour_map(wks, h(0,:,:), res_h)
 
-  gsn_panel(wks, (/plot0,plot1/), (/1,1/), res_pannel)
+  gsn_panel(wks, (/plot0,plot1/), (/1,1/), res_panel)
 end do

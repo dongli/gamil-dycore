@@ -31,15 +31,15 @@ contains
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       cos_lat = mesh%full_cos_lat(j)
       sin_lat = mesh%full_sin_lat(j)
-      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        cos_lon = mesh%half_cos_lon(i)
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        cos_lon = mesh%full_cos_lon(i)
         state(1)%u(i,j) = u0 * (cos_lat * cos_alpha + cos_lon * sin_lat * sin_alpha)
       end do
     end do
 
     call parallel_fill_halo(state(1)%u, all_halo=.true.)
 
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         sin_lon = mesh%full_cos_lon(i)
         state(1)%v(i,j) = - u0 * sin_lon * sin_alpha

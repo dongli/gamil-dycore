@@ -369,10 +369,10 @@ contains
       end do
     end select
 
-    !tag = tag + 1
-    !if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6 .or. tag == 18 .or. tag == 21)) then
+    ! tag = tag + 1
+    ! if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6 .or. tag == 18 .or. tag == 21)) then
     !  call history_write(tend, tag)
-    !end if
+    ! end if
 
     ! call check_antisymmetry(tend, state)
 
@@ -442,18 +442,19 @@ contains
     ! U
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%u_adv_lat(i,j) = (state%iap%u(i,j+1) * (state%v(i,j) * mesh%full_cos_lat(j) + state%v(i,j+1) * mesh%full_cos_lat(j+1)) - &
-                               state%iap%u(i,j-1) * (state%v(i,j) * mesh%full_cos_lat(j) + state%v(i,j-1) * mesh%full_cos_lat(j-1))) * &
-                              0.5 / coef%full_dlat(j)
+        tend%u_adv_lat(i,j) = 0.5 / coef%full_dlat(j) * &
+          ((state%v(i,j) * mesh%full_cos_lat(j) + state%v(i,j+1) * mesh%full_cos_lat(j+1)) * state%iap%u(i,j+1) - &
+           (state%v(i,j) * mesh%full_cos_lat(j) + state%v(i,j-1) * mesh%full_cos_lat(j-1)) * state%iap%u(i,j-1))
+                              
       end do
     end do
 
     ! V
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%v_adv_lat(i,j) = (state%iap%v(i,j+1) * (state%v(i,j) * mesh%full_cos_lat(j) + state%v(i,j+1) * mesh%full_cos_lat(j+1)) - &
-                               state%iap%v(i,j-1) * (state%v(i,j) * mesh%full_cos_lat(j) + state%v(i,j-1) * mesh%full_cos_lat(j-1))) * &
-                              0.5 / coef%full_dlat(j)
+        tend%v_adv_lat(i,j) = 0.5 / coef%full_dlat(j) * &
+          ((state%v(i,j) * mesh%full_cos_lat(j) + state%v(i,j+1) * mesh%full_cos_lat(j+1)) * state%iap%v(i,j+1) - &
+           (state%v(i,j) * mesh%full_cos_lat(j) + state%v(i,j-1) * mesh%full_cos_lat(j-1)) * state%iap%v(i,j-1))
       end do
     end do
 
@@ -690,44 +691,27 @@ contains
 
     integer i, j
 
+    ! Update IAP state.
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         new_state%gd(i,j) = old_state%gd(i,j) + dt * tend%dgd(i,j)
-        new_state%iap%gd(i,j) = sqrt(new_state%gd(i,j))
-      end do
-    end do
-
-    call parallel_fill_halo(new_state%iap%gd(:,:), all_halo=.true.)
-    call parallel_fill_halo(new_state%gd(:,:), all_halo=.true.)
-
-    ! Update IAP wind state.
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         new_state%iap%u(i,j) = old_state%iap%u(i,j) + dt * tend%du(i,j)
-      end do
-    end do
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         new_state%iap%v(i,j) = old_state%iap%v(i,j) + dt * tend%dv(i,j)
       end do
     end do
 
+    call parallel_fill_halo(new_state%gd(:,:), all_halo=.true.)
+    call parallel_fill_halo(new_state%iap%u(:,:), all_halo=.true.)
+    call parallel_fill_halo(new_state%iap%v(:,:), all_halo=.true.)
+
     ! Transform from IAP to normal state.
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+    do j = parallel%full_lat_lb, parallel%full_lat_ub
+      do i = parallel%full_lon_lb_for_reduce, parallel%full_lon_ub_for_reduce
+        new_state%iap%gd(i,j) = sqrt(new_state%gd(i,j))
         new_state%u(i,j) = new_state%iap%u(i,j) / new_state%iap%gd(i,j)
-      end do
-    end do
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         new_state%v(i,j) = new_state%iap%v(i,j) / new_state%iap%gd(i,j)
       end do
     end do
-
-    call parallel_fill_halo(new_state%iap%u(:,:), all_halo=.true.)
-    call parallel_fill_halo(new_state%iap%v(:,:), all_halo=.true.)
-    call parallel_fill_halo(new_state%u(:,:), all_halo=.true.)
-    call parallel_fill_halo(new_state%v(:,:), all_halo=.true.)
 
   end subroutine update_state
 
