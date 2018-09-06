@@ -369,10 +369,10 @@ contains
       end do
     end select
 
-    ! tag = tag + 1
-    ! if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6 .or. tag == 18 .or. tag == 21)) then
-    !  call history_write(tend, tag)
-    ! end if
+    tag = tag + 1
+    if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6)) then
+     call history_write(tend, tag)
+    end if
 
     ! call check_antisymmetry(tend, state)
 
@@ -576,8 +576,8 @@ contains
         do k = 1, full_reduce_factor(j)
           do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
             reduced_tend(i) = full_reduced_state(j)%iap%gd(i,k,2) * &
-              (full_reduced_state(j)%gd(i+1,k,2) + full_reduced_static(j)%ghs(i+1,k,2) - &
-               full_reduced_state(j)%gd(i-1,k,2) + full_reduced_static(j)%ghs(i-1,k,2)) / &
+              ((full_reduced_state(j)%gd(i+1,k,2) + full_reduced_static(j)%ghs(i+1,k,2)) - &
+               (full_reduced_state(j)%gd(i-1,k,2) + full_reduced_static(j)%ghs(i-1,k,2))) / &
               coef%full_dlon(j) / full_reduce_factor(j)
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%u_pgf(:,j))
