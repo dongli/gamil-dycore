@@ -18,10 +18,6 @@ module history_mod
   public history_final
   public history_write
 
-  ! A-grid velocity
-  real, allocatable :: u(:,:)
-  real, allocatable :: v(:,:)
-
   interface history_write
     module procedure history_write_state
     module procedure history_write_tendency
@@ -69,17 +65,11 @@ contains
     call io_add_var('dv', 'debug', long_name='dv', units='', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('dgd', 'debug', long_name='dgd', units='', dim_names=['lon ', 'lat ', 'time'])
 
-    if (.not. allocated(u)) call parallel_allocate(u, extended_halo=.true.)
-    if (.not. allocated(v)) call parallel_allocate(v, extended_halo=.true.)
-
     call log_notice('History module is initialized.')
 
   end subroutine history_init
 
   subroutine history_final()
-
-    if (allocated(u)) deallocate(u)
-    if (allocated(v)) deallocate(v)
 
     call log_notice('History module is finalized.')
 
@@ -93,22 +83,11 @@ contains
 
     integer i, j
 
-    ! Convert wind from C grid to A grid.
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        u(i,j) = 0.5 * (state%u(i,j) + state%u(i-1,j))
-      end do
-    end do
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        v(i,j) = 0.5 * (state%v(i,j) + state%v(i,j-1))
-      end do
-    end do
     call io_start_output()
     call io_output('lon', mesh%full_lon_deg(:))
     call io_output('lat', mesh%full_lat_deg(:))
-    call io_output('u', u(:,:))
-    call io_output('v', v(:,:))
+    call io_output('u', state%u(:,:))
+    call io_output('v', state%v(:,:))
     call io_output('gd', state%gd(:,:))
     call io_output('ghs', static%ghs(:,:))
     call io_output('rf', full_reduce_factor(:))
