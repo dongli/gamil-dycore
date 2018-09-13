@@ -59,6 +59,8 @@ set(source_files
   src/reduce_mod.F90
   src/diffusion_mod.F90
   src/filter_mod.F90
+  src/pole_a_grid_mod.F90
+  src/space_operators_mod.F90
   src/dycore_mod.F90
   src/dycore_test.F90
   src/test_cases/barotropic/rossby_haurwitz_wave_test_mod.F90

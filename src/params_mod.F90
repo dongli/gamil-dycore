@@ -9,6 +9,10 @@ module params_mod
   real, parameter :: omega = 2.0 * pi / 86400.0
   real, parameter :: radius = 6.37122e6
   real, parameter :: g = 9.80616
+  
+  integer, parameter :: all_pass = 0
+  integer, parameter :: fast_pass = 1
+  integer, parameter :: slow_pass = 2
 
   integer num_lon
   integer num_lat
@@ -58,6 +62,9 @@ module params_mod
   logical :: use_zonal_tend_filter = .true.
   integer :: zonal_tend_filter_cutoff_wavenumber(20) = 0
 
+  logical :: use_pole_a_grid = .true.
+  integer :: pole_a_grid_tag(20) = 0
+
   namelist /dycore_params/ &
     num_lon, &
     num_lat, &
@@ -85,6 +92,8 @@ module params_mod
     zonal_reduce_factors, &
     use_zonal_tend_filter, &
     zonal_tend_filter_cutoff_wavenumber, &
+    use_pole_a_grid, &
+    pole_a_grid_tag, &
     use_diffusion, &
     diffusion_coef
 

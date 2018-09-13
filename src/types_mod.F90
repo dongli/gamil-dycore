@@ -33,14 +33,18 @@ module types_mod
 
   ! IAP transformed variables
   type iap_type
-    real, allocatable :: u(:,:)
-    real, allocatable :: v(:,:)
+    real, allocatable :: u_a(:,:)
+    real, allocatable :: v_a(:,:)
+    real, allocatable :: u_c(:,:)
+    real, allocatable :: v_c(:,:)
     real, allocatable :: gd(:,:)
   end type iap_type
 
   type state_type
-    real, allocatable :: u(:,:)
-    real, allocatable :: v(:,:)
+    real, allocatable :: u_a(:,:)
+    real, allocatable :: v_a(:,:)
+    real, allocatable :: u_c(:,:)
+    real, allocatable :: v_c(:,:)
     real, allocatable :: gd(:,:) ! Geopotential depth
     type(iap_type) iap
   end type state_type
@@ -50,20 +54,32 @@ module types_mod
   end type static_type
 
   type tend_type
-    real, allocatable :: u_adv_lon(:,:)
-    real, allocatable :: u_adv_lat(:,:)
-    real, allocatable :: v_adv_lon(:,:)
-    real, allocatable :: v_adv_lat(:,:)
-    real, allocatable :: fu(:,:)
-    real, allocatable :: fv(:,:)
-    real, allocatable :: cu(:,:)
-    real, allocatable :: cv(:,:)
-    real, allocatable :: u_pgf(:,:)
-    real, allocatable :: v_pgf(:,:)
+    real, allocatable :: u_adv_lon_a(:,:)
+    real, allocatable :: u_adv_lat_a(:,:)
+    real, allocatable :: v_adv_lon_a(:,:)
+    real, allocatable :: v_adv_lat_a(:,:)
+    real, allocatable :: fu_a(:,:)
+    real, allocatable :: fv_a(:,:)
+    real, allocatable :: cu_a(:,:)
+    real, allocatable :: cv_a(:,:)
+    real, allocatable :: u_pgf_a(:,:)
+    real, allocatable :: v_pgf_a(:,:)
+    real, allocatable :: u_adv_lon_c(:,:)
+    real, allocatable :: u_adv_lat_c(:,:)
+    real, allocatable :: v_adv_lon_c(:,:)
+    real, allocatable :: v_adv_lat_c(:,:)
+    real, allocatable :: fu_c(:,:)
+    real, allocatable :: fv_c(:,:)
+    real, allocatable :: cu_c(:,:)
+    real, allocatable :: cv_c(:,:)
+    real, allocatable :: u_pgf_c(:,:)
+    real, allocatable :: v_pgf_c(:,:)
     real, allocatable :: mass_div_lon(:,:)
     real, allocatable :: mass_div_lat(:,:)
-    real, allocatable :: du(:,:)
-    real, allocatable :: dv(:,:)
+    real, allocatable :: du_a(:,:)
+    real, allocatable :: dv_a(:,:)
+    real, allocatable :: du_c(:,:)
+    real, allocatable :: dv_c(:,:)
     real, allocatable :: dgd(:,:)
   end type tend_type
 
@@ -108,11 +124,15 @@ contains
 
     type(state_type), intent(out) :: state
 
-    if (.not. allocated(state%u))           call parallel_allocate(state%u,             half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(state%v))           call parallel_allocate(state%v,             half_lat=.true., extended_halo=.true.)
+    if (.not. allocated(state%u_a))         call parallel_allocate(state%u_a,                            extended_halo=.true.)
+    if (.not. allocated(state%v_a))         call parallel_allocate(state%v_a,                            extended_halo=.true.)
+    if (.not. allocated(state%u_c))         call parallel_allocate(state%u_c,           half_lon=.true., extended_halo=.true.)
+    if (.not. allocated(state%v_c))         call parallel_allocate(state%v_c,           half_lat=.true., extended_halo=.true.)
     if (.not. allocated(state%gd))          call parallel_allocate(state%gd,                             extended_halo=.true.)
-    if (.not. allocated(state%iap%u))       call parallel_allocate(state%iap%u,         half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(state%iap%v))       call parallel_allocate(state%iap%v,         half_lat=.true., extended_halo=.true.)
+    if (.not. allocated(state%iap%u_a))     call parallel_allocate(state%iap%u_a,                        extended_halo=.true.)
+    if (.not. allocated(state%iap%v_a))     call parallel_allocate(state%iap%v_a,                        extended_halo=.true.)
+    if (.not. allocated(state%iap%u_c))     call parallel_allocate(state%iap%u_c,       half_lon=.true., extended_halo=.true.)
+    if (.not. allocated(state%iap%v_c))     call parallel_allocate(state%iap%v_c,       half_lat=.true., extended_halo=.true.)
     if (.not. allocated(state%iap%gd))      call parallel_allocate(state%iap%gd,                         extended_halo=.true.)
 
   end subroutine allocate_state_data
@@ -121,20 +141,32 @@ contains
 
     type(tend_type), intent(out) :: tend
 
-    if (.not. allocated(tend%u_adv_lon))    call parallel_allocate(tend%u_adv_lon,      half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(tend%u_adv_lat))    call parallel_allocate(tend%u_adv_lat,      half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(tend%fv))           call parallel_allocate(tend%fv,             half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(tend%cv))           call parallel_allocate(tend%cv,             half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(tend%u_pgf))        call parallel_allocate(tend%u_pgf,          half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(tend%v_adv_lon))    call parallel_allocate(tend%v_adv_lon,      half_lat=.true., extended_halo=.true.)
-    if (.not. allocated(tend%v_adv_lat))    call parallel_allocate(tend%v_adv_lat,      half_lat=.true., extended_halo=.true.)
-    if (.not. allocated(tend%fu))           call parallel_allocate(tend%fu,             half_lat=.true., extended_halo=.true.)
-    if (.not. allocated(tend%cu))           call parallel_allocate(tend%cu,             half_lat=.true., extended_halo=.true.)
-    if (.not. allocated(tend%v_pgf))        call parallel_allocate(tend%v_pgf,          half_lat=.true., extended_halo=.true.)
+    if (.not. allocated(tend%u_adv_lon_a))  call parallel_allocate(tend%u_adv_lon_a,                     extended_halo=.true.)
+    if (.not. allocated(tend%u_adv_lat_a))  call parallel_allocate(tend%u_adv_lat_a,                     extended_halo=.true.)
+    if (.not. allocated(tend%fv_a))         call parallel_allocate(tend%fv_a,                            extended_halo=.true.)
+    if (.not. allocated(tend%cv_a))         call parallel_allocate(tend%cv_a,                            extended_halo=.true.)
+    if (.not. allocated(tend%u_pgf_a))      call parallel_allocate(tend%u_pgf_a,                         extended_halo=.true.)
+    if (.not. allocated(tend%v_adv_lon_a))  call parallel_allocate(tend%v_adv_lon_a,                     extended_halo=.true.)
+    if (.not. allocated(tend%v_adv_lat_a))  call parallel_allocate(tend%v_adv_lat_a,                     extended_halo=.true.)
+    if (.not. allocated(tend%fu_a))         call parallel_allocate(tend%fu_a,                            extended_halo=.true.)
+    if (.not. allocated(tend%cu_a))         call parallel_allocate(tend%cu_a,                            extended_halo=.true.)
+    if (.not. allocated(tend%v_pgf_a))      call parallel_allocate(tend%v_pgf_a,                         extended_halo=.true.)
+    if (.not. allocated(tend%u_adv_lon_c))  call parallel_allocate(tend%u_adv_lon_c,    half_lon=.true., extended_halo=.true.)
+    if (.not. allocated(tend%u_adv_lat_c))  call parallel_allocate(tend%u_adv_lat_c,    half_lon=.true., extended_halo=.true.)
+    if (.not. allocated(tend%fv_c))         call parallel_allocate(tend%fv_c,           half_lon=.true., extended_halo=.true.)
+    if (.not. allocated(tend%cv_c))         call parallel_allocate(tend%cv_c,           half_lon=.true., extended_halo=.true.)
+    if (.not. allocated(tend%u_pgf_c))      call parallel_allocate(tend%u_pgf_c,        half_lon=.true., extended_halo=.true.)
+    if (.not. allocated(tend%v_adv_lon_c))  call parallel_allocate(tend%v_adv_lon_c,    half_lat=.true., extended_halo=.true.)
+    if (.not. allocated(tend%v_adv_lat_c))  call parallel_allocate(tend%v_adv_lat_c,    half_lat=.true., extended_halo=.true.)
+    if (.not. allocated(tend%fu_c))         call parallel_allocate(tend%fu_c,           half_lat=.true., extended_halo=.true.)
+    if (.not. allocated(tend%cu_c))         call parallel_allocate(tend%cu_c,           half_lat=.true., extended_halo=.true.)
+    if (.not. allocated(tend%v_pgf_c))      call parallel_allocate(tend%v_pgf_c,        half_lat=.true., extended_halo=.true.)
     if (.not. allocated(tend%mass_div_lon)) call parallel_allocate(tend%mass_div_lon,                    extended_halo=.true.)
     if (.not. allocated(tend%mass_div_lat)) call parallel_allocate(tend%mass_div_lat,                    extended_halo=.true.)
-    if (.not. allocated(tend%du))           call parallel_allocate(tend%du,             half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(tend%dv))           call parallel_allocate(tend%dv,             half_lat=.true., extended_halo=.true.)
+    if (.not. allocated(tend%du_a))         call parallel_allocate(tend%du_a,                            extended_halo=.true.)
+    if (.not. allocated(tend%dv_a))         call parallel_allocate(tend%dv_a,                            extended_halo=.true.)
+    if (.not. allocated(tend%du_c))         call parallel_allocate(tend%du_c,           half_lon=.true., extended_halo=.true.)
+    if (.not. allocated(tend%dv_c))         call parallel_allocate(tend%dv_c,           half_lat=.true., extended_halo=.true.)
     if (.not. allocated(tend%dgd))          call parallel_allocate(tend%dgd,                             extended_halo=.true.)
 
   end subroutine allocate_tend_data
@@ -164,12 +196,16 @@ contains
 
     type(state_type), intent(inout) :: state
 
-    if (allocated(state%u)) deallocate(state%u)
-    if (allocated(state%v)) deallocate(state%v)
+    if (allocated(state%u_a)) deallocate(state%u_a)
+    if (allocated(state%v_a)) deallocate(state%v_a)
+    if (allocated(state%u_c)) deallocate(state%u_c)
+    if (allocated(state%v_c)) deallocate(state%v_c)
     if (allocated(state%gd)) deallocate(state%gd)
 
-    if (allocated(state%iap%u)) deallocate(state%iap%u)
-    if (allocated(state%iap%v)) deallocate(state%iap%v)
+    if (allocated(state%iap%u_a)) deallocate(state%iap%u_a)
+    if (allocated(state%iap%v_a)) deallocate(state%iap%v_a)
+    if (allocated(state%iap%u_c)) deallocate(state%iap%u_c)
+    if (allocated(state%iap%v_c)) deallocate(state%iap%v_c)
     if (allocated(state%iap%gd)) deallocate(state%iap%gd)
 
   end subroutine deallocate_state_data
@@ -178,20 +214,32 @@ contains
 
     type(tend_type), intent(inout) :: tend
 
-    if (allocated(tend%u_adv_lon)) deallocate(tend%u_adv_lon)
-    if (allocated(tend%u_adv_lat)) deallocate(tend%u_adv_lat)
-    if (allocated(tend%v_adv_lon)) deallocate(tend%v_adv_lon)
-    if (allocated(tend%v_adv_lat)) deallocate(tend%v_adv_lat)
-    if (allocated(tend%fu)) deallocate(tend%fu)
-    if (allocated(tend%fv)) deallocate(tend%fv)
-    if (allocated(tend%cu)) deallocate(tend%cu)
-    if (allocated(tend%cv)) deallocate(tend%cv)
-    if (allocated(tend%u_pgf)) deallocate(tend%u_pgf)
-    if (allocated(tend%v_pgf)) deallocate(tend%v_pgf)
+    if (allocated(tend%u_adv_lon_a)) deallocate(tend%u_adv_lon_a)
+    if (allocated(tend%u_adv_lat_a)) deallocate(tend%u_adv_lat_a)
+    if (allocated(tend%v_adv_lon_a)) deallocate(tend%v_adv_lon_a)
+    if (allocated(tend%v_adv_lat_a)) deallocate(tend%v_adv_lat_a)
+    if (allocated(tend%fu_a)) deallocate(tend%fu_a)
+    if (allocated(tend%fv_a)) deallocate(tend%fv_a)
+    if (allocated(tend%cu_a)) deallocate(tend%cu_a)
+    if (allocated(tend%cv_a)) deallocate(tend%cv_a)
+    if (allocated(tend%u_pgf_a)) deallocate(tend%u_pgf_a)
+    if (allocated(tend%v_pgf_a)) deallocate(tend%v_pgf_a)
+    if (allocated(tend%u_adv_lon_c)) deallocate(tend%u_adv_lon_c)
+    if (allocated(tend%u_adv_lat_c)) deallocate(tend%u_adv_lat_c)
+    if (allocated(tend%v_adv_lon_c)) deallocate(tend%v_adv_lon_c)
+    if (allocated(tend%v_adv_lat_c)) deallocate(tend%v_adv_lat_c)
+    if (allocated(tend%fu_c)) deallocate(tend%fu_c)
+    if (allocated(tend%fv_c)) deallocate(tend%fv_c)
+    if (allocated(tend%cu_c)) deallocate(tend%cu_c)
+    if (allocated(tend%cv_c)) deallocate(tend%cv_c)
+    if (allocated(tend%u_pgf_c)) deallocate(tend%u_pgf_c)
+    if (allocated(tend%v_pgf_c)) deallocate(tend%v_pgf_c)
     if (allocated(tend%mass_div_lon)) deallocate(tend%mass_div_lon)
     if (allocated(tend%mass_div_lat)) deallocate(tend%mass_div_lat)
-    if (allocated(tend%du)) deallocate(tend%du)
-    if (allocated(tend%dv)) deallocate(tend%dv)
+    if (allocated(tend%du_a)) deallocate(tend%du_a)
+    if (allocated(tend%dv_a)) deallocate(tend%dv_a)
+    if (allocated(tend%du_c)) deallocate(tend%du_c)
+    if (allocated(tend%dv_c)) deallocate(tend%dv_c)
     if (allocated(tend%dgd)) deallocate(tend%dgd)
 
   end subroutine deallocate_tend_data
@@ -212,18 +260,18 @@ contains
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        state%iap%u(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%u(i,j)
+        state%iap%u_c(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%u_c(i,j)
       end do
     end do
 
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        state%iap%v(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%v(i,j)
+        state%iap%v_c(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%v_c(i,j)
       end do
     end do
 
-    call parallel_fill_halo(state%iap%u(:,:), all_halo=.true.)
-    call parallel_fill_halo(state%iap%v(:,:), all_halo=.true.)
+    call parallel_fill_halo(state%iap%u_c(:,:), all_halo=.true.)
+    call parallel_fill_halo(state%iap%v_c(:,:), all_halo=.true.)
 
   end subroutine iap_transform
 
@@ -232,10 +280,14 @@ contains
     type(state_type), intent(in) :: state1
     type(state_type), intent(inout) :: state2
 
-    state2%u = state1%u
-    state2%iap%u = state1%iap%u
-    state2%v = state1%v
-    state2%iap%v = state1%iap%v
+    state2%u_a = state1%u_a
+    state2%iap%u_a = state1%iap%u_a
+    state2%v_a = state1%v_a
+    state2%iap%v_a = state1%iap%v_a
+    state2%u_c = state1%u_c
+    state2%iap%u_c = state1%iap%u_c
+    state2%v_c = state1%v_c
+    state2%iap%v_c = state1%iap%v_c
     state2%gd = state1%gd
     state2%iap%gd = state1%iap%gd
 
@@ -247,10 +299,14 @@ contains
     type(state_type), intent(in) :: state2
     type(state_type), intent(inout) :: state3
 
-    state3%u = (state1%u + state2%u) * 0.5
-    state3%iap%u = (state1%iap%u + state2%iap%u) * 0.5
-    state3%v = (state1%v + state2%v) * 0.5
-    state3%iap%v = (state1%iap%v + state2%iap%v) * 0.5
+    state3%u_a = (state1%u_a + state2%u_a) * 0.5
+    state3%iap%u_a = (state1%iap%u_a + state2%iap%u_a) * 0.5
+    state3%v_a = (state1%v_a + state2%v_a) * 0.5
+    state3%iap%v_a = (state1%iap%v_a + state2%iap%v_a) * 0.5
+    state3%u_c = (state1%u_c + state2%u_c) * 0.5
+    state3%iap%u_c = (state1%iap%u_c + state2%iap%u_c) * 0.5
+    state3%v_c = (state1%v_c + state2%v_c) * 0.5
+    state3%iap%v_c = (state1%iap%v_c + state2%iap%v_c) * 0.5
     state3%gd = (state1%gd + state2%gd) * 0.5
     state3%iap%gd = (state1%iap%gd + state2%iap%gd) * 0.5
 
