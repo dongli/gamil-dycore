@@ -10,6 +10,11 @@ module mesh_mod
   public mesh
   public mesh_init
   public mesh_final
+  public south_pole
+  public north_pole
+
+  integer, parameter :: south_pole = 1
+  integer, parameter :: north_pole = 2
 
   type mesh_type
     integer num_full_lon

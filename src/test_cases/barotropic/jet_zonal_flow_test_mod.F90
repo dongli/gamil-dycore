@@ -41,20 +41,14 @@ contains
     call parallel_fill_halo(static%ghs, all_halo=.true.)
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        state(1)%u_c(i,j) = u_function(mesh%full_lat(j))
-      end do
-    end do
-
-    call parallel_fill_halo(state(1)%u_c, all_halo=.true.)
-
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        state(1)%v_c(i,j) = 0.0
+        state(1)%u_a(i,j) = u_function(mesh%full_lat(j))
       end do
     end do
 
-    call parallel_fill_halo(state(1)%v_c, all_halo=.true.)
+    call parallel_fill_halo(state(1)%u_a, all_halo=.true.)
+
+    state(1)%v_a(:,:) = 0.0
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       if (j == parallel%full_lat_start_idx) then
@@ -66,7 +60,7 @@ contains
         end if
         state(1)%gd(0,j) = gh0 - state(1)%gd(0,j)
       end if
-      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         state(1)%gd(i,j) = state(1)%gd(0,j)
         ! Add perturbation.
         state(1)%gd(i,j) = state(1)%gd(i,j) + ghd * &

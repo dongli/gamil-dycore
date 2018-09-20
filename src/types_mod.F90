@@ -259,6 +259,21 @@ contains
     call parallel_fill_halo(state%iap%gd(:,:), all_halo=.true.)
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        state%iap%u_a(i,j) = state%iap%gd(i,j) * state%u_a(i,j)
+      end do
+    end do
+
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        state%iap%v_a(i,j) = state%iap%gd(i,j) * state%v_a(i,j)
+      end do
+    end do
+
+    call parallel_fill_halo(state%iap%u_a(:,:), all_halo=.true.)
+    call parallel_fill_halo(state%iap%v_a(:,:), all_halo=.true.)
+
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         state%iap%u_c(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%u_c(i,j)
       end do

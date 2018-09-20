@@ -126,6 +126,7 @@ contains
 
     call reset_cos_lat_at_poles()
 
+    call pole_a_grid_init_state(state(old_time_idx))
     call iap_transform(state(old_time_idx))
 
     call diag_run(state(old_time_idx))

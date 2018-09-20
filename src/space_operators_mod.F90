@@ -14,20 +14,20 @@ module space_operators_mod
   private
 
   public space_operators_run
-  public join_ac_tendencies
 
 contains
 
-  subroutine zonal_momentum_advection_operator_on_a_grid(state, tend)
+  subroutine zonal_momentum_advection_operator_on_a_grid(state, tend, pole)
 
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
+    integer, intent(in) :: pole
 
     real reduced_tend(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
     integer i, j, k
 
     ! U
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_a_grid(pole), full_lat_end_idx_no_pole_a_grid(pole)
       if (full_reduce_factor(j) == 1 .or. .not. reduce_adv_lon) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%u_adv_lon_a(i,j) = 0.5 / coef%full_dlon(j) * &
@@ -49,7 +49,7 @@ contains
     end do
 
     ! V
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_a_grid(pole), full_lat_end_idx_no_pole_a_grid(pole)
       if (full_reduce_factor(j) == 1 .or. .not. reduce_adv_lon) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%v_adv_lon_a(i,j) = 0.5 / coef%full_dlon(j) * &
@@ -72,15 +72,16 @@ contains
 
   end subroutine zonal_momentum_advection_operator_on_a_grid
 
-  subroutine meridional_momentum_advection_operator_on_a_grid(state, tend)
+  subroutine meridional_momentum_advection_operator_on_a_grid(state, tend, pole)
 
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
+    integer, intent(in) :: pole
 
     integer i, j
 
     ! U
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_a_grid(pole), full_lat_end_idx_no_pole_a_grid(pole)
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%u_adv_lat_a(i,j) = 0.5 / coef%full_dlat(j) * &
           ((state%v_a(i,j) * mesh%full_cos_lat(j) + state%v_a(i,j+1) * mesh%full_cos_lat(j+1)) * state%iap%u_a(i,j+1) - &
@@ -90,7 +91,7 @@ contains
     end do
 
     ! V
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_a_grid(pole), full_lat_end_idx_no_pole_a_grid(pole)
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%v_adv_lat_a(i,j) = 0.5 / coef%full_dlat(j) * &
           ((state%v_a(i,j) * mesh%full_cos_lat(j) + state%v_a(i,j+1) * mesh%full_cos_lat(j+1)) * state%iap%v_a(i,j+1) - &
@@ -100,16 +101,17 @@ contains
 
   end subroutine meridional_momentum_advection_operator_on_a_grid
 
-  subroutine coriolis_operator_on_a_grid(state, tend)
+  subroutine coriolis_operator_on_a_grid(state, tend, pole)
 
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
+    integer, intent(in) :: pole
 
     real reduced_tend(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
     integer i, j, k
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_a_grid(pole), full_lat_end_idx_no_pole_a_grid(pole)
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%fv_a(i,j) = coef%cori(j) * state%iap%v_a(i,j)
@@ -128,7 +130,7 @@ contains
 !$OMP END PARALLEL DO
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_a_grid(pole), full_lat_end_idx_no_pole_a_grid(pole)
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%fu_a(i,j) = coef%cori(j) * state%iap%u_a(i,j)
@@ -148,16 +150,17 @@ contains
 
   end subroutine coriolis_operator_on_a_grid
 
-  subroutine curvature_operator_on_a_grid(state, tend)
+  subroutine curvature_operator_on_a_grid(state, tend, pole)
 
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
+    integer, intent(in) :: pole
 
     real reduced_tend(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
     integer i, j, k
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_a_grid(pole), full_lat_end_idx_no_pole_a_grid(pole)
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%cv_a(i,j) = coef%curv(j) * state%u_a(i,j) * state%iap%v_a(i,j)
@@ -176,7 +179,7 @@ contains
 !$OMP END PARALLEL DO
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_a_grid(pole), full_lat_end_idx_no_pole_a_grid(pole)
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%cu_a(i,j) = coef%curv(j) * state%u_a(i,j) * state%iap%u_a(i,j)
@@ -196,16 +199,17 @@ contains
 
   end subroutine curvature_operator_on_a_grid
 
-  subroutine zonal_pressure_gradient_force_operator_on_a_grid(state, tend)
+  subroutine zonal_pressure_gradient_force_operator_on_a_grid(state, tend, pole)
 
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
+    integer, intent(in) :: pole
 
     real reduced_tend(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
     integer i, j, k
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_a_grid(pole), full_lat_end_idx_no_pole_a_grid(pole)
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%u_pgf_a(i,j) = state%iap%gd(i,j) / coef%full_dlon(j) * &
@@ -229,14 +233,15 @@ contains
 
   end subroutine zonal_pressure_gradient_force_operator_on_a_grid
 
-  subroutine meridional_pressure_gradient_force_operator_on_a_grid(state, tend)
+  subroutine meridional_pressure_gradient_force_operator_on_a_grid(state, tend, pole)
 
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
+    integer, intent(in) :: pole
 
     integer i, j
 
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_a_grid(pole), full_lat_end_idx_no_pole_a_grid(pole)
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%v_pgf_a(i,j) = state%iap%gd(i,j) / coef%full_dlat(j) * mesh%full_cos_lat(j) * &
           (state%gd(i,j+1) + static%ghs(i,j+1) - state%gd(i,j-1) - static%ghs(i,j-1))
@@ -245,16 +250,17 @@ contains
 
   end subroutine meridional_pressure_gradient_force_operator_on_a_grid
 
-  subroutine zonal_mass_divergence_operator_on_a_grid(state, tend)
+  subroutine zonal_mass_divergence_operator_on_a_grid(state, tend, pole)
 
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
+    integer, intent(in) :: pole
 
     real reduced_tend(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
     integer i, j, k
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_a_grid(pole), full_lat_end_idx_no_pole_a_grid(pole)
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%mass_div_lon(i,j) = (state%iap%gd(i+1,j) * state%iap%u_a(i+1,j) - &
@@ -278,15 +284,16 @@ contains
 
   end subroutine zonal_mass_divergence_operator_on_a_grid
 
-  subroutine meridional_mass_divergence_operator_on_a_grid(state, tend)
+  subroutine meridional_mass_divergence_operator_on_a_grid(state, tend, pole)
 
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
+    integer, intent(in) :: pole
 
     real sp, np
     integer i, j
 
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_a_grid(pole), full_lat_end_idx_no_pole_a_grid(pole)
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%mass_div_lat(i,j) = (state%iap%gd(i,j+1) * state%iap%v_a(i,j+1) * mesh%full_cos_lat(j+1) - &
                                   state%iap%gd(i,j-1) * state%iap%v_a(i,j-1) * mesh%full_cos_lat(j-1)) / &
@@ -331,7 +338,7 @@ contains
     integer i, j, k
 
     ! U
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_c_grid, full_lat_end_idx_no_pole_c_grid
       if (full_reduce_factor(j) == 1 .or. .not. reduce_adv_lon) then
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%u_adv_lon_c(i,j) = 0.5 / coef%full_dlon(j) * &
@@ -353,7 +360,7 @@ contains
     end do
 
     ! V
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+    do j = half_lat_start_idx_c_grid, half_lat_end_idx_c_grid
       if (half_reduce_factor(j) == 1 .or. .not. reduce_adv_lon) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%v_adv_lon_c(i,j) = 0.5 / coef%half_dlon(j) * &
@@ -384,7 +391,7 @@ contains
     integer i, j
 
     ! U
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_c_grid, full_lat_end_idx_no_pole_c_grid
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         tend%u_adv_lat_c(i,j) = 0.5 / coef%full_dlat(j) * &
           ((state%v_c(i,j  ) + state%v_c(i+1,j  )) * mesh%half_cos_lat(j  ) * state%iap%u_c(i,j+1) - &
@@ -393,7 +400,7 @@ contains
     end do
 
     ! V
-    do j = parallel%half_lat_start_idx_no_pole, parallel%half_lat_end_idx_no_pole
+    do j = half_lat_start_idx_no_pole_c_grid, half_lat_end_idx_no_pole_c_grid
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%v_adv_lat_c(i,j) = 0.5 / coef%half_dlat(j) * &
           ((state%v_c(i,j) * mesh%half_cos_lat(j) + state%v_c(i,j+1) * mesh%half_cos_lat(j+1)) * state%iap%v_c(i,j+1) - &
@@ -431,7 +438,7 @@ contains
     integer i, j, k
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(c1, c2, i, k, reduced_tend)
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_c_grid, full_lat_end_idx_no_pole_c_grid
       c1 = mesh%half_cos_lat(j-1) / mesh%full_cos_lat(j)
       c2 = mesh%half_cos_lat(j  ) / mesh%full_cos_lat(j)
       if (full_reduce_factor(j) == 1) then
@@ -456,7 +463,7 @@ contains
 !$OMP END PARALLEL DO
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+    do j = half_lat_start_idx_c_grid, half_lat_end_idx_c_grid
       tend%fu_c(:,j) = 0.0
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
@@ -501,7 +508,7 @@ contains
     integer i, j, k
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(c1, c2, i, k, reduced_tend)
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_c_grid, full_lat_end_idx_no_pole_c_grid
       c1 = mesh%half_cos_lat(j-1) / mesh%full_cos_lat(j)
       c2 = mesh%half_cos_lat(j  ) / mesh%full_cos_lat(j)
       if (full_reduce_factor(j) == 1) then
@@ -526,7 +533,7 @@ contains
 !$OMP END PARALLEL DO
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+    do j = half_lat_start_idx_c_grid, half_lat_end_idx_c_grid
       tend%cu_c(:,j) = 0.0
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
@@ -576,7 +583,7 @@ contains
     integer i, j, k
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_c_grid, full_lat_end_idx_no_pole_c_grid
       if (full_reduce_factor(j) == 1) then
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%u_pgf_c(i,j) = (state%iap%gd(i,j) + state%iap%gd(i+1,j)) / coef%full_dlon(j) * &
@@ -607,7 +614,7 @@ contains
 
     integer i, j
 
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+    do j = half_lat_start_idx_c_grid, half_lat_end_idx_c_grid
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%v_pgf_c(i,j) = (state%iap%gd(i,j) + state%iap%gd(i,j+1)) / coef%half_dlat(j) * mesh%half_cos_lat(j) * &
           (state%gd(i,j+1) + static%ghs(i,j+1) - state%gd(i,j) - static%ghs(i,j))
@@ -625,7 +632,7 @@ contains
     integer i, j, k
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_c_grid, full_lat_end_idx_no_pole_c_grid
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%mass_div_lon(i,j) = ((state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%iap%u_c(i,  j) - &
@@ -657,7 +664,7 @@ contains
     real sp, np
     integer i, j
 
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = full_lat_start_idx_no_pole_c_grid, full_lat_end_idx_no_pole_c_grid
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%mass_div_lat(i,j) = ((state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%iap%v_c(i,j  ) * mesh%half_cos_lat(j  ) - &
                                   (state%iap%gd(i,j) + state%iap%gd(i,j-1)) * state%iap%v_c(i,j-1) * mesh%half_cos_lat(j-1)) / &
@@ -693,12 +700,13 @@ contains
 
   end subroutine meridional_mass_divergence_operator_on_c_grid
 
-  subroutine space_operators_run_on_a_grids(state, tend, dt, pass)
+  subroutine space_operators_run_on_a_grids(state, tend, dt, pass, pole)
 
     type(state_type), intent(inout) :: state
     type(tend_type), intent(inout) :: tend
     real, intent(in) :: dt
     integer, intent(in) :: pass
+    integer, intent(in) :: pole
 
     integer i, j, i1, i2
     real s1, s2
@@ -711,47 +719,37 @@ contains
 
     select case (pass)
     case (all_pass)
-      call zonal_momentum_advection_operator_on_a_grid(state, tend)
-      call meridional_momentum_advection_operator_on_a_grid(state, tend)
-      call coriolis_operator_on_a_grid(state, tend)
-      call curvature_operator_on_a_grid(state, tend)
-      call zonal_pressure_gradient_force_operator_on_a_grid(state, tend)
-      call meridional_pressure_gradient_force_operator_on_a_grid(state, tend)
-      call zonal_mass_divergence_operator_on_a_grid(state, tend)
-      call meridional_mass_divergence_operator_on_a_grid(state, tend)
+      call zonal_momentum_advection_operator_on_a_grid(state, tend, pole)
+      call meridional_momentum_advection_operator_on_a_grid(state, tend, pole)
+      call coriolis_operator_on_a_grid(state, tend, pole)
+      call curvature_operator_on_a_grid(state, tend, pole)
+      call zonal_pressure_gradient_force_operator_on_a_grid(state, tend, pole)
+      call meridional_pressure_gradient_force_operator_on_a_grid(state, tend, pole)
+      call zonal_mass_divergence_operator_on_a_grid(state, tend, pole)
+      call meridional_mass_divergence_operator_on_a_grid(state, tend, pole)
 
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do j = full_lat_start_idx_a_grid(pole), full_lat_end_idx_a_grid(pole)
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%du_a(i,j) = - tend%u_adv_lon_a(i,j) - tend%u_adv_lat_a(i,j) + tend%fv_a(i,j) + tend%cv_a(i,j) - tend%u_pgf_a(i,j)
         end do
       end do
 
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do j = full_lat_start_idx_a_grid(pole), full_lat_end_idx_a_grid(pole)
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv_a(i,j) = - tend%v_adv_lon_a(i,j) - tend%v_adv_lat_a(i,j) - tend%fu_a(i,j) - tend%cu_a(i,j) - tend%v_pgf_a(i,j)
         end do
       end do
 
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do j = full_lat_start_idx_a_grid(pole), full_lat_end_idx_a_grid(pole)
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dgd(i,j) = - tend%mass_div_lon(i,j) - tend%mass_div_lat(i,j)
         end do
       end do
     case (slow_pass)
-#ifndef NDEBUG
-      tend%fv_a = 0.0
-      tend%cv_a = 0.0
-      tend%u_pgf_a = 0.0
-      tend%fu_a = 0.0
-      tend%cu_a = 0.0
-      tend%v_pgf_a = 0.0
-      tend%mass_div_lon = 0.0
-      tend%mass_div_lat = 0.0
-#endif
-      call zonal_momentum_advection_operator_on_a_grid(state, tend)
-      call meridional_momentum_advection_operator_on_a_grid(state, tend)
+      call zonal_momentum_advection_operator_on_a_grid(state, tend, pole)
+      call meridional_momentum_advection_operator_on_a_grid(state, tend, pole)
 
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do j = full_lat_start_idx_a_grid(pole), full_lat_end_idx_a_grid(pole)
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%du_a(i,j) = - tend%u_adv_lon_a(i,j) - tend%u_adv_lat_a(i,j)
         end do
@@ -767,7 +765,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
 
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do j = full_lat_start_idx_a_grid(pole), full_lat_end_idx_a_grid(pole)
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv_a(i,j) = - tend%v_adv_lon_a(i,j) - tend%v_adv_lat_a(i,j)
         end do
@@ -785,20 +783,14 @@ contains
 
       tend%dgd = 0.0
     case (fast_pass)
-#ifndef NDEBUG
-      tend%u_adv_lon_a = 0.0
-      tend%u_adv_lat_a = 0.0
-      tend%v_adv_lon_a = 0.0
-      tend%v_adv_lat_a = 0.0
-#endif
-      call coriolis_operator_on_a_grid(state, tend)
-      call curvature_operator_on_a_grid(state, tend)
-      call zonal_pressure_gradient_force_operator_on_a_grid(state, tend)
-      call meridional_pressure_gradient_force_operator_on_a_grid(state, tend)
-      call zonal_mass_divergence_operator_on_a_grid(state, tend)
-      call meridional_mass_divergence_operator_on_a_grid(state, tend)
+      call coriolis_operator_on_a_grid(state, tend, pole)
+      call curvature_operator_on_a_grid(state, tend, pole)
+      call zonal_pressure_gradient_force_operator_on_a_grid(state, tend, pole)
+      call meridional_pressure_gradient_force_operator_on_a_grid(state, tend, pole)
+      call zonal_mass_divergence_operator_on_a_grid(state, tend, pole)
+      call meridional_mass_divergence_operator_on_a_grid(state, tend, pole)
 
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do j = full_lat_start_idx_a_grid(pole), full_lat_end_idx_a_grid(pole)
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dgd(i,j) = - tend%mass_div_lon(i,j) - tend%mass_div_lat(i,j)
         end do
@@ -814,7 +806,7 @@ contains
         ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
 
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do j = full_lat_start_idx_a_grid(pole), full_lat_end_idx_a_grid(pole)
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%du_a(i,j) = tend%fv_a(i,j) + tend%cv_a(i,j) - tend%u_pgf_a(i,j)
         end do
@@ -830,7 +822,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
 
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do j = full_lat_start_idx_a_grid(pole), full_lat_end_idx_a_grid(pole)
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv_a(i,j) = - tend%fu_a(i,j) - tend%cu_a(i,j) - tend%v_pgf_a(i,j)
         end do
@@ -859,7 +851,7 @@ contains
     integer i, j, i1, i2
     real s1, s2
 
-    call reduce_run(state, static)
+    ! call reduce_run(state, static)
 
     ! Allow me to use i1 and i2 as shorthands.
     i1 = parallel%full_lon_start_idx
@@ -876,38 +868,28 @@ contains
       call zonal_mass_divergence_operator_on_c_grid(state, tend)
       call meridional_mass_divergence_operator_on_c_grid(state, tend)
 
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do j = full_lat_start_idx_c_grid, full_lat_end_idx_c_grid
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%du_c(i,j) = - tend%u_adv_lon_c(i,j) - tend%u_adv_lat_c(i,j) + tend%fv_c(i,j) + tend%cv_c(i,j) - tend%u_pgf_c(i,j)
         end do
       end do
 
-      do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      do j = half_lat_start_idx_c_grid, half_lat_end_idx_c_grid
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv_c(i,j) = - tend%v_adv_lon_c(i,j) - tend%v_adv_lat_c(i,j) - tend%fu_c(i,j) - tend%cu_c(i,j) - tend%v_pgf_c(i,j)
         end do
       end do
 
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do j = full_lat_start_idx_c_grid, full_lat_end_idx_c_grid
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dgd(i,j) = - tend%mass_div_lon(i,j) - tend%mass_div_lat(i,j)
         end do
       end do
     case (slow_pass)
-#ifndef NDEBUG
-      tend%fv_c = 0.0
-      tend%cv_c = 0.0
-      tend%u_pgf_c = 0.0
-      tend%fu_c = 0.0
-      tend%cu_c = 0.0
-      tend%v_pgf_c = 0.0
-      tend%mass_div_lon = 0.0
-      tend%mass_div_lat = 0.0
-#endif
       call zonal_momentum_advection_operator_on_c_grid(state, tend)
       call meridional_momentum_advection_operator_on_c_grid(state, tend)
 
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do j = full_lat_start_idx_c_grid, full_lat_end_idx_c_grid
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%du_c(i,j) = - tend%u_adv_lon_c(i,j) - tend%u_adv_lat_c(i,j)
         end do
@@ -923,7 +905,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
 
-      do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      do j = half_lat_start_idx_c_grid, half_lat_end_idx_c_grid
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv_c(i,j) = - tend%v_adv_lon_c(i,j) - tend%v_adv_lat_c(i,j)
         end do
@@ -941,12 +923,6 @@ contains
 
       tend%dgd = 0.0
     case (fast_pass)
-#ifndef NDEBUG
-      tend%u_adv_lon_c = 0.0
-      tend%u_adv_lat_c = 0.0
-      tend%v_adv_lon_c = 0.0
-      tend%v_adv_lat_c = 0.0
-#endif
       call coriolis_operator_on_c_grid(state, tend)
       call curvature_operator_on_c_grid(state, tend)
       call zonal_pressure_gradient_force_operator_on_c_grid(state, tend)
@@ -954,7 +930,7 @@ contains
       call zonal_mass_divergence_operator_on_c_grid(state, tend)
       call meridional_mass_divergence_operator_on_c_grid(state, tend)
 
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do j = full_lat_start_idx_c_grid, full_lat_end_idx_c_grid
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dgd(i,j) = - tend%mass_div_lon(i,j) - tend%mass_div_lat(i,j)
         end do
@@ -970,7 +946,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
 
-      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do j = full_lat_start_idx_c_grid, full_lat_end_idx_c_grid
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%du_c(i,j) = tend%fv_c(i,j) + tend%cv_c(i,j) - tend%u_pgf_c(i,j)
         end do
@@ -986,7 +962,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
 
-      do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      do j = half_lat_start_idx_c_grid, half_lat_end_idx_c_grid
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv_c(i,j) = - tend%fu_c(i,j) - tend%cu_c(i,j) - tend%v_pgf_c(i,j)
         end do
@@ -1019,16 +995,18 @@ contains
     real, intent(in) :: dt
     integer, intent(in) :: pass
 
+    call fill_ac_interface(state)
+    call space_operators_run_on_a_grids(state, tend, dt, pass, south_pole)
+    call space_operators_run_on_a_grids(state, tend, dt, pass, north_pole)
     call space_operators_run_on_c_grids(state, tend, dt, pass)
 
   end subroutine space_operators_run
 
-  subroutine join_ac_tendencies(state, tend)
+  subroutine fill_ac_interface(state)
 
-    type(state_type), intent(in) :: state
-    type(tend_type), intent(inout) :: tend
+    type(state_type), intent(inout) :: state
 
-  end subroutine join_ac_tendencies
+  end subroutine fill_ac_interface
 
   subroutine check_antisymmetry(tend, state)
 
@@ -1062,7 +1040,7 @@ contains
     ip_mass_div_lon = 0.0
     ip_mass_div_lat = 0.0
 
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+    do j = full_lat_start_idx_c_grid, full_lat_end_idx_c_grid
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         ip_u_adv_lon = ip_u_adv_lon + tend%u_adv_lon_c(i,j) * state%iap%u_c(i,j) * mesh%full_cos_lat(j)
         ip_u_adv_lat = ip_u_adv_lat + tend%u_adv_lat_c(i,j) * state%iap%u_c(i,j) * mesh%full_cos_lat(j)
@@ -1072,7 +1050,7 @@ contains
       end do
     end do
 
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+    do j = half_lat_start_idx_c_grid, half_lat_end_idx_c_grid
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         ip_v_adv_lon = ip_v_adv_lon + tend%v_adv_lon_c(i,j) * state%iap%v_c(i,j) * mesh%half_cos_lat(j)
         ip_v_adv_lat = ip_v_adv_lat + tend%v_adv_lat_c(i,j) * state%iap%v_c(i,j) * mesh%half_cos_lat(j)
@@ -1082,7 +1060,7 @@ contains
       end do
     end do
 
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+    do j = full_lat_start_idx_c_grid, full_lat_end_idx_c_grid
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         ip_mass_div_lon = ip_mass_div_lon + tend%mass_div_lon(i,j) * (state%gd(i,j) + static%ghs(i,j)) * mesh%full_cos_lat(j)
         ip_mass_div_lat = ip_mass_div_lat + tend%mass_div_lat(i,j) * (state%gd(i,j) + static%ghs(i,j)) * mesh%full_cos_lat(j)

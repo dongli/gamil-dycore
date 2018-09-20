@@ -91,7 +91,7 @@ contains
         state%u_a(i,j) = 0.5 * (state%u_c(i,j) + state%u_c(i-1,j))
       end do
     end do
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         state%v_a(i,j) = 0.5 * (state%v_c(i,j) + state%v_c(i,j-1))
       end do

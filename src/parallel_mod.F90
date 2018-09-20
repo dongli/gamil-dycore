@@ -93,11 +93,6 @@ contains
     parallel%half_lat_start_idx = 1
     parallel%half_lat_end_idx = mesh%num_half_lat
 
-    parallel%full_lat_start_idx_no_pole = parallel%full_lat_start_idx + 1
-    parallel%full_lat_end_idx_no_pole = parallel%full_lat_end_idx - 1
-    parallel%half_lat_start_idx_no_pole = parallel%half_lat_start_idx + 1
-    parallel%half_lat_end_idx_no_pole = parallel%half_lat_end_idx - 1
-
     parallel%full_lat_south_pole_idx = 1
     parallel%full_lat_north_pole_idx = mesh%num_full_lat
     parallel%half_lat_south_pole_idx = 1
@@ -105,6 +100,21 @@ contains
 
     parallel%has_south_pole = parallel%full_lat_start_idx == parallel%full_lat_south_pole_idx
     parallel%has_north_pole = parallel%full_lat_end_idx == parallel%full_lat_north_pole_idx
+
+    if (parallel%has_south_pole) then
+      parallel%full_lat_start_idx_no_pole = parallel%full_lat_start_idx + 1
+      parallel%half_lat_start_idx_no_pole = parallel%half_lat_start_idx + 1
+    else
+      parallel%full_lat_start_idx_no_pole = parallel%full_lat_start_idx
+      parallel%half_lat_start_idx_no_pole = parallel%half_lat_start_idx
+    end if
+    if (parallel%has_north_pole) then
+      parallel%full_lat_end_idx_no_pole = parallel%full_lat_end_idx - 1
+      parallel%half_lat_end_idx_no_pole = parallel%half_lat_end_idx - 1
+    else
+      parallel%full_lat_end_idx_no_pole = parallel%full_lat_end_idx
+      parallel%half_lat_end_idx_no_pole = parallel%half_lat_end_idx
+    end if
 
     parallel%lon_halo_width = 1
     parallel%lat_halo_width = 1
