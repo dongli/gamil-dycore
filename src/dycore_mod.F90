@@ -196,8 +196,6 @@ contains
 
     integer i, j, i1, i2
     real s1, s2
-    real filter_residue_mass_div_lon(parallel%full_lat_start_idx_no_pole:parallel%full_lat_end_idx_no_pole)
-    real filter_residue_mass_div_lat(parallel%full_lat_start_idx_no_pole:parallel%full_lat_end_idx_no_pole)
 
     call reduce_run(state, static)
 
@@ -294,33 +292,25 @@ contains
       call zonal_mass_divergence_operator(state, tend)
       call meridional_mass_divergence_operator(state, tend)
 
-      filter_residue_mass_div_lon(:) = 0.0
-      filter_residue_mass_div_lat(:) = 0.0
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if (filter_full_zonal_tend(j)) then
-          s1 = sum(tend%mass_div_lon(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
-          if (abs(s1) > 1.0e-16) then
-            call filter_array_at_full_lat(j, tend%mass_div_lon(:,j))
-            s2 = sum(tend%mass_div_lon(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
-            filter_residue_mass_div_lon(j) = s1 - s2
-          end if
-          s1 = sum(tend%mass_div_lat(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j))) * mesh%full_cos_lat(j)
-          if (abs(s1) > 1.0e-16) then
-            call filter_array_at_full_lat(j, tend%mass_div_lat(:,j))
-            s2 = sum(tend%mass_div_lat(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j))) * mesh%full_cos_lat(j)
-            filter_residue_mass_div_lat(j) = s1 - s2
-          end if
-        end if
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dgd(i,j) = - tend%mass_div_lon(i,j) - tend%mass_div_lat(i,j)
         end do
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (filter_full_zonal_tend(j)) then
+          s1 = sum(tend%dgd(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
+          if (abs(s1) > 1.0e-16) then
+            call filter_array_at_full_lat(j, tend%dgd(:,j))
+            s2 = sum(tend%dgd(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
+            tend%dgd(i1:i2,j) = tend%dgd(i1:i2,j) * s1 / s2
+          end if
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
 
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%du(i,j) = tend%fv(i,j) + tend%cv(i,j)
+          tend%du(i,j) = tend%fv(i,j) + tend%cv(i,j) - tend%u_pgf(i,j)
         end do
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (filter_full_zonal_tend(j)) then
@@ -330,22 +320,13 @@ contains
             s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
             tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
           end if
-          s1 = sum(tend%u_pgf(i1:i2,j) * state%iap%u(i1:i2,j))
-          if (abs(s1) > 1.0e-16) then
-            call filter_array_at_full_lat(j, tend%u_pgf(:,j))
-            s2 = sum(tend%u_pgf(i1:i2,j) * state%iap%u(i1:i2,j))
-            tend%u_pgf(i1:i2,j) = tend%u_pgf(i1:i2,j) * (s1 + filter_residue_mass_div_lon(j)) / s2
-          end if
         end if
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%du(i,j) = tend%du(i,j) - tend%u_pgf(i,j)
-        end do
       end do
 
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%dv(i,j) = - tend%fu(i,j) - tend%cu(i,j)
+          tend%dv(i,j) = - tend%fu(i,j) - tend%cu(i,j) - tend%v_pgf(i,j)
         end do
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (filter_full_zonal_tend(j)) then
@@ -355,24 +336,10 @@ contains
             s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
             tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
           end if
-          s1 = sum(tend%v_pgf(i1:i2,j) * state%iap%v(i1:i2,j)) * mesh%full_cos_lat(j)
-          if (abs(s1) > 1.0e-16) then
-            call filter_array_at_full_lat(j, tend%v_pgf(:,j))
-            s2 = sum(tend%v_pgf(i1:i2,j) * state%iap%v(i1:i2,j)) * mesh%full_cos_lat(j)
-            tend%v_pgf(i1:i2,j) = tend%v_pgf(i1:i2,j) * (s1 + filter_residue_mass_div_lat(j)) / s2
-          end if
         end if
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%dv(i,j) = tend%dv(i,j) - tend%v_pgf(i,j)
-        end do
       end do
     end select
-
-    tag = tag + 1
-    if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6)) then
-     call history_write(tend, tag)
-    end if
 
     ! call check_antisymmetry(tend, state)
 
