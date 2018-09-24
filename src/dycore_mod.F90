@@ -429,20 +429,36 @@ contains
     type(tend_type), intent(inout) :: tend
 
     real reduced_tend(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
+#ifdef AVERAGE_CORIOLIS
+    real c1, c2
+#endif
     integer i, j, k
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+#ifdef AVERAGE_CORIOLIS
+      c1 = mesh%full_cos_lat(j-1) / mesh%full_cos_lat(j)
+      c2 = mesh%full_cos_lat(j+1) / mesh%full_cos_lat(j)
+#endif
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+#ifdef AVERAGE_CORIOLIS
+          tend%fv(i,j) = 0.25 * (coef%cori(j) + coef%curv(j) * state%u(i,j)) * &
+            (c1 * (state%iap%v(i-1,j-1) + state%iap%v(i+1,j-1)) + &
+             c2 * (state%iap%v(i-1,j+1) + state%iap%v(i+1,j+1)))
+#else
           tend%fv(i,j) = (coef%cori(j) + coef%curv(j) * state%u(i,j)) * state%iap%v(i,j)
+#endif
         end do
       else
         tend%fv(:,j) = 0.0
         do k = 1, full_reduce_factor(j)
           do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
+#ifdef AVERAGE_CORIOLIS
+#else
             reduced_tend(i) = (coef%cori(j) + coef%curv(j) * full_reduced_state(j)%u(i,k,2)) * &
               full_reduced_state(j)%iap%v(i,k,2)
+#endif
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%fv(:,j))
         end do
@@ -455,14 +471,24 @@ contains
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       if (full_reduce_factor(j) == 1) then
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+#ifdef AVERAGE_CORIOLIS
+          tend%fu(i,j) = 0.25 * ((coef%cori(j-1) + coef%curv(j-1) * state%u(i-1,j-1)) * state%iap%u(i-1,j-1) + &
+                                 (coef%cori(j-1) + coef%curv(j-1) * state%u(i+1,j-1)) * state%iap%u(i+1,j-1) + &
+                                 (coef%cori(j+1) + coef%curv(j+1) * state%u(i-1,j+1)) * state%iap%u(i-1,j+1) + &
+                                 (coef%cori(j+1) + coef%curv(j+1) * state%u(i+1,j+1)) * state%iap%u(i+1,j+1))
+#else
           tend%fu(i,j) = (coef%cori(j) + coef%curv(j) * state%u(i,j)) * state%iap%u(i,j)
+#endif
         end do
       else
         tend%fu(:,j) = 0.0
         do k = 1, full_reduce_factor(j)
           do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
+#ifdef AVERAGE_CORIOLIS
+#else
             reduced_tend(i) = (coef%cori(j) + coef%curv(j) * full_reduced_state(j)%u(i,k,2)) * &
               full_reduced_state(j)%iap%u(i,k,2)
+#endif
           end do
           call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%fu(:,j))
         end do
