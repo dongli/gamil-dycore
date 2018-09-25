@@ -916,8 +916,6 @@ contains
     j = full_lat_start_idx_c_grid - 1
     do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
       state%u_c(i,j) = (state%u_a(i,j) + state%u_a(i+1,j)) * 0.5
-    end do
-    do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
       state%iap%u_c(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%u_c(i,j)
     end do
     call parallel_fill_halo(state%u_c(:,j), left_halo=.true., right_halo=.true.)
@@ -925,9 +923,7 @@ contains
     j = half_lat_start_idx_c_grid - 1
     do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
       state%v_c(i,j) = (state%v_a(i,j) + state%v_a(i,j+1)) * 0.5
-    end do
-    do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-      state%iap%v_c(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i,j-1)) * state%v_c(i,j)
+      state%iap%v_c(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%v_c(i,j)
     end do
     call parallel_fill_halo(state%v_c(:,j), left_halo=.true., right_halo=.true.)
     call parallel_fill_halo(state%iap%v_c(:,j), left_halo=.true., right_halo=.true.)
@@ -936,8 +932,6 @@ contains
     j = full_lat_end_idx_c_grid + 1
     do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
       state%u_c(i,j) = (state%u_a(i,j) + state%u_a(i+1,j)) * 0.5
-    end do
-    do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
       state%iap%u_c(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%u_c(i,j)
     end do
     call parallel_fill_halo(state%u_c(:,j), left_halo=.true., right_halo=.true.)
@@ -945,8 +939,6 @@ contains
     j = half_lat_end_idx_c_grid + 1
     do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
       state%v_c(i,j) = (state%v_a(i,j) + state%v_a(i,j+1)) * 0.5
-    end do
-    do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
       state%iap%v_c(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%v_c(i,j)
     end do
     call parallel_fill_halo(state%v_c(:,j), left_halo=.true., right_halo=.true.)
