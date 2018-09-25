@@ -62,6 +62,7 @@ module params_mod
   logical :: use_zonal_tend_filter = .true.
   integer :: zonal_tend_filter_cutoff_wavenumber(20) = 0
 
+  logical :: use_all_a_grid = .false. ! Only for testing.
   logical :: use_pole_a_grid = .true.
   integer :: pole_a_grid_tag(20) = 0
 

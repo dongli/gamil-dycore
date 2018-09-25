@@ -9,6 +9,7 @@ module history_mod
   use diag_mod
   use reduce_mod
   use string_mod
+  use pole_a_grid_mod
 
   implicit none
 
@@ -56,9 +57,7 @@ contains
     call io_add_var('v_adv_lon', 'debug', long_name='v_adv_lon', units='', dim_names=['lon ', 'ilat', 'time'])
     call io_add_var('v_adv_lat', 'debug', long_name='v_adv_lat', units='', dim_names=['lon ', 'ilat', 'time'])
     call io_add_var('fv', 'debug', long_name='fv', units='', dim_names=['ilon', 'lat ', 'time'])
-    call io_add_var('cv', 'debug', long_name='cv', units='', dim_names=['ilon', 'lat ', 'time'])
     call io_add_var('fu', 'debug', long_name='fu', units='', dim_names=['lon ', 'ilat', 'time'])
-    call io_add_var('cu', 'debug', long_name='cu', units='', dim_names=['lon ', 'ilat', 'time'])
     call io_add_var('u_pgf', 'debug', long_name='u_pgf', units='', dim_names=['ilon', 'lat ', 'time'])
     call io_add_var('v_pgf', 'debug', long_name='v_pgf', units='', dim_names=['lon ', 'ilat', 'time'])
     call io_add_var('mass_div_lon', 'debug', long_name='mass_div_lon', units='', dim_names=['lon ', 'lat ', 'time'])
@@ -86,12 +85,12 @@ contains
     integer i, j
 
     ! Convert wind from C grid to A grid.
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+    do j = full_lat_start_idx_c_grid, full_lat_end_idx_c_grid
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         state%u_a(i,j) = 0.5 * (state%u_c(i,j) + state%u_c(i-1,j))
       end do
     end do
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+    do j = full_lat_start_idx_c_grid, full_lat_end_idx_c_grid
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         state%v_a(i,j) = 0.5 * (state%v_c(i,j) + state%v_c(i,j-1))
       end do
@@ -124,8 +123,6 @@ contains
     call io_output('u_adv_lat', tend%u_adv_lat_c(:,:), 'debug')
     call io_output('v_adv_lon', tend%v_adv_lon_c(:,:), 'debug')
     call io_output('v_adv_lat', tend%v_adv_lat_c(:,:), 'debug')
-    call io_output('cv', tend%cv_c(:,:), 'debug')
-    call io_output('cu', tend%cu_c(:,:), 'debug')
     call io_output('fv', tend%fv_c(:,:), 'debug')
     call io_output('fu', tend%fu_c(:,:), 'debug')
     call io_output('u_pgf', tend%u_pgf_c(:,:), 'debug')

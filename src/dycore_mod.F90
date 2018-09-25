@@ -211,30 +211,66 @@ contains
       end do
     end do
 
-    ! Update IAP wind state.
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+    ! Update IAP wind state on A grids at South Pole.
+    do j = full_lat_start_idx_a_grid(south_pole), full_lat_end_idx_a_grid(south_pole)
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        new_state%iap%u_a(i,j) = old_state%iap%u_a(i,j) + dt * tend%du_a(i,j)
+        new_state%iap%v_a(i,j) = old_state%iap%v_a(i,j) + dt * tend%dv_a(i,j)
+      end do
+    end do
+
+    ! Update IAP wind state on A grids at North Pole.
+    do j = full_lat_start_idx_a_grid(north_pole), full_lat_end_idx_a_grid(north_pole)
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        new_state%iap%u_a(i,j) = old_state%iap%u_a(i,j) + dt * tend%du_a(i,j)
+        new_state%iap%v_a(i,j) = old_state%iap%v_a(i,j) + dt * tend%dv_a(i,j)
+      end do
+    end do
+
+    ! Update IAP wind state on C grids.
+    do j = full_lat_start_idx_c_grid, full_lat_end_idx_c_grid
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         new_state%iap%u_c(i,j) = old_state%iap%u_c(i,j) + dt * tend%du_c(i,j)
       end do
     end do
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+    do j = half_lat_start_idx_c_grid, half_lat_end_idx_c_grid
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         new_state%iap%v_c(i,j) = old_state%iap%v_c(i,j) + dt * tend%dv_c(i,j)
       end do
     end do
 
-    ! Transform from IAP to normal state.
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+    ! Transform from IAP to normal state on A grids at South Pole.
+    do j = full_lat_start_idx_a_grid(south_pole), full_lat_end_idx_a_grid(south_pole)
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        new_state%u_a(i,j) = new_state%iap%u_a(i,j) / new_state%iap%gd(i,j)
+        new_state%v_a(i,j) = new_state%iap%v_a(i,j) / new_state%iap%gd(i,j)
+      end do
+    end do
+
+    ! Transform from IAP to normal state on A grids at North Pole.
+    do j = full_lat_start_idx_a_grid(north_pole), full_lat_end_idx_a_grid(north_pole)
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        new_state%u_a(i,j) = new_state%iap%u_a(i,j) / new_state%iap%gd(i,j)
+        new_state%v_a(i,j) = new_state%iap%v_a(i,j) / new_state%iap%gd(i,j)
+      end do
+    end do
+
+    ! Transform from IAP to normal state on C grids.
+    do j = full_lat_start_idx_c_grid, full_lat_end_idx_c_grid
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         new_state%u_c(i,j) = new_state%iap%u_c(i,j) * 2.0 / (new_state%iap%gd(i,j) + new_state%iap%gd(i+1,j))
       end do
     end do
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+    do j = half_lat_start_idx_c_grid, half_lat_end_idx_c_grid
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         new_state%v_c(i,j) = new_state%iap%v_c(i,j) * 2.0 / (new_state%iap%gd(i,j) + new_state%iap%gd(i,j+1))
       end do
     end do
 
+    call parallel_fill_halo(new_state%iap%u_a(:,:), all_halo=.true.)
+    call parallel_fill_halo(new_state%iap%v_a(:,:), all_halo=.true.)
+    call parallel_fill_halo(new_state%u_a(:,:), all_halo=.true.)
+    call parallel_fill_halo(new_state%v_a(:,:), all_halo=.true.)
     call parallel_fill_halo(new_state%iap%u_c(:,:), all_halo=.true.)
     call parallel_fill_halo(new_state%iap%v_c(:,:), all_halo=.true.)
     call parallel_fill_halo(new_state%u_c(:,:), all_halo=.true.)
@@ -250,13 +286,24 @@ contains
     integer i, j
 
     res = 0.0
-
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+    do j = full_lat_start_idx_a_grid(south_pole), full_lat_end_idx_a_grid(south_pole)
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        res = res + tend1%du_a(i,j) * tend2%du_a(i,j) * mesh%full_cos_lat(j)
+        res = res + tend1%dv_a(i,j) * tend2%dv_a(i,j) * mesh%full_cos_lat(j)
+      end do
+    end do
+    do j = full_lat_start_idx_a_grid(north_pole), full_lat_end_idx_a_grid(north_pole)
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        res = res + tend1%du_a(i,j) * tend2%du_a(i,j) * mesh%full_cos_lat(j)
+        res = res + tend1%dv_a(i,j) * tend2%dv_a(i,j) * mesh%full_cos_lat(j)
+      end do
+    end do
+    do j = full_lat_start_idx_c_grid, full_lat_end_idx_c_grid
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         res = res + tend1%du_c(i,j) * tend2%du_c(i,j) * mesh%full_cos_lat(j)
       end do
     end do
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+    do j = half_lat_start_idx_c_grid, half_lat_end_idx_c_grid
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         res = res + tend1%dv_c(i,j) * tend2%dv_c(i,j) * mesh%half_cos_lat(j)
       end do

@@ -41,6 +41,7 @@ contains
       else
         coef%curv(j) = mesh%full_sin_lat(j) / mesh%full_cos_lat(j) / radius
       end if
+      ! FIXME: Move out 2.0 to make code more clear!
       coef%full_dlon(j) = 2.0 * radius * mesh%dlon * mesh%full_cos_lat(j)
       coef%full_dlat(j) = 2.0 * radius * mesh%dlat * mesh%full_cos_lat(j)
     end do
