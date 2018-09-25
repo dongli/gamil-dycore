@@ -52,12 +52,12 @@ contains
         vp1 = state%v(i+1,j-1) + state%v(i+1,j)
         um1 = (state%u(i-1,j-1) + state%u(i,j-1) + state%u(i-1,j) + state%u(i,j)) * mesh%half_cos_lat(j-1)
         up1 = (state%u(i-1,j+1) + state%u(i,j+1) + state%u(i-1,j) + state%u(i,j)) * mesh%half_cos_lat(j)
-        diag%vor(i,j) = 0.5 * ((vp1 - vm1) / coef%full_dlon(j) - (up1 - um1) / coef%full_dlat(j))
+        diag%vor(i,j) = (vp1 - vm1) / coef%full_dlon(j) - (up1 - um1) / coef%full_dlat(j)
         um1 = state%u(i-1,j)
         up1 = state%u(i,j)
         vm1 = state%v(i,j-1) * mesh%half_cos_lat(j-1)
         vp1 = state%v(i,j) * mesh%half_cos_lat(j)
-        diag%div(i,j) = 0.5 * ((up1 - um1) / coef%full_dlon(j) - (vp1 - vm1) / coef%full_dlat(j))
+        diag%div(i,j) = (up1 - um1) / coef%full_dlon(j) + (vp1 - vm1) / coef%full_dlat(j)
       end do
     end do
 

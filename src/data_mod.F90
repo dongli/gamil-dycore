@@ -41,13 +41,13 @@ contains
       else
         coef%curv(j) = mesh%full_sin_lat(j) / mesh%full_cos_lat(j) / radius
       end if
-      coef%full_dlon(j) = 2.0 * radius * mesh%dlon * mesh%full_cos_lat(j)
-      coef%full_dlat(j) = 2.0 * radius * mesh%dlat * mesh%full_cos_lat(j)
+      coef%full_dlon(j) = radius * mesh%dlon * mesh%full_cos_lat(j)
+      coef%full_dlat(j) = radius * mesh%dlat * mesh%full_cos_lat(j)
     end do
 
     do j = 1, mesh%num_half_lat
-      coef%half_dlon(j) = 2.0 * radius * mesh%dlon * mesh%half_cos_lat(j)
-      coef%half_dlat(j) = 2.0 * radius * mesh%dlat * mesh%half_cos_lat(j)
+      coef%half_dlon(j) = radius * mesh%dlon * mesh%half_cos_lat(j)
+      coef%half_dlat(j) = radius * mesh%dlat * mesh%half_cos_lat(j)
     end do
 
     do time_idx = -1, 2
