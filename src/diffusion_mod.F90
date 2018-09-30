@@ -130,7 +130,7 @@ contains
     if (parallel%has_north_pole) then
       j = parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        vd(i,j) = vd(i,j) + (state%v(i,j) - state%v(i,j-1)) * mesh%full_cos_lat(j) / coef%half_dlat(j)**2 * mesh%half_cos_lat(j)
+        vd(i,j) = vd(i,j) - (state%v(i,j) - state%v(i,j-1)) * mesh%full_cos_lat(j) / coef%half_dlat(j)**2 * mesh%half_cos_lat(j)
       end do
     end if
 
@@ -174,7 +174,7 @@ contains
       j = parallel%full_lat_end_idx
       np = 0.0
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        np = np + state%gd(i,j) - state%gd(i,j-1)
+        np = np - (state%gd(i,j) - state%gd(i,j-1))
       end do
       call parallel_zonal_sum(np)
       np = np * mesh%half_cos_lat(j-1) / coef%full_dlat(j)**2 * mesh%full_cos_lat(j) / mesh%num_full_lon
