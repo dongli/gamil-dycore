@@ -576,35 +576,6 @@ contains
       end do
     end do
 
-    ! i1 = parallel%half_lon_start_idx
-    ! i2 = parallel%half_lon_end_idx
-    ! do j = parallel%full_lat_north_pole_idx - 1, parallel%full_lat_north_pole_idx - 1
-    !   s1 = sum(new_state%iap%u(i1:i2,j)**2)
-    !   do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-    !     if (new_state%iap%u(i,j-1) * new_state%iap%u(i,j) < 0 .or. (new_state%iap%u(i,j-1) - new_state%iap%u(i,j)) * (new_state%iap%u(i,j-2) - new_state%iap%u(i,j-1)) < 0) then
-    !       new_state%iap%u(i,j) = new_state%iap%u(i,j) + dt * 1.0e-4 * (new_state%iap%u(i,j-1) - new_state%iap%u(i,j))
-    !     end if
-    !   end do
-    !   if (s1 > 1.0e-16) then
-    !     s2 = sum(new_state%iap%u(i1:i2,j)**2)
-    !     new_state%iap%u(i1:i2,j) = new_state%iap%u(i1:i2,j) * sqrt(s1 / s2)
-    !   end if
-    ! end do
-    ! i1 = parallel%full_lon_start_idx
-    ! i2 = parallel%full_lon_end_idx
-    ! do j = parallel%half_lat_north_pole_idx, parallel%half_lat_north_pole_idx
-    !   s1 = sum(new_state%iap%v(i1:i2,j)**2)
-    !   do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-    !     if (new_state%iap%v(i,j-1) * new_state%iap%v(i,j) < 0 .or. (new_state%iap%v(i,j-1) - new_state%iap%v(i,j)) * (new_state%iap%v(i,j-2) - new_state%iap%v(i,j-1)) < 0) then
-    !       new_state%iap%v(i,j) = new_state%iap%v(i,j) + dt * 1.0e-4 * (new_state%iap%v(i,j-1) - new_state%iap%v(i,j))
-    !     end if
-    !   end do
-    !   if (s1 > 1.0e-16) then
-    !     s2 = sum(new_state%iap%v(i1:i2,j)**2)
-    !     new_state%iap%v(i1:i2,j) = new_state%iap%v(i1:i2,j) * sqrt(s1 / s2)
-    !   end if
-    ! end do
-
     ! Transform from IAP to normal state.
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
