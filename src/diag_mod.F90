@@ -32,8 +32,8 @@ contains
 
   subroutine diag_init()
 
-    if (.not. allocated(diag%vor)) call parallel_allocate(diag%vor, extended_halo=.true.)
-    if (.not. allocated(diag%div)) call parallel_allocate(diag%div, extended_halo=.true.)
+    if (.not. allocated(diag%vor)) call parallel_allocate(diag%vor)
+    if (.not. allocated(diag%div)) call parallel_allocate(diag%div)
 
     call log_notice('Diag module is initialized.')
 
@@ -60,6 +60,7 @@ contains
         diag%div(i,j) = (up1 - um1) / coef%full_dlon(j) + (vp1 - vm1) / coef%full_dlat(j)
       end do
     end do
+    call parallel_fill_halo(diag%div, all_halo=.true.)
 
     diag%total_mass = 0.0
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx

@@ -49,10 +49,6 @@ module params_mod
   ! - none
   character(30) split_scheme
 
-  logical :: use_zonal_reduce = .true.
-  logical :: reduce_adv_lon = .true.
-  integer :: zonal_reduce_factors(20) = 0
-
   logical is_restart_run
 
   logical :: use_zonal_tend_filter = .true.
@@ -80,9 +76,6 @@ module params_mod
     time_order, &
     qcon_modified, &
     split_scheme, &
-    use_zonal_reduce, &
-    reduce_adv_lon, &
-    zonal_reduce_factors, &
     use_zonal_tend_filter, &
     zonal_tend_filter_cutoff_wavenumber, &
     use_diffusion, &

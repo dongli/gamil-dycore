@@ -56,7 +56,6 @@ set(source_files
   src/history_mod.F90
   src/restart_mod.F90
   src/data_mod.F90
-  src/reduce_mod.F90
   src/diffusion_mod.F90
   src/filter_mod.F90
   src/dycore_mod.F90

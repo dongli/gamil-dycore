@@ -7,7 +7,6 @@ module history_mod
   use parallel_mod
   use types_mod
   use diag_mod
-  use reduce_mod
   use string_mod
 
   implicit none
@@ -32,8 +31,6 @@ contains
   subroutine history_init()
 
     call io_create_dataset(desc=case_desc, file_prefix=case_name // '.h0')
-    call io_add_meta('use_zonal_reduce', use_zonal_reduce)
-    call io_add_meta('zonal_reduce_factors', to_string(pack(zonal_reduce_factors, zonal_reduce_factors /= 0)))
     call io_add_meta('time_step_size', time_step_size)
     call io_add_meta('time_scheme', time_scheme)
     call io_add_meta('split_scheme', split_scheme)
@@ -68,8 +65,8 @@ contains
     call io_add_var('dv', 'debug', long_name='dv', units='', dim_names=['lon ', 'ilat', 'time'])
     call io_add_var('dgd', 'debug', long_name='dgd', units='', dim_names=['lon ', 'lat ', 'time'])
 
-    if (.not. allocated(u)) call parallel_allocate(u, extended_halo=.true.)
-    if (.not. allocated(v)) call parallel_allocate(v, extended_halo=.true.)
+    if (.not. allocated(u)) call parallel_allocate(u)
+    if (.not. allocated(v)) call parallel_allocate(v)
 
     call log_notice('History module is initialized.')
 

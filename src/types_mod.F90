@@ -20,9 +20,9 @@ module types_mod
 
   type coef_type
     ! Coriolis coefficient at full meridional grids
-    real, allocatable :: cori(:)
+    real, allocatable :: full_f(:)
     ! Curvature coefficient at full meridional grids 
-    real, allocatable :: curv(:)
+    real, allocatable :: full_c(:)
     ! Zonal difference coefficient at full/half meridional grids
     real, allocatable :: full_dlon(:)
     real, allocatable :: half_dlon(:)
@@ -85,8 +85,8 @@ contains
 
     type(coef_type), intent(out) :: coef
 
-    allocate(coef%cori(mesh%num_full_lat))
-    allocate(coef%curv(mesh%num_full_lat))
+    allocate(coef%full_f(mesh%num_full_lat))
+    allocate(coef%full_c(mesh%num_full_lat))
     allocate(coef%full_dlon(mesh%num_full_lat))
     allocate(coef%half_dlon(mesh%num_half_lat))
     allocate(coef%full_dlat(mesh%num_full_lat))
@@ -98,7 +98,7 @@ contains
 
     type(static_type), intent(out) :: static
 
-    if (.not. allocated(static%ghs)) call parallel_allocate(static%ghs, extended_halo=.true.)
+    if (.not. allocated(static%ghs)) call parallel_allocate(static%ghs)
 
   end subroutine allocate_static_data
 
@@ -106,12 +106,12 @@ contains
 
     type(state_type), intent(out) :: state
 
-    if (.not. allocated(state%u))           call parallel_allocate(state%u,             half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(state%v))           call parallel_allocate(state%v,             half_lat=.true., extended_halo=.true.)
-    if (.not. allocated(state%gd))          call parallel_allocate(state%gd,                             extended_halo=.true.)
-    if (.not. allocated(state%iap%u))       call parallel_allocate(state%iap%u,         half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(state%iap%v))       call parallel_allocate(state%iap%v,         half_lat=.true., extended_halo=.true.)
-    if (.not. allocated(state%iap%gd))      call parallel_allocate(state%iap%gd,                         extended_halo=.true.)
+    if (.not. allocated(state%u))           call parallel_allocate(state%u,             half_lon=.true.)
+    if (.not. allocated(state%v))           call parallel_allocate(state%v,             half_lat=.true.)
+    if (.not. allocated(state%gd))          call parallel_allocate(state%gd)
+    if (.not. allocated(state%iap%u))       call parallel_allocate(state%iap%u,         half_lon=.true.)
+    if (.not. allocated(state%iap%v))       call parallel_allocate(state%iap%v,         half_lat=.true.)
+    if (.not. allocated(state%iap%gd))      call parallel_allocate(state%iap%gd)
 
   end subroutine allocate_state_data
 
@@ -119,19 +119,19 @@ contains
 
     type(tend_type), intent(out) :: tend
 
-    if (.not. allocated(tend%u_adv_lon))    call parallel_allocate(tend%u_adv_lon,      half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(tend%u_adv_lat))    call parallel_allocate(tend%u_adv_lat,      half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(tend%fv))           call parallel_allocate(tend%fv,             half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(tend%u_pgf))        call parallel_allocate(tend%u_pgf,          half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(tend%v_adv_lon))    call parallel_allocate(tend%v_adv_lon,      half_lat=.true., extended_halo=.true.)
-    if (.not. allocated(tend%v_adv_lat))    call parallel_allocate(tend%v_adv_lat,      half_lat=.true., extended_halo=.true.)
-    if (.not. allocated(tend%fu))           call parallel_allocate(tend%fu,             half_lat=.true., extended_halo=.true.)
-    if (.not. allocated(tend%v_pgf))        call parallel_allocate(tend%v_pgf,          half_lat=.true., extended_halo=.true.)
-    if (.not. allocated(tend%mass_div_lon)) call parallel_allocate(tend%mass_div_lon,                    extended_halo=.true.)
-    if (.not. allocated(tend%mass_div_lat)) call parallel_allocate(tend%mass_div_lat,                    extended_halo=.true.)
-    if (.not. allocated(tend%du))           call parallel_allocate(tend%du,             half_lon=.true., extended_halo=.true.)
-    if (.not. allocated(tend%dv))           call parallel_allocate(tend%dv,             half_lat=.true., extended_halo=.true.)
-    if (.not. allocated(tend%dgd))          call parallel_allocate(tend%dgd,                             extended_halo=.true.)
+    if (.not. allocated(tend%u_adv_lon))    call parallel_allocate(tend%u_adv_lon,      half_lon=.true.)
+    if (.not. allocated(tend%u_adv_lat))    call parallel_allocate(tend%u_adv_lat,      half_lon=.true.)
+    if (.not. allocated(tend%fv))           call parallel_allocate(tend%fv,             half_lon=.true.)
+    if (.not. allocated(tend%u_pgf))        call parallel_allocate(tend%u_pgf,          half_lon=.true.)
+    if (.not. allocated(tend%v_adv_lon))    call parallel_allocate(tend%v_adv_lon,      half_lat=.true.)
+    if (.not. allocated(tend%v_adv_lat))    call parallel_allocate(tend%v_adv_lat,      half_lat=.true.)
+    if (.not. allocated(tend%fu))           call parallel_allocate(tend%fu,             half_lat=.true.)
+    if (.not. allocated(tend%v_pgf))        call parallel_allocate(tend%v_pgf,          half_lat=.true.)
+    if (.not. allocated(tend%mass_div_lon)) call parallel_allocate(tend%mass_div_lon)
+    if (.not. allocated(tend%mass_div_lat)) call parallel_allocate(tend%mass_div_lat)
+    if (.not. allocated(tend%du))           call parallel_allocate(tend%du,             half_lon=.true.)
+    if (.not. allocated(tend%dv))           call parallel_allocate(tend%dv,             half_lat=.true.)
+    if (.not. allocated(tend%dgd))          call parallel_allocate(tend%dgd)
 
   end subroutine allocate_tend_data
 
@@ -139,8 +139,8 @@ contains
 
     type(coef_type), intent(inout) :: coef
 
-    if (allocated(coef%cori)) deallocate(coef%cori)
-    if (allocated(coef%curv)) deallocate(coef%curv)
+    if (allocated(coef%full_f))    deallocate(coef%full_f)
+    if (allocated(coef%full_c))    deallocate(coef%full_c)
     if (allocated(coef%full_dlon)) deallocate(coef%full_dlon)
     if (allocated(coef%half_dlon)) deallocate(coef%half_dlon)
     if (allocated(coef%full_dlat)) deallocate(coef%full_dlat)
@@ -160,12 +160,12 @@ contains
 
     type(state_type), intent(inout) :: state
 
-    if (allocated(state%u)) deallocate(state%u)
-    if (allocated(state%v)) deallocate(state%v)
+    if (allocated(state%u))  deallocate(state%u)
+    if (allocated(state%v))  deallocate(state%v)
     if (allocated(state%gd)) deallocate(state%gd)
 
-    if (allocated(state%iap%u)) deallocate(state%iap%u)
-    if (allocated(state%iap%v)) deallocate(state%iap%v)
+    if (allocated(state%iap%u))  deallocate(state%iap%u)
+    if (allocated(state%iap%v))  deallocate(state%iap%v)
     if (allocated(state%iap%gd)) deallocate(state%iap%gd)
 
   end subroutine deallocate_state_data
@@ -174,19 +174,19 @@ contains
 
     type(tend_type), intent(inout) :: tend
 
-    if (allocated(tend%u_adv_lon)) deallocate(tend%u_adv_lon)
-    if (allocated(tend%u_adv_lat)) deallocate(tend%u_adv_lat)
-    if (allocated(tend%v_adv_lon)) deallocate(tend%v_adv_lon)
-    if (allocated(tend%v_adv_lat)) deallocate(tend%v_adv_lat)
-    if (allocated(tend%fu)) deallocate(tend%fu)
-    if (allocated(tend%fv)) deallocate(tend%fv)
-    if (allocated(tend%u_pgf)) deallocate(tend%u_pgf)
-    if (allocated(tend%v_pgf)) deallocate(tend%v_pgf)
+    if (allocated(tend%u_adv_lon))    deallocate(tend%u_adv_lon)
+    if (allocated(tend%u_adv_lat))    deallocate(tend%u_adv_lat)
+    if (allocated(tend%v_adv_lon))    deallocate(tend%v_adv_lon)
+    if (allocated(tend%v_adv_lat))    deallocate(tend%v_adv_lat)
+    if (allocated(tend%fu))           deallocate(tend%fu)
+    if (allocated(tend%fv))           deallocate(tend%fv)
+    if (allocated(tend%u_pgf))        deallocate(tend%u_pgf)
+    if (allocated(tend%v_pgf))        deallocate(tend%v_pgf)
     if (allocated(tend%mass_div_lon)) deallocate(tend%mass_div_lon)
     if (allocated(tend%mass_div_lat)) deallocate(tend%mass_div_lat)
-    if (allocated(tend%du)) deallocate(tend%du)
-    if (allocated(tend%dv)) deallocate(tend%dv)
-    if (allocated(tend%dgd)) deallocate(tend%dgd)
+    if (allocated(tend%du))           deallocate(tend%du)
+    if (allocated(tend%dv))           deallocate(tend%dv)
+    if (allocated(tend%dgd))          deallocate(tend%dgd)
 
   end subroutine deallocate_tend_data
 
@@ -226,11 +226,11 @@ contains
     type(state_type), intent(in) :: state1
     type(state_type), intent(inout) :: state2
 
-    state2%u = state1%u
-    state2%iap%u = state1%iap%u
-    state2%v = state1%v
-    state2%iap%v = state1%iap%v
-    state2%gd = state1%gd
+    state2%u      = state1%u
+    state2%iap%u  = state1%iap%u
+    state2%v      = state1%v
+    state2%iap%v  = state1%iap%v
+    state2%gd     = state1%gd
     state2%iap%gd = state1%iap%gd
 
   end subroutine copy_state
@@ -241,11 +241,11 @@ contains
     type(state_type), intent(in) :: state2
     type(state_type), intent(inout) :: state3
 
-    state3%u = (state1%u + state2%u) * 0.5
-    state3%iap%u = (state1%iap%u + state2%iap%u) * 0.5
-    state3%v = (state1%v + state2%v) * 0.5
-    state3%iap%v = (state1%iap%v + state2%iap%v) * 0.5
-    state3%gd = (state1%gd + state2%gd) * 0.5
+    state3%u      = (state1%u      + state2%u     ) * 0.5
+    state3%iap%u  = (state1%iap%u  + state2%iap%u ) * 0.5
+    state3%v      = (state1%v      + state2%v     ) * 0.5
+    state3%iap%v  = (state1%iap%v  + state2%iap%v ) * 0.5
+    state3%gd     = (state1%gd     + state2%gd    ) * 0.5
     state3%iap%gd = (state1%iap%gd + state2%iap%gd) * 0.5
 
   end subroutine average_state

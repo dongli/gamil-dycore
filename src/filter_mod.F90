@@ -37,7 +37,7 @@ contains
 
     filter_full_zonal_tend(:) = .false.
     filter_half_zonal_tend(:) = .false.
-    if (parallel%has_south_pole) then
+    if (parallel%has_south_pole .and. use_zonal_tend_filter) then
       do j = 1, size(zonal_tend_filter_cutoff_wavenumber)
         if (zonal_tend_filter_cutoff_wavenumber(j) /= 0) then
           filter_full_zonal_tend(parallel%full_lat_start_idx+j) = .true.
@@ -45,7 +45,7 @@ contains
         end if
       end do
     end if
-    if (parallel%has_north_pole) then
+    if (parallel%has_north_pole .and. use_zonal_tend_filter) then
       do j = 1, size(zonal_tend_filter_cutoff_wavenumber)
         if (zonal_tend_filter_cutoff_wavenumber(j) /= 0) then
           filter_full_zonal_tend(parallel%full_lat_end_idx-j) = .true.
@@ -101,7 +101,7 @@ contains
   subroutine filter_array_at_full_lat(lat_idx, x)
 
     integer, intent(in) :: lat_idx
-    real, intent(inout) :: x(parallel%full_lon_lb_for_reduce:parallel%full_lon_ub_for_reduce)
+    real, intent(inout) :: x(parallel%full_lon_lb:parallel%full_lon_ub)
 
     real local_x(mesh%num_full_lon)
     integer i, j, ierr
@@ -133,7 +133,7 @@ contains
   subroutine filter_array_at_half_lat(lat_idx, x)
 
     integer, intent(in) :: lat_idx
-    real, intent(inout) :: x(parallel%full_lon_lb_for_reduce:parallel%full_lon_ub_for_reduce)
+    real, intent(inout) :: x(parallel%full_lon_lb:parallel%full_lon_ub)
 
     real local_x(mesh%num_full_lon)
     integer i, j, ierr
@@ -166,10 +166,12 @@ contains
 
     if (allocated(filter_full_zonal_tend)) deallocate(filter_full_zonal_tend)
     if (allocated(filter_half_zonal_tend)) deallocate(filter_half_zonal_tend)
-    if (allocated(wave_array)) deallocate(wave_array)
-    if (allocated(work_array)) deallocate(work_array)
-    if (allocated(full_filter_factor)) deallocate(full_filter_factor)
-    if (allocated(half_filter_factor)) deallocate(half_filter_factor)
+    if (allocated(wave_array))             deallocate(wave_array)
+    if (allocated(work_array))             deallocate(work_array)
+    if (allocated(full_filter_factor))     deallocate(full_filter_factor)
+    if (allocated(half_filter_factor))     deallocate(half_filter_factor)
+
+    call log_notice('Filter module is finalized.')
 
   end subroutine filter_final
 
