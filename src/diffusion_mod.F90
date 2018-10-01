@@ -170,6 +170,9 @@ contains
         end do
       end if
       if (order /= diffusion_order / 2) then
+        call parallel_fill_halo(gdd, all_halo=.true.)
+        call parallel_fill_halo(ud,  all_halo=.true.)
+        call parallel_fill_halo(vd,  all_halo=.true.)
         gd(:,:) = gdd(:,:)
         u(:,:) = ud(:,:)
         v(:,:) = vd(:,:)
