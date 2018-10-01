@@ -108,7 +108,7 @@ contains
       ! H
       do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          gdd(i,j) = sign * (gd(i+1,j) - 2 * gd(i,j) + gd(i-1,j)) / coef%full_dlon(j)**2 + &
+          gdd(i,j) = (gd(i+1,j) - 2 * gd(i,j) + gd(i-1,j)) / coef%full_dlon(j)**2 + &
                      ((gd(i,j+1) - gd(i,j  )) * mesh%half_cos_lat(j  ) - &
                       (gd(i,j  ) - gd(i,j-1)) * mesh%half_cos_lat(j-1)) / coef%full_dlat(j)**2 * mesh%full_cos_lat(j)
         end do
