@@ -138,7 +138,7 @@ contains
       call time_advance()
       call diag_run(state(old_time_idx))
       if (use_diffusion) then
-        call normal_diffusion(time_step_size, state(old_time_idx))
+        call ordinary_diffusion(time_step_size, state(old_time_idx))
       end if
       ! call divergence_diffusion(time_step_size, diag, state(old_time_idx))
       call output(state(old_time_idx))

@@ -17,6 +17,7 @@ module params_mod
 
   logical :: use_diffusion = .false.
   real diffusion_coef
+  integer :: diffusion_order = 2
  
   integer :: days = 0
   integer :: hours = 0
@@ -79,6 +80,7 @@ module params_mod
     use_zonal_tend_filter, &
     zonal_tend_filter_cutoff_wavenumber, &
     use_diffusion, &
+    diffusion_order, &
     diffusion_coef
 
 contains
