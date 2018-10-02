@@ -32,9 +32,9 @@ contains
     if (.not. allocated(ud))  call parallel_allocate(ud, half_lon=.true.)
     if (.not. allocated(vd))  call parallel_allocate(vd, half_lat=.true.)
     if (.not. allocated(gdd)) call parallel_allocate(gdd)
-    if (.not. allocated(u))  call parallel_allocate(u, half_lon=.true.)
-    if (.not. allocated(v))  call parallel_allocate(v, half_lat=.true.)
-    if (.not. allocated(gd)) call parallel_allocate(gd)
+    if (.not. allocated(u))   call parallel_allocate(u,  half_lon=.true.)
+    if (.not. allocated(v))   call parallel_allocate(v,  half_lat=.true.)
+    if (.not. allocated(gd))  call parallel_allocate(gd)
 
   end subroutine diffusion_init
 
@@ -66,8 +66,8 @@ contains
 
     call parallel_fill_halo(state%iap%u(:,:), all_halo=.true.)
     call parallel_fill_halo(state%iap%v(:,:), all_halo=.true.)
-    call parallel_fill_halo(state%u(:,:), all_halo=.true.)
-    call parallel_fill_halo(state%v(:,:), all_halo=.true.)
+    call parallel_fill_halo(state%u(:,:),     all_halo=.true.)
+    call parallel_fill_halo(state%v(:,:),     all_halo=.true.)
 
   end subroutine divergence_diffusion
 
@@ -96,13 +96,13 @@ contains
     !
     ! 2nd order:
     !
-    !            u        2 sin𝞿   ∂ v
-    ! ∇² u - --------- + --------- ---
-    !        a² cos²𝞿    a² cos²𝞿  ∂ 𝞴
+    ! ∂² u                 u        2 sin𝞿   ∂ v
+    ! ----           - --------- + --------- ---
+    ! ∂ λ²             a² cos²𝞿    a² cos²𝞿  ∂ 𝞴
     !
-    !            v        2 sin𝞿   ∂ u
-    ! ∇² v - --------- - --------- ---
-    !        a² cos²𝞿    a² cos²𝞿  ∂ 𝞴
+    ! ∂          ∂ v       v        2 sin𝞿   ∂ u
+    ! --- cos(φ) --- - --------- - --------- ---
+    ! ∂ φ        ∂ φ   a² cos²𝞿    a² cos²𝞿  ∂ 𝞴
 
     do order = 1, diffusion_order / 2
       ! H
@@ -209,8 +209,8 @@ contains
     end do
 
     call parallel_fill_halo(state%gd, all_halo=.true.)
-    call parallel_fill_halo(state%u, all_halo=.true.)
-    call parallel_fill_halo(state%v, all_halo=.true.)
+    call parallel_fill_halo(state%u,  all_halo=.true.)
+    call parallel_fill_halo(state%v,  all_halo=.true.)
 
     call iap_transform(state)
 
@@ -221,9 +221,9 @@ contains
     if (allocated(ud))  deallocate(ud)
     if (allocated(vd))  deallocate(vd)
     if (allocated(gdd)) deallocate(gdd)
-    if (allocated(u))  deallocate(u)
-    if (allocated(v))  deallocate(v)
-    if (allocated(gd)) deallocate(gd)
+    if (allocated(u))   deallocate(u)
+    if (allocated(v))   deallocate(v)
+    if (allocated(gd))  deallocate(gd)
 
   end subroutine diffusion_final
 

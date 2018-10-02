@@ -137,10 +137,6 @@ contains
       call time_integrate()
       call time_advance()
       call diag_run(state(old_time_idx))
-      if (use_diffusion) then
-        call ordinary_diffusion(time_step_size, state(old_time_idx))
-      end if
-      ! call divergence_diffusion(time_step_size, diag, state(old_time_idx))
       call output(state(old_time_idx))
       call log_add_diag('total_mass', diag%total_mass)
       call log_add_diag('total_energy', diag%total_energy)
@@ -188,11 +184,10 @@ contains
 
   end subroutine output
 
-  subroutine space_operators(state, tend, dt, pass)
+  subroutine space_operators(state, tend, pass)
 
     type(state_type), intent(inout) :: state
     type(tend_type), intent(inout) :: tend
-    real, intent(in) :: dt
     integer, intent(in) :: pass
 
     integer i, j, i1, i2
@@ -643,6 +638,10 @@ contains
       call integrator(time_step_size)
     end select
 
+    if (use_diffusion) then
+      call ordinary_diffusion(time_step_size, state(new_time_idx))
+    end if
+
   end subroutine time_integrate
 
   subroutine middle_point(time_step_size, old_time_idx_, new_time_idx_, pass_)
@@ -678,7 +677,7 @@ contains
     e1 = diag_total_energy(state(old))
     do iteration = 1, 8
       call average_state(state(old), state(new), state(half))
-      call space_operators(state(half), tend(old), dt, pass)
+      call space_operators(state(half), tend(old), pass)
       call update_state(dt, tend(old), state(old), state(new))
       e2 = diag_total_energy(state(new))
       if (abs(e2 - e1) * 2 / (e2 + e1) < 5.0e-15) then
@@ -716,15 +715,15 @@ contains
     dt = time_step_size * 0.5
 
     ! Do first predict step.
-    call space_operators(state(old), tend(old), dt, pass)
+    call space_operators(state(old), tend(old), pass)
     call update_state(dt, tend(old), state(old), state(new))
 
     ! Do second predict step.
-    call space_operators(state(new), tend(old), dt, pass)
+    call space_operators(state(new), tend(old), pass)
     call update_state(dt, tend(old), state(old), state(new))
 
     ! Do correct step.
-    call space_operators(state(new), tend(new), dt, pass)
+    call space_operators(state(new), tend(new), pass)
 
     ip1 = inner_product(tend(old), tend(new))
     ip2 = inner_product(tend(new), tend(new))
@@ -765,19 +764,19 @@ contains
     dt = time_step_size * 0.5d0
 
     ! Compute RK1
-    call space_operators(state(old), tend_rk(1), dt, pass)
+    call space_operators(state(old), tend_rk(1), pass)
 
     ! Compute RK2
     call update_state(dt, tend_rk(1), state(old), state(tmp))
-    call space_operators(state(tmp), tend_rk(2), dt, pass)
+    call space_operators(state(tmp), tend_rk(2), pass)
 
     ! Compute RK3
     call update_state(dt, tend_rk(2), state(old), state(tmp))
-    call space_operators(state(tmp), tend_rk(3), dt, pass)
+    call space_operators(state(tmp), tend_rk(3), pass)
 
     ! Compute RK4
     call update_state(time_step_size, tend_rk(3), state(old), state(tmp))
-    call space_operators(state(tmp), tend_rk(4), dt, pass)
+    call space_operators(state(tmp), tend_rk(4), pass)
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
