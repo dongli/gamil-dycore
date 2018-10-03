@@ -39,18 +39,18 @@ contains
     type(state_type), intent(inout) :: state
     type(static_type), intent(inout) :: static
 
-    call io_create_dataset('restart', file_path=restart_file, mode='input')
-    call io_start_input('restart')
-    call time_reset_start_time(datetime(io_get_meta('restart_time', 'restart')))
-    call log_notice('Reset time to ' // trim(curr_time_format) // '.')
-    call io_input('u', state%u, 'restart')
-    call parallel_fill_halo(state%u(:,:), all_halo=.true.)
-    call io_input('v', state%v, 'restart')
-    call parallel_fill_halo(state%v(:,:), all_halo=.true.)
-    call io_input('gd', state%gd, 'restart')
-    call parallel_fill_halo(state%gd(:,:), all_halo=.true.)
-    call io_input('ghs', static%ghs, 'restart')
-    call parallel_fill_halo(static%ghs, all_halo=.true.)
+    ! call io_create_dataset('restart', file_path=restart_file, mode='input')
+    ! call io_start_input('restart')
+    ! call time_reset_start_time(datetime(io_get_meta('restart_time', 'restart')))
+    ! call log_notice('Reset time to ' // trim(curr_time_format) // '.')
+    ! call io_input('u', state%u, 'restart')
+    ! call parallel_fill_halo(state%u(:,:), all_halo=.true.)
+    ! call io_input('v', state%v, 'restart')
+    ! call parallel_fill_halo(state%v(:,:), all_halo=.true.)
+    ! call io_input('gd', state%gd, 'restart')
+    ! call parallel_fill_halo(state%gd(:,:), all_halo=.true.)
+    ! call io_input('ghs', static%ghs, 'restart')
+    ! call parallel_fill_halo(static%ghs, all_halo=.true.)
 
   end subroutine restart_read
 
@@ -59,18 +59,18 @@ contains
     type(state_type), intent(in) :: state
     type(static_type), intent(in) :: static
 
-    call io_add_meta('restart_time', curr_time_format, 'restart')
-    call io_add_meta('elapsed_seconds', time_elapsed_seconds(), 'restart')
-    call io_start_output('restart')
-    call io_output('lon', mesh%full_lon_deg(:), 'restart')
-    call io_output('ilon', mesh%half_lon_deg(:), 'restart')
-    call io_output('lat', mesh%full_lat_deg(:), 'restart')
-    call io_output('ilat', mesh%half_lat_deg(:), 'restart')
-    call io_output('u', state%u(:,:), 'restart')
-    call io_output('v', state%v(:,:), 'restart')
-    call io_output('gd', state%gd(:,:), 'restart')
-    call io_output('ghs', static%ghs(:,:), 'restart')
-    call io_end_output('restart')
+    ! call io_add_meta('restart_time', curr_time_format, 'restart')
+    ! call io_add_meta('elapsed_seconds', time_elapsed_seconds(), 'restart')
+    ! call io_start_output('restart')
+    ! call io_output('lon', mesh%full_lon_deg(:), 'restart')
+    ! call io_output('ilon', mesh%half_lon_deg(:), 'restart')
+    ! call io_output('lat', mesh%full_lat_deg(:), 'restart')
+    ! call io_output('ilat', mesh%half_lat_deg(:), 'restart')
+    ! call io_output('u', state%u(:,:), 'restart')
+    ! call io_output('v', state%v(:,:), 'restart')
+    ! call io_output('gd', state%gd(:,:), 'restart')
+    ! call io_output('ghs', static%ghs(:,:), 'restart')
+    ! call io_end_output('restart')
 
   end subroutine restart_write
 

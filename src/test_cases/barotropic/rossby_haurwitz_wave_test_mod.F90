@@ -3,6 +3,7 @@ module rossby_haurwitz_wave_test_mod
   use mesh_mod
   use parallel_mod
   use params_mod
+  use types_mod
   use data_mod
 
   implicit none
@@ -34,7 +35,7 @@ contains
 
     real lon, cos_lat, sin_lat
     real a, b, c
-    integer i, j
+    integer i, j, shift_idx
 
     write(6, *) '[Notice]: Use Rossby-Haurwitz wave initial condition.'
 
@@ -52,11 +53,14 @@ contains
         a = cos_lat
         b = R * cos_lat**(R - 1) * sin_lat**2 * cos(R * lon)
         c = cos_lat**(R + 1) * cos(R * lon)
-        state(1)%u(i,j) = radius * omg * (a + b - c)
+        state(1)%u(i,j,shift_idx) = radius * omg * (a + b - c)
       end do
     end do
 
-    call parallel_fill_halo(state(1)%u, all_halo=.true.)
+    call parallel_fill_halo(state(1)%u(:,:,shift_idx), all_halo=.true.)
+    do shift_idx = 1, 4
+      state(1)%u(:,:,shift_idx) = state(1)%u(:,:,combined_wind_idx)
+    end do
 
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       cos_lat = mesh%half_cos_lat(j)
@@ -64,11 +68,14 @@ contains
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         lon = mesh%full_lon(i)
         a = R * cos_lat**(R - 1) * sin_lat * sin(R * lon)
-        state(1)%v(i,j) = - radius * omg * a
+        state(1)%v(i,j,shift_idx) = - radius * omg * a
       end do
     end do
 
-    call parallel_fill_halo(state(1)%v, all_halo=.true.)
+    call parallel_fill_halo(state(1)%v(:,:,shift_idx), all_halo=.true.)
+    do shift_idx = 1, 4
+      state(1)%v(:,:,shift_idx) = state(1)%v(:,:,combined_wind_idx)
+    end do
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       cos_lat = mesh%full_cos_lat(j)

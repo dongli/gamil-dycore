@@ -3,6 +3,7 @@ module steady_geostrophic_flow_test_mod
   use mesh_mod
   use parallel_mod
   use params_mod
+  use types_mod
   use data_mod
 
   implicit none
@@ -20,7 +21,7 @@ contains
   subroutine steady_geostrophic_flow_test_set_initial_condition()
 
     real cos_lat, sin_lat, cos_lon, sin_lon, cos_alpha, sin_alpha
-    integer i, j
+    integer i, j, shift_idx
 
     write(6, *) '[Notice]: Use steady geostrophic flow initial condition.'
 
@@ -33,20 +34,26 @@ contains
       sin_lat = mesh%full_sin_lat(j)
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         cos_lon = mesh%half_cos_lon(i)
-        state(1)%u(i,j) = u0 * (cos_lat * cos_alpha + cos_lon * sin_lat * sin_alpha)
+        state(1)%u(i,j,shift_idx) = u0 * (cos_lat * cos_alpha + cos_lon * sin_lat * sin_alpha)
       end do
     end do
 
-    call parallel_fill_halo(state(1)%u, all_halo=.true.)
+    call parallel_fill_halo(state(1)%u(:,:,shift_idx), all_halo=.true.)
+    do shift_idx = 1, 4
+      state(1)%u(:,:,shift_idx) = state(1)%u(:,:,combined_wind_idx)
+    end do
 
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         sin_lon = mesh%full_cos_lon(i)
-        state(1)%v(i,j) = - u0 * sin_lon * sin_alpha
+        state(1)%v(i,j,shift_idx) = - u0 * sin_lon * sin_alpha
       end do
     end do
 
-    call parallel_fill_halo(state(1)%v, all_halo=.true.)
+    call parallel_fill_halo(state(1)%v(:,:,shift_idx), all_halo=.true.)
+    do shift_idx = 1, 4
+      state(1)%v(:,:,shift_idx) = state(1)%v(:,:,combined_wind_idx)
+    end do
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       cos_lat = mesh%full_cos_lat(j)

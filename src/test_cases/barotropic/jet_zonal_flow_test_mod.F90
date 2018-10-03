@@ -3,6 +3,7 @@ module jet_zonal_flow_test_mod
   use mesh_mod
   use parallel_mod
   use params_mod
+  use types_mod
   use data_mod
   use log_mod
   use string_mod
@@ -27,7 +28,7 @@ contains
 
   subroutine jet_zonal_flow_test_set_initial_condition()
 
-    integer i, j, neval, ierr
+    integer i, j, shift_idx, neval, ierr
     real abserr
 
     write(6, *) '[Notice]: Use jet zonal flow initial condition.'
@@ -42,19 +43,25 @@ contains
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        state(1)%u(i,j) = u_function(mesh%full_lat(j))
+        state(1)%u(i,j,combined_wind_idx) = u_function(mesh%full_lat(j))
       end do
     end do
 
-    call parallel_fill_halo(state(1)%u, all_halo=.true.)
+    call parallel_fill_halo(state(1)%u(:,:,combined_wind_idx), all_halo=.true.)
+    do shift_idx = 1, 4
+      state(1)%u(:,:,shift_idx) = state(1)%u(:,:,combined_wind_idx)
+    end do
 
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        state(1)%v(i,j) = 0.0
+        state(1)%v(i,j,combined_wind_idx) = 0.0
       end do
     end do
 
-    call parallel_fill_halo(state(1)%v, all_halo=.true.)
+    call parallel_fill_halo(state(1)%v(:,:,combined_wind_idx), all_halo=.true.)
+    do shift_idx = 1, 4
+      state(1)%v(:,:,shift_idx) = state(1)%v(:,:,combined_wind_idx)
+    end do
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       if (j == parallel%full_lat_start_idx) then

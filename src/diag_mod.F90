@@ -48,15 +48,15 @@ contains
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        vm1 = state%v(i-1,j-1) + state%v(i-1,j)
-        vp1 = state%v(i+1,j-1) + state%v(i+1,j)
-        um1 = (state%u(i-1,j-1) + state%u(i,j-1) + state%u(i-1,j) + state%u(i,j)) * mesh%half_cos_lat(j-1)
-        up1 = (state%u(i-1,j+1) + state%u(i,j+1) + state%u(i-1,j) + state%u(i,j)) * mesh%half_cos_lat(j)
+        vm1 = state%v(i-1,j-1,combined_wind_idx) + state%v(i-1,j,combined_wind_idx)
+        vp1 = state%v(i+1,j-1,combined_wind_idx) + state%v(i+1,j,combined_wind_idx)
+        um1 = (state%u(i-1,j-1,combined_wind_idx) + state%u(i,j-1,combined_wind_idx) + state%u(i-1,j,combined_wind_idx) + state%u(i,j,combined_wind_idx)) * mesh%half_cos_lat(j-1)
+        up1 = (state%u(i-1,j+1,combined_wind_idx) + state%u(i,j+1,combined_wind_idx) + state%u(i-1,j,combined_wind_idx) + state%u(i,j,combined_wind_idx)) * mesh%half_cos_lat(j)
         diag%vor(i,j) = (vp1 - vm1) / coef%full_dlon(j) - (up1 - um1) / coef%full_dlat(j)
-        um1 = state%u(i-1,j)
-        up1 = state%u(i,j)
-        vm1 = state%v(i,j-1) * mesh%half_cos_lat(j-1)
-        vp1 = state%v(i,j) * mesh%half_cos_lat(j)
+        um1 = state%u(i-1,j,combined_wind_idx)
+        up1 = state%u(i,  j,combined_wind_idx)
+        vm1 = state%v(i,j-1,combined_wind_idx) * mesh%half_cos_lat(j-1)
+        vp1 = state%v(i,j,  combined_wind_idx) * mesh%half_cos_lat(j)
         diag%div(i,j) = (up1 - um1) / coef%full_dlon(j) + (vp1 - vm1) / coef%full_dlat(j)
       end do
     end do
@@ -93,19 +93,22 @@ contains
 
     type(state_type), intent(in) :: state
 
-    integer i, j
+    integer i, j, shift_idx
 
     res = 0.0
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        res = res + state%iap%u(i,j)**2 * mesh%full_cos_lat(j)
+    do shift_idx = 1, 4
+      do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+        do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+          res = res + state%iap%u(i,j,shift_idx)**2 * mesh%full_cos_lat(j)
+        end do
+      end do
+      do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+          res = res + state%iap%v(i,j,shift_idx)**2 * mesh%half_cos_lat(j)
+        end do
       end do
     end do
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        res = res + state%iap%v(i,j)**2 * mesh%half_cos_lat(j)
-      end do
-    end do
+    res = res / 4
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         res = res + (state%gd(i,j) + static%ghs(i,j))**2 * mesh%full_cos_lat(j)
