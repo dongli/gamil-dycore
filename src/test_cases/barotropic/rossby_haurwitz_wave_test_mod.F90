@@ -53,11 +53,11 @@ contains
         a = cos_lat
         b = R * cos_lat**(R - 1) * sin_lat**2 * cos(R * lon)
         c = cos_lat**(R + 1) * cos(R * lon)
-        state(1)%u(i,j,shift_idx) = radius * omg * (a + b - c)
+        state(1)%u(i,j,combined_wind_idx) = radius * omg * (a + b - c)
       end do
     end do
 
-    call parallel_fill_halo(state(1)%u(:,:,shift_idx), all_halo=.true.)
+    call parallel_fill_halo(state(1)%u(:,:,combined_wind_idx), all_halo=.true.)
     do shift_idx = 1, 4
       state(1)%u(:,:,shift_idx) = state(1)%u(:,:,combined_wind_idx)
     end do
@@ -68,11 +68,11 @@ contains
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         lon = mesh%full_lon(i)
         a = R * cos_lat**(R - 1) * sin_lat * sin(R * lon)
-        state(1)%v(i,j,shift_idx) = - radius * omg * a
+        state(1)%v(i,j,combined_wind_idx) = - radius * omg * a
       end do
     end do
 
-    call parallel_fill_halo(state(1)%v(:,:,shift_idx), all_halo=.true.)
+    call parallel_fill_halo(state(1)%v(:,:,combined_wind_idx), all_halo=.true.)
     do shift_idx = 1, 4
       state(1)%v(:,:,shift_idx) = state(1)%v(:,:,combined_wind_idx)
     end do
