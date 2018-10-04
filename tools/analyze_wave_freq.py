@@ -96,6 +96,8 @@ if args.coord_type == 'plane':
 		[ eqn[2][1] / wave(),         eqn[2][2] / wave(),         eqn[2][0] / wave() ]
 	])).expand(complex=True), method='fu')
 	freq_relation_expr['\\section{Modified C-grid case}'] = [ M, simplify(M.det()) ]
+	inertial_error = Poly(freq_relation_expr['\\section{Modified C-grid case}'][1], f).coeffs()[0] / I / w
+	print(inertial_error)
 elif args.coord_type == 'sphere':
 	pass
 
