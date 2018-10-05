@@ -49,25 +49,25 @@ contains
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        state%u(i,j) = state%u(i,j) + dt * vd * (diag%div(i+1,j) - diag%div(i,j)) / coef%full_dlon(j)
+        state%u_c(i,j) = state%u_c(i,j) + dt * vd * (diag%div(i+1,j) - diag%div(i,j)) / coef%full_dlon(j)
       end do
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        state%iap%u(i,j) = state%u(i,j) * 0.5 * (state%iap%gd(i,j) + state%iap%gd(i+1,j))
+        state%iap%u_c(i,j) = state%u_c(i,j) * 0.5 * (state%iap%gd(i,j) + state%iap%gd(i+1,j))
       end do
     end do
     do j = parallel%half_lon_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        state%v(i,j) = state%v(i,j) + dt * vd * (diag%div(i,j+1) - diag%div(i,j)) / radius / mesh%dlat
+        state%v_c(i,j) = state%v_c(i,j) + dt * vd * (diag%div(i,j+1) - diag%div(i,j)) / radius / mesh%dlat
       end do
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        state%iap%v(i,j) = state%v(i,j) * 0.5 * (state%iap%gd(i,j) + state%iap%gd(i,j+1))
+        state%iap%v_c(i,j) = state%v_c(i,j) * 0.5 * (state%iap%gd(i,j) + state%iap%gd(i,j+1))
       end do
     end do
 
-    call parallel_fill_halo(state%iap%u(:,:), all_halo=.true.)
-    call parallel_fill_halo(state%iap%v(:,:), all_halo=.true.)
-    call parallel_fill_halo(state%u(:,:),     all_halo=.true.)
-    call parallel_fill_halo(state%v(:,:),     all_halo=.true.)
+    call parallel_fill_halo(state%iap%u_c(:,:), all_halo=.true.)
+    call parallel_fill_halo(state%iap%v_c(:,:), all_halo=.true.)
+    call parallel_fill_halo(state%u_c(:,:),     all_halo=.true.)
+    call parallel_fill_halo(state%v_c(:,:),     all_halo=.true.)
 
   end subroutine divergence_diffusion
 
@@ -79,8 +79,8 @@ contains
     real sp, np
     integer i, j, order, sign
 
-    u(:,:) = state%u(:,:)
-    v(:,:) = state%v(:,:)
+    u(:,:) = state%u_c(:,:)
+    v(:,:) = state%v_c(:,:)
     gd(:,:) = state%gd(:,:)
 
     ! Scalar diffusion:
@@ -199,18 +199,18 @@ contains
         state%gd(i,j) = state%gd(i,j) + sign * dt * diffusion_coef * gdd(i,j)
       end do
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        state%u(i,j) = state%u(i,j) + sign * dt * diffusion_coef * ud(i,j)
+        state%u_c(i,j) = state%u_c(i,j) + sign * dt * diffusion_coef * ud(i,j)
       end do
     end do
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        state%v(i,j) = state%v(i,j) + sign * dt * diffusion_coef * vd(i,j)
+        state%v_c(i,j) = state%v_c(i,j) + sign * dt * diffusion_coef * vd(i,j)
       end do
     end do
 
     call parallel_fill_halo(state%gd, all_halo=.true.)
-    call parallel_fill_halo(state%u,  all_halo=.true.)
-    call parallel_fill_halo(state%v,  all_halo=.true.)
+    call parallel_fill_halo(state%u_c,  all_halo=.true.)
+    call parallel_fill_halo(state%v_c,  all_halo=.true.)
 
     call iap_transform(state)
 

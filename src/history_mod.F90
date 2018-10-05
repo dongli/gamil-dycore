@@ -92,12 +92,12 @@ contains
     ! Convert wind from C grid to A grid.
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        u(i,j) = 0.5 * (state%u(i,j) + state%u(i-1,j))
+        u(i,j) = 0.5 * (state%u_c(i,j) + state%u_c(i-1,j))
       end do
     end do
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        v(i,j) = 0.5 * (state%v(i,j) + state%v(i,j-1))
+        v(i,j) = 0.5 * (state%v_c(i,j) + state%v_c(i,j-1))
       end do
     end do
     call io_start_output()
@@ -123,18 +123,18 @@ contains
     call io_output('lat', mesh%full_lat_deg(:), 'debug')
     call io_output('ilon', mesh%half_lon_deg(:), 'debug')
     call io_output('ilat', mesh%half_lat_deg(:), 'debug')
-    call io_output('u_adv_lon', tend%u_adv_lon(:,:), 'debug')
-    call io_output('u_adv_lat', tend%u_adv_lat(:,:), 'debug')
-    call io_output('v_adv_lon', tend%v_adv_lon(:,:), 'debug')
-    call io_output('v_adv_lat', tend%v_adv_lat(:,:), 'debug')
-    call io_output('fv', tend%fv(:,:), 'debug')
-    call io_output('fu', tend%fu(:,:), 'debug')
-    call io_output('u_pgf', tend%u_pgf(:,:), 'debug')
-    call io_output('v_pgf', tend%v_pgf(:,:), 'debug')
+    call io_output('u_adv_lon', tend%u_adv_lon_c(:,:), 'debug')
+    call io_output('u_adv_lat', tend%u_adv_lat_c(:,:), 'debug')
+    call io_output('v_adv_lon', tend%v_adv_lon_c(:,:), 'debug')
+    call io_output('v_adv_lat', tend%v_adv_lat_c(:,:), 'debug')
+    call io_output('fv', tend%fv_c(:,:), 'debug')
+    call io_output('fu', tend%fu_c(:,:), 'debug')
+    call io_output('u_pgf', tend%u_pgf_c(:,:), 'debug')
+    call io_output('v_pgf', tend%v_pgf_c(:,:), 'debug')
     call io_output('mass_div_lon', tend%mass_div_lon(:,:), 'debug')
     call io_output('mass_div_lat', tend%mass_div_lat(:,:), 'debug')
-    call io_output('du', tend%du(:,:), 'debug')
-    call io_output('dv', tend%dv(:,:), 'debug')
+    call io_output('du', tend%du_c(:,:), 'debug')
+    call io_output('dv', tend%dv_c(:,:), 'debug')
     call io_output('dgd', tend%dgd(:,:), 'debug')
     call io_end_output('debug')
 

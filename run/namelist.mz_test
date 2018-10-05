@@ -1,6 +1,6 @@
 &dycore_params
 test_case = 'mountain_zonal_flow'
-case_name = 'mz_c_u_01.180x90.dt480'
+case_name = 'mz_cd_01.180x90.dt480'
 case_desc = 'Mountain zonal flow test'
 author = 'Li Dong <dongli@lasg.iap.ac.cn>'
 days = 20

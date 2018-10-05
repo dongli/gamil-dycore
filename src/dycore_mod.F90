@@ -187,13 +187,15 @@ contains
 
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-          tend%du(i,j) = - tend%u_adv_lon(i,j) - tend%u_adv_lat(i,j) + tend%fv(i,j) - tend%u_pgf(i,j)
+          tend%du_c(i,j) = - tend%u_adv_lon_c(i,j) - tend%u_adv_lat_c(i,j) + tend%fv_c(i,j) - tend%u_pgf_c(i,j)
+          tend%dv_d(i,j) = - tend%v_adv_lon_d(i,j) - tend%v_adv_lat_d(i,j) - tend%fu_d(i,j) - tend%v_pgf_d(i,j)
         end do
       end do
 
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%dv(i,j) = - tend%v_adv_lon(i,j) - tend%v_adv_lat(i,j) - tend%fu(i,j) - tend%v_pgf(i,j)
+          tend%du_d(i,j) = - tend%u_adv_lon_d(i,j) - tend%u_adv_lat_d(i,j) + tend%fv_d(i,j) - tend%u_pgf_d(i,j)
+          tend%dv_c(i,j) = - tend%v_adv_lon_c(i,j) - tend%v_adv_lat_c(i,j) - tend%fu_c(i,j) - tend%v_pgf_c(i,j)
         end do
       end do
 
@@ -204,10 +206,14 @@ contains
       end do
     case (slow_pass)
 #ifndef NDEBUG
-      tend%fv = 0.0
-      tend%u_pgf = 0.0
-      tend%fu = 0.0
-      tend%v_pgf = 0.0
+      tend%fv_c = 0.0
+      tend%fu_c = 0.0
+      tend%u_pgf_c = 0.0
+      tend%v_pgf_c = 0.0
+      tend%fv_d = 0.0
+      tend%fu_d = 0.0
+      tend%u_pgf_d = 0.0
+      tend%v_pgf_d = 0.0
       tend%mass_div_lon = 0.0
       tend%mass_div_lat = 0.0
 #endif
@@ -216,15 +222,22 @@ contains
 
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-          tend%du(i,j) = - tend%u_adv_lon(i,j) - tend%u_adv_lat(i,j)
+          tend%du_c(i,j) = - tend%u_adv_lon_c(i,j) - tend%u_adv_lat_c(i,j)
+          tend%dv_d(i,j) = - tend%v_adv_lon_d(i,j) - tend%v_adv_lat_d(i,j)
         end do
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (filter_full_zonal_tend(j)) then
-          s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
+          s1 = sum(tend%du_c(i1:i2,j) * state%iap%u_c(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call filter_array_at_full_lat(j, tend%du(:,j))
-            s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
-            tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
+            call filter_array_at_full_lat(j, tend%du_c(:,j))
+            s2 = sum(tend%du_c(i1:i2,j) * state%iap%u_c(i1:i2,j))
+            tend%du_c(i1:i2,j) = tend%du_c(i1:i2,j) * s1 / s2
+          end if
+          s1 = sum(tend%dv_d(i1:i2,j) * state%iap%v_d(i1:i2,j))
+          if (abs(s1) > 1.0e-16) then
+            call filter_array_at_full_lat(j, tend%dv_d(:,j))
+            s2 = sum(tend%dv_d(i1:i2,j) * state%iap%v_d(i1:i2,j))
+            tend%dv_d(i1:i2,j) = tend%dv_d(i1:i2,j) * s1 / s2
           end if
         end if
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -232,15 +245,22 @@ contains
 
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%dv(i,j) = - tend%v_adv_lon(i,j) - tend%v_adv_lat(i,j)
+          tend%du_d(i,j) = - tend%u_adv_lon_d(i,j) - tend%u_adv_lat_d(i,j)
+          tend%dv_c(i,j) = - tend%v_adv_lon_c(i,j) - tend%v_adv_lat_c(i,j)
         end do
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (filter_half_zonal_tend(j)) then
-          s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
+          s1 = sum(tend%du_d(i1:i2,j) * state%iap%u_d(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call filter_array_at_half_lat(j, tend%dv(:,j))
-            s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
-            tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
+            call filter_array_at_half_lat(j, tend%du_d(:,j))
+            s2 = sum(tend%du_d(i1:i2,j) * state%iap%u_d(i1:i2,j))
+            tend%du_d(i1:i2,j) = tend%du_d(i1:i2,j) * s1 / s2
+          end if
+          s1 = sum(tend%dv_c(i1:i2,j) * state%iap%v_c(i1:i2,j))
+          if (abs(s1) > 1.0e-16) then
+            call filter_array_at_half_lat(j, tend%dv_c(:,j))
+            s2 = sum(tend%dv_c(i1:i2,j) * state%iap%v_c(i1:i2,j))
+            tend%dv_c(i1:i2,j) = tend%dv_c(i1:i2,j) * s1 / s2
           end if
         end if
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -249,10 +269,14 @@ contains
       tend%dgd = 0.0
     case (fast_pass)
 #ifndef NDEBUG
-      tend%u_adv_lon = 0.0
-      tend%u_adv_lat = 0.0
-      tend%v_adv_lon = 0.0
-      tend%v_adv_lat = 0.0
+      tend%u_adv_lon_c = 0.0
+      tend%u_adv_lat_c = 0.0
+      tend%v_adv_lon_c = 0.0
+      tend%v_adv_lat_c = 0.0
+      tend%u_adv_lon_d = 0.0
+      tend%u_adv_lat_d = 0.0
+      tend%v_adv_lon_d = 0.0
+      tend%v_adv_lat_d = 0.0
 #endif
       call coriolis_operator(state, tend)
       call zonal_pressure_gradient_force_operator(state, tend)
@@ -278,15 +302,22 @@ contains
 
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-          tend%du(i,j) = tend%fv(i,j) - tend%u_pgf(i,j)
+          tend%du_c(i,j) =   tend%fv_c(i,j) - tend%u_pgf_c(i,j)
+          tend%dv_d(i,j) = - tend%fu_d(i,j) - tend%v_pgf_d(i,j)
         end do
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (filter_full_zonal_tend(j)) then
-          s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
+          s1 = sum(tend%du_c(i1:i2,j) * state%iap%u_c(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call filter_array_at_full_lat(j, tend%du(:,j))
-            s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
-            tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
+            call filter_array_at_full_lat(j, tend%du_c(:,j))
+            s2 = sum(tend%du_c(i1:i2,j) * state%iap%u_c(i1:i2,j))
+            tend%du_c(i1:i2,j) = tend%du_c(i1:i2,j) * s1 / s2
+          end if
+          s1 = sum(tend%dv_d(i1:i2,j) * state%iap%v_d(i1:i2,j))
+          if (abs(s1) > 1.0e-16) then
+            call filter_array_at_full_lat(j, tend%dv_d(:,j))
+            s2 = sum(tend%dv_d(i1:i2,j) * state%iap%v_d(i1:i2,j))
+            tend%dv_d(i1:i2,j) = tend%dv_d(i1:i2,j) * s1 / s2
           end if
         end if
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -294,15 +325,22 @@ contains
 
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%dv(i,j) = - tend%fu(i,j) - tend%v_pgf(i,j)
+          tend%du_d(i,j) =   tend%fv_d(i,j) - tend%u_pgf_d(i,j)
+          tend%dv_c(i,j) = - tend%fu_c(i,j) - tend%v_pgf_c(i,j)
         end do
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (filter_half_zonal_tend(j)) then
-          s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
+          s1 = sum(tend%du_d(i1:i2,j) * state%iap%u_d(i1:i2,j))
           if (abs(s1) > 1.0e-16) then
-            call filter_array_at_half_lat(j, tend%dv(:,j))
-            s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
-            tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
+            call filter_array_at_half_lat(j, tend%du_d(:,j))
+            s2 = sum(tend%du_d(i1:i2,j) * state%iap%u_d(i1:i2,j))
+            tend%du_d(i1:i2,j) = tend%du_d(i1:i2,j) * s1 / s2
+          end if
+          s1 = sum(tend%dv_c(i1:i2,j) * state%iap%v_c(i1:i2,j))
+          if (abs(s1) > 1.0e-16) then
+            call filter_array_at_half_lat(j, tend%dv_c(:,j))
+            s2 = sum(tend%dv_c(i1:i2,j) * state%iap%v_c(i1:i2,j))
+            tend%dv_c(i1:i2,j) = tend%dv_c(i1:i2,j) * s1 / s2
           end if
         end if
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -314,7 +352,7 @@ contains
     !  call history_write(tend, tag)
     ! end if
 
-    ! call check_antisymmetry(tend, state)
+    call check_antisymmetry(tend, state)
 
   end subroutine space_operators
 
@@ -325,21 +363,49 @@ contains
 
     integer i, j
 
-    ! U
+    ! U on C grid
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        tend%u_adv_lon(i,j) = 0.25 / coef%full_dlon(j) * &
-          ((state%u(i,j) + state%u(i+1,j)) * state%iap%u(i+1,j) - &
-           (state%u(i,j) + state%u(i-1,j)) * state%iap%u(i-1,j))
+        tend%u_adv_lon_c(i,j) = 0.25 / coef%full_dlon(j) * &
+          ((state%u_c(i,j) + state%u_c(i+1,j)) * state%iap%u_c(i+1,j) - &
+           (state%u_c(i,j) + state%u_c(i-1,j)) * state%iap%u_c(i-1,j))
       end do
     end do
 
-    ! V
+    ! V on C grid
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%v_adv_lon(i,j) = 0.25 / coef%half_dlon(j) * &
-          ((state%u(i,  j) + state%u(i,  j+1)) * state%iap%v(i+1,j) - &
-           (state%u(i-1,j) + state%u(i-1,j+1)) * state%iap%v(i-1,j))
+        tend%v_adv_lon_c(i,j) = 0.25 / coef%half_dlon(j) * &
+          ((state%u_c(i,  j) + state%u_c(i,  j+1)) * state%iap%v_c(i+1,j) - &
+           (state%u_c(i-1,j) + state%u_c(i-1,j+1)) * state%iap%v_c(i-1,j))
+      end do
+    end do
+
+    ! U on D grid
+    !
+    !       o u_d (i-1,j)    o u_d (i,j)    o u_d (i+1,j)
+    !
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        tend%u_adv_lon_d(i,j) = 0.25 / coef%half_dlon(j) * &
+          ((state%u_d(i,j) + state%u_d(i+1,j)) * state%iap%u_d(i+1,j) - &
+           (state%u_d(i,j) + state%u_d(i-1,j)) * state%iap%u_d(i-1,j))
+      end do
+    end do
+
+    ! V on D grid
+    !
+    !                      x u_d (i,j-1)                   x u_d (i+1,j-1)
+    !
+    !       o v_d (i-1,j)                   o v_d (i,j)                      o v_d (i+1,j)
+    !
+    !                      x u_d (i, j )                   x u_d (i+1, j )
+    !
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+        tend%v_adv_lon_d(i,j) = 0.25 / coef%full_dlon(j) * &
+          ((state%u_d(i+1,j-1) + state%u_d(i+1,j)) * state%iap%v_d(i+1,j) - &
+           (state%u_d(i,  j-1) + state%u_d(i,  j)) * state%iap%v_d(i-1,j))
       end do
     end do
 
@@ -352,41 +418,77 @@ contains
 
     integer i, j
 
-    ! U
+    ! U on C grid
+    !
+    !                        o u_c (i,j-1)
+    !
+    !       x v_c (i,j-1)                    x v_c (i+1,j-1)
+    !
+    !                        o u_c (i, j )
+    !
+    !       x v_c (i,j  )                    x v_c (i+1,j  )
+    !
+    !                        o u_c (i,j+1)
+    !
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        tend%u_adv_lat(i,j) = 0.25 / coef%full_dlat(j) * &
-          ((state%v(i,j  ) + state%v(i+1,j  )) * mesh%half_cos_lat(j  ) * state%iap%u(i,j+1) - &
-           (state%v(i,j-1) + state%v(i+1,j-1)) * mesh%half_cos_lat(j-1) * state%iap%u(i,j-1))
+        tend%u_adv_lat_c(i,j) = 0.25 / coef%full_dlat(j) * &
+          ((state%v_c(i,j  ) + state%v_c(i+1,j  )) * mesh%half_cos_lat(j  ) * state%iap%u_c(i,j+1) - &
+           (state%v_c(i,j-1) + state%v_c(i+1,j-1)) * mesh%half_cos_lat(j-1) * state%iap%u_c(i,j-1))
       end do
     end do
 
-    ! V
-    do j = parallel%half_lat_start_idx_no_pole, parallel%half_lat_end_idx_no_pole
+    ! V on C grid
+    !
+    !                        o v_c (i,j-1)
+    !
+    !                        o v_c (i, j )
+    !
+    !                        o v_c (i,j+1)
+    !
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%v_adv_lat(i,j) = 0.25 / coef%half_dlat(j) * &
-          ((state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j+1) * mesh%half_cos_lat(j+1)) * state%iap%v(i,j+1) - &
-           (state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j-1) * mesh%half_cos_lat(j-1)) * state%iap%v(i,j-1))
+        tend%v_adv_lat_c(i,j) = 0.25 / coef%half_dlat(j) * &
+          ((state%v_c(i,j) * mesh%half_cos_lat(j) + state%v_c(i,j+1) * mesh%half_cos_lat(j+1)) * state%iap%v_c(i,j+1) - &
+           (state%v_c(i,j) * mesh%half_cos_lat(j) + state%v_c(i,j-1) * mesh%half_cos_lat(j-1)) * state%iap%v_c(i,j-1))
       end do
     end do
 
-    ! Handle meridional advection at South Pole.
-    if (parallel%has_south_pole) then
-      j = parallel%half_lat_south_pole_idx
+    ! U on D grid
+    !
+    !                        o u_d (i,j-1)
+    !
+    !     x v_d (i-1,j  )                    x v_d (i,j  )
+    !
+    !                        o u_d (i, j )
+    !
+    !     x v_d (i-1,j+1)                    x v_d (i,j+1)
+    !
+    !                        o u_d (i,j+1)
+    !
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%v_adv_lat(i,j) = 0.25 / coef%half_dlat(j) * &
-          (state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j+1) * mesh%half_cos_lat(j+1)) * state%iap%v(i,j+1)
+        tend%u_adv_lat_d(i,j) = 0.25 / coef%half_dlat(j) * &
+          ((state%v_d(i-1,j+1) + state%v_d(i,j+1)) * mesh%full_cos_lat(j+1) * state%iap%u_d(i,j+1) - &
+           (state%v_d(i-1,j  ) + state%v_d(i,j  )) * mesh%full_cos_lat(j  ) * state%iap%u_d(i,j-1))
       end do
-    end if
+    end do
 
-    ! Handle meridional advection at North Pole.
-    if (parallel%has_north_pole) then
-      j = parallel%half_lat_north_pole_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%v_adv_lat(i,j) = - 0.25 / coef%half_dlat(j) * &
-          (state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j-1) * mesh%half_cos_lat(j-1)) * state%iap%v(i,j-1)
+    ! V on D grid
+    !
+    !                        o v_d (i,j-1)
+    !
+    !                        o v_d (i, j )
+    !
+    !                        o v_d (i,j+1)
+    !
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+        tend%v_adv_lat_d(i,j) = 0.25 / coef%full_dlat(j) * &
+          ((state%v_d(i,j) * mesh%full_cos_lat(j) + state%v_d(i,j+1) * mesh%full_cos_lat(j+1)) * state%iap%v_d(i,j+1) - &
+           (state%v_d(i,j) * mesh%full_cos_lat(j) + state%v_d(i,j-1) * mesh%full_cos_lat(j-1)) * state%iap%v_d(i,j-1))
       end do
-    end if
+    end do
 
   end subroutine meridional_momentum_advection_operator
 
@@ -395,26 +497,33 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real c1, c2
     integer i, j
 
+    ! U on C grid
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      c1 = mesh%half_cos_lat(j-1) / mesh%full_cos_lat(j)
-      c2 = mesh%half_cos_lat(j  ) / mesh%full_cos_lat(j)
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        tend%fv(i,j) = 0.25 * (coef%full_f(j) + coef%full_c(j) * state%u(i,j)) * &
-          (c1 * (state%iap%v(i,j-1) + state%iap%v(i+1,j-1)) + &
-           c2 * (state%iap%v(i,j  ) + state%iap%v(i+1,j  )))
+        tend%fv_c(i,j) = (coef%full_f(j) + coef%full_c(j) * state%u_c(i,j)) * state%iap%v_d(i,j)
       end do
     end do
 
+    ! V on C grid
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%fu(i,j) = 0.25 * &
-          ((coef%full_f(j  ) + coef%full_c(j  ) * state%u(i,  j  )) * state%iap%u(i,  j  ) + &
-           (coef%full_f(j  ) + coef%full_c(j  ) * state%u(i-1,j  )) * state%iap%u(i-1,j  ) + &
-           (coef%full_f(j+1) + coef%full_c(j+1) * state%u(i,  j+1)) * state%iap%u(i,  j+1) + &
-           (coef%full_f(j+1) + coef%full_c(j+1) * state%u(i-1,j+1)) * state%iap%u(i-1,j+1))
+        tend%fu_c(i,j) = (coef%half_f(j) + coef%half_c(j) * state%u_d(i,j)) * state%iap%u_d(i,j)
+      end do
+    end do
+
+    ! U on D grid
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        tend%fv_d(i,j) = (coef%half_f(j) + coef%half_c(j) * state%u_d(i,j)) * state%iap%v_c(i,j)
+      end do
+    end do
+
+    ! V on D grid
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+        tend%fu_d(i,j) = (coef%full_f(j) + coef%full_c(j) * state%u_c(i,j)) * state%iap%u_c(i,j)
       end do
     end do
 
@@ -427,10 +536,27 @@ contains
 
     integer i, j
 
+    ! U on C grid
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        tend%u_pgf(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i+1,j)) / coef%full_dlon(j) * &
+        tend%u_pgf_c(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i+1,j)) / coef%full_dlon(j) * &
           (state%gd(i+1,j) + static%ghs(i+1,j) - state%gd(i,j) - static%ghs(i,j))
+      end do
+    end do
+
+    ! U on D grid
+    !
+    !       x gd  (i-1, j )    x gd  (i, j )    x gd (i+1, j )
+    !
+    !                          o u_d (i, j )
+    !
+    !       x gd  (i-1,j+1)    x gd  (i,j+1)    x gd (i+1,j+1)
+    !
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        tend%u_pgf_d(i,j) = 0.125 * (state%iap%gd(i,j) + state%iap%gd(i,j+1)) / coef%half_dlon(j) * &
+          ((state%gd(i+1,j) + state%gd(i+1,j+1) + static%ghs(i+1,j) + static%ghs(i+1,j+1)) - &
+           (state%gd(i-1,j) + state%gd(i-1,j+1) + static%ghs(i-1,j) + static%ghs(i-1,j+1)))
       end do
     end do
 
@@ -443,10 +569,27 @@ contains
 
     integer i, j
 
+    ! V on C grid
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%v_pgf(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i,j+1)) / coef%half_dlat(j) * mesh%half_cos_lat(j) * &
+        tend%v_pgf_c(i,j) = 0.5 * (state%iap%gd(i,j) + state%iap%gd(i,j+1)) / coef%half_dlat(j) * mesh%half_cos_lat(j) * &
           (state%gd(i,j+1) + static%ghs(i,j+1) - state%gd(i,j) - static%ghs(i,j))
+      end do
+    end do
+
+    ! V on D grid
+    !
+    !       x gd (i,j-1)                            x gd (i+1,j-1)
+    !
+    !       x gd (i, j)          o v_d (i,j)        x gd (i+1, j )
+    !
+    !       x gd (i,j+1)                            x gd (i+1,j+1)
+    !
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+        tend%v_pgf_d(i,j) = 0.125 * (state%iap%gd(i,j) + state%iap%gd(i+1,j)) / coef%full_dlat(j) * mesh%full_cos_lat(j) * &
+          ((state%gd(i,j+1) + state%gd(i+1,j+1) + static%ghs(i,j+1) + static%ghs(i+1,j+1)) - &
+           (state%gd(i,j-1) + state%gd(i+1,j-1) + static%ghs(i,j-1) + static%ghs(i+1,j-1)))
       end do
     end do
 
@@ -461,8 +604,8 @@ contains
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%mass_div_lon(i,j) = ((state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%iap%u(i,  j) - &
-                                  (state%iap%gd(i,j) + state%iap%gd(i-1,j)) * state%iap%u(i-1,j)) &
+        tend%mass_div_lon(i,j) = ((state%iap%gd(i,j) + state%iap%gd(i+1,j)) * state%iap%u_c(i,  j) - &
+                                  (state%iap%gd(i,j) + state%iap%gd(i-1,j)) * state%iap%u_c(i-1,j)) &
                                  * 0.5 / coef%full_dlon(j)
       end do
     end do
@@ -479,8 +622,8 @@ contains
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%mass_div_lat(i,j) = ((state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%iap%v(i,j  ) * mesh%half_cos_lat(j  ) - &
-                                  (state%iap%gd(i,j) + state%iap%gd(i,j-1)) * state%iap%v(i,j-1) * mesh%half_cos_lat(j-1)) &
+        tend%mass_div_lat(i,j) = ((state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%iap%v_c(i,j  ) * mesh%half_cos_lat(j  ) - &
+                                  (state%iap%gd(i,j) + state%iap%gd(i,j-1)) * state%iap%v_c(i,j-1) * mesh%half_cos_lat(j-1)) &
                                  * 0.5 / coef%full_dlat(j)
       end do
     end do
@@ -489,7 +632,7 @@ contains
       j = parallel%full_lat_south_pole_idx
       sp = 0.0
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        sp = sp + (state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%iap%v(i,j) * mesh%half_cos_lat(j)
+        sp = sp + (state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%iap%v_c(i,j) * mesh%half_cos_lat(j)
       end do
       call parallel_zonal_sum(sp)
       sp = sp / mesh%num_full_lon * 0.5 / coef%full_dlat(j)
@@ -502,7 +645,7 @@ contains
       j = parallel%full_lat_north_pole_idx
       np = 0.0
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        np = np - (state%iap%gd(i,j) + state%iap%gd(i,j-1)) * state%iap%v(i,j-1) * mesh%half_cos_lat(j-1)
+        np = np - (state%iap%gd(i,j) + state%iap%gd(i,j-1)) * state%iap%v_c(i,j-1) * mesh%half_cos_lat(j-1)
       end do
       call parallel_zonal_sum(np)
       np = np / mesh%num_full_lon * 0.5 / coef%full_dlat(j)
@@ -540,31 +683,39 @@ contains
     ! Update IAP wind state.
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        new_state%iap%u(i,j) = old_state%iap%u(i,j) + dt * tend%du(i,j)
+        new_state%iap%u_c(i,j) = old_state%iap%u_c(i,j) + dt * tend%du_c(i,j)
+        new_state%iap%v_d(i,j) = old_state%iap%v_d(i,j) + dt * tend%dv_d(i,j)
       end do
     end do
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        new_state%iap%v(i,j) = old_state%iap%v(i,j) + dt * tend%dv(i,j)
+        new_state%iap%u_d(i,j) = old_state%iap%u_d(i,j) + dt * tend%du_d(i,j)
+        new_state%iap%v_c(i,j) = old_state%iap%v_c(i,j) + dt * tend%dv_c(i,j)
       end do
     end do
 
     ! Transform from IAP to normal state.
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        new_state%u(i,j) = new_state%iap%u(i,j) * 2.0 / (new_state%iap%gd(i,j) + new_state%iap%gd(i+1,j))
+        new_state%u_c(i,j) = new_state%iap%u_c(i,j) * 2.0 / (new_state%iap%gd(i,j) + new_state%iap%gd(i+1,j))
+        new_state%v_d(i,j) = new_state%iap%v_d(i,j) * 2.0 / (new_state%iap%gd(i,j) + new_state%iap%gd(i+1,j))
       end do
     end do
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        new_state%v(i,j) = new_state%iap%v(i,j) * 2.0 / (new_state%iap%gd(i,j) + new_state%iap%gd(i,j+1))
+        new_state%u_d(i,j) = new_state%iap%u_d(i,j) * 2.0 / (new_state%iap%gd(i,j) + new_state%iap%gd(i,j+1))
+        new_state%v_c(i,j) = new_state%iap%v_c(i,j) * 2.0 / (new_state%iap%gd(i,j) + new_state%iap%gd(i,j+1))
       end do
     end do
 
-    call parallel_fill_halo(new_state%iap%u(:,:), all_halo=.true.)
-    call parallel_fill_halo(new_state%iap%v(:,:), all_halo=.true.)
-    call parallel_fill_halo(new_state%u(:,:), all_halo=.true.)
-    call parallel_fill_halo(new_state%v(:,:), all_halo=.true.)
+    call parallel_fill_halo(new_state%iap%u_c(:,:), all_halo=.true.)
+    call parallel_fill_halo(new_state%iap%v_c(:,:), all_halo=.true.)
+    call parallel_fill_halo(new_state%iap%u_d(:,:), all_halo=.true.)
+    call parallel_fill_halo(new_state%iap%v_d(:,:), all_halo=.true.)
+    call parallel_fill_halo(new_state%u_c(:,:), all_halo=.true.)
+    call parallel_fill_halo(new_state%v_c(:,:), all_halo=.true.)
+    call parallel_fill_halo(new_state%u_d(:,:), all_halo=.true.)
+    call parallel_fill_halo(new_state%v_d(:,:), all_halo=.true.)
 
   end subroutine update_state
 
@@ -579,12 +730,14 @@ contains
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        res = res + tend1%du(i,j) * tend2%du(i,j) * mesh%full_cos_lat(j)
+        res = res + tend1%du_c(i,j) * tend2%du_c(i,j) * mesh%full_cos_lat(j)
+        res = res + tend1%dv_d(i,j) * tend2%dv_d(i,j) * mesh%full_cos_lat(j)
       end do
     end do
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        res = res + tend1%dv(i,j) * tend2%dv(i,j) * mesh%half_cos_lat(j)
+        res = res + tend1%du_d(i,j) * tend2%du_d(i,j) * mesh%half_cos_lat(j)
+        res = res + tend1%dv_c(i,j) * tend2%dv_c(i,j) * mesh%half_cos_lat(j)
       end do
     end do
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
@@ -689,12 +842,12 @@ contains
     end do
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        tend_rk(0)%du(i,j) = tend_rk(1)%du(i,j) / 6.0d0 + tend_rk(2)%du(i,j) / 3.0d0 + tend_rk(3)%du(i,j) / 3.0d0 + tend_rk(4)%du(i,j) / 6.0d0
+        tend_rk(0)%du_c(i,j) = tend_rk(1)%du_c(i,j) / 6.0d0 + tend_rk(2)%du_c(i,j) / 3.0d0 + tend_rk(3)%du_c(i,j) / 3.0d0 + tend_rk(4)%du_c(i,j) / 6.0d0
       end do
     end do
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend_rk(0)%dv(i,j) = tend_rk(1)%dv(i,j) / 6.0d0 + tend_rk(2)%dv(i,j) / 3.0d0 + tend_rk(3)%dv(i,j) / 3.0d0 + tend_rk(4)%dv(i,j) / 6.0d0
+        tend_rk(0)%dv_c(i,j) = tend_rk(1)%dv_c(i,j) / 6.0d0 + tend_rk(2)%dv_c(i,j) / 3.0d0 + tend_rk(3)%dv_c(i,j) / 3.0d0 + tend_rk(4)%dv_c(i,j) / 6.0d0
       end do
     end do
 
@@ -717,43 +870,67 @@ contains
     type(state_type), intent(in) :: state
 
     integer i, j
-    real ip_u_adv_lon
-    real ip_u_adv_lat
-    real ip_fv
-    real ip_u_pgf
-    real ip_v_adv_lon
-    real ip_v_adv_lat
-    real ip_fu
-    real ip_v_pgf
+    real ip_u_adv_lon_c
+    real ip_u_adv_lat_c
+    real ip_v_adv_lon_c
+    real ip_v_adv_lat_c
+    real ip_fv_c
+    real ip_fu_c
+    real ip_u_pgf_c
+    real ip_v_pgf_c
+    real ip_u_adv_lon_d
+    real ip_u_adv_lat_d
+    real ip_v_adv_lon_d
+    real ip_v_adv_lat_d
+    real ip_fv_d
+    real ip_fu_d
+    real ip_u_pgf_d
+    real ip_v_pgf_d
     real ip_mass_div_lon
     real ip_mass_div_lat
 
-    ip_u_adv_lon = 0.0
-    ip_u_adv_lat = 0.0
-    ip_fv = 0.0
-    ip_u_pgf = 0.0
-    ip_v_adv_lon = 0.0
-    ip_v_adv_lat = 0.0
-    ip_fu = 0.0
-    ip_v_pgf = 0.0
+    ip_u_adv_lon_c = 0.0
+    ip_u_adv_lat_c = 0.0
+    ip_v_adv_lon_c = 0.0
+    ip_v_adv_lat_c = 0.0
+    ip_fu_c = 0.0
+    ip_fv_c = 0.0
+    ip_u_pgf_c = 0.0
+    ip_v_pgf_c = 0.0
+    ip_u_adv_lon_d = 0.0
+    ip_u_adv_lat_d = 0.0
+    ip_v_adv_lon_d = 0.0
+    ip_v_adv_lat_d = 0.0
+    ip_fu_d = 0.0
+    ip_fv_d = 0.0
+    ip_u_pgf_d = 0.0
+    ip_v_pgf_d = 0.0
     ip_mass_div_lon = 0.0
     ip_mass_div_lat = 0.0
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        ip_u_adv_lon = ip_u_adv_lon + tend%u_adv_lon(i,j) * state%iap%u(i,j) * mesh%full_cos_lat(j)
-        ip_u_adv_lat = ip_u_adv_lat + tend%u_adv_lat(i,j) * state%iap%u(i,j) * mesh%full_cos_lat(j)
-        ip_fv = ip_fv + tend%fv(i,j) * state%iap%u(i,j) * mesh%full_cos_lat(j)
-        ip_u_pgf = ip_u_pgf + tend%u_pgf(i,j) * state%iap%u(i,j) * mesh%full_cos_lat(j)
+        ip_u_adv_lon_c = ip_u_adv_lon_c + tend%u_adv_lon_c(i,j) * state%iap%u_c(i,j) * mesh%full_cos_lat(j)
+        ip_u_adv_lat_c = ip_u_adv_lat_c + tend%u_adv_lat_c(i,j) * state%iap%u_c(i,j) * mesh%full_cos_lat(j)
+        ip_v_adv_lon_d = ip_v_adv_lon_d + tend%v_adv_lon_d(i,j) * state%iap%v_d(i,j) * mesh%full_cos_lat(j)
+        ip_v_adv_lat_d = ip_v_adv_lat_d + tend%v_adv_lat_d(i,j) * state%iap%v_d(i,j) * mesh%full_cos_lat(j)
+        ip_fv_c = ip_fv_c + tend%fv_c(i,j) * state%iap%u_c(i,j) * mesh%full_cos_lat(j)
+        ip_fu_d = ip_fu_d + tend%fu_d(i,j) * state%iap%v_d(i,j) * mesh%full_cos_lat(j)
+        ip_u_pgf_c = ip_u_pgf_c + tend%u_pgf_c(i,j) * state%iap%u_c(i,j) * mesh%full_cos_lat(j)
+        ip_v_pgf_d = ip_v_pgf_d + tend%v_pgf_d(i,j) * state%iap%v_d(i,j) * mesh%full_cos_lat(j)
       end do
     end do
 
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        ip_v_adv_lon = ip_v_adv_lon + tend%v_adv_lon(i,j) * state%iap%v(i,j) * mesh%half_cos_lat(j)
-        ip_v_adv_lat = ip_v_adv_lat + tend%v_adv_lat(i,j) * state%iap%v(i,j) * mesh%half_cos_lat(j)
-        ip_fu = ip_fu + tend%fu(i,j) * state%iap%v(i,j) * mesh%half_cos_lat(j)
-        ip_v_pgf = ip_v_pgf + tend%v_pgf(i,j) * state%iap%v(i,j) * mesh%half_cos_lat(j)
+        ip_u_adv_lon_d = ip_u_adv_lon_d + tend%u_adv_lon_d(i,j) * state%iap%u_d(i,j) * mesh%half_cos_lat(j)
+        ip_u_adv_lat_d = ip_u_adv_lat_d + tend%u_adv_lat_d(i,j) * state%iap%u_d(i,j) * mesh%half_cos_lat(j)
+        ip_v_adv_lon_c = ip_v_adv_lon_c + tend%v_adv_lon_c(i,j) * state%iap%v_c(i,j) * mesh%half_cos_lat(j)
+        ip_v_adv_lat_c = ip_v_adv_lat_c + tend%v_adv_lat_c(i,j) * state%iap%v_c(i,j) * mesh%half_cos_lat(j)
+        ip_fv_d = ip_fv_d + tend%fv_d(i,j) * state%iap%u_d(i,j) * mesh%half_cos_lat(j)
+        ip_fu_c = ip_fu_c + tend%fu_c(i,j) * state%iap%v_c(i,j) * mesh%half_cos_lat(j)
+        ip_u_pgf_d = ip_u_pgf_d + tend%u_pgf_d(i,j) * state%iap%u_d(i,j) * mesh%half_cos_lat(j)
+        ip_v_pgf_c = ip_v_pgf_c + tend%v_pgf_c(i,j) * state%iap%v_c(i,j) * mesh%half_cos_lat(j)
       end do
     end do
 
@@ -765,10 +942,12 @@ contains
     end do
 
     print *, &
-      ip_u_adv_lon + ip_v_adv_lon + ip_u_adv_lat + ip_v_adv_lat, &
-      ip_u_pgf + ip_mass_div_lon, &
-      ip_fv - ip_fu, &
-      ip_v_pgf + ip_mass_div_lat
+      ip_u_adv_lon_c + ip_v_adv_lon_c + ip_u_adv_lat_c + ip_v_adv_lat_c, &
+      ip_u_adv_lon_d + ip_v_adv_lon_d + ip_u_adv_lat_d + ip_v_adv_lat_d, &
+      ip_u_pgf_c + ip_mass_div_lon, &
+      ip_fv_c - ip_fu_d, &
+      ip_fu_c - ip_fv_d, &
+      ip_v_pgf_c + ip_mass_div_lat
 
   end subroutine check_antisymmetry
   

@@ -42,19 +42,22 @@ contains
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        state(1)%u(i,j) = u_function(mesh%full_lat(j))
+        state(1)%u_c(i,j) = u_function(mesh%full_lat(j))
       end do
     end do
 
-    call parallel_fill_halo(state(1)%u, all_halo=.true.)
+    call parallel_fill_halo(state(1)%u_c, all_halo=.true.)
 
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        state(1)%v(i,j) = 0.0
+        state(1)%u_d(i,j) = u_function(mesh%half_lat(j))
       end do
     end do
 
-    call parallel_fill_halo(state(1)%v, all_halo=.true.)
+    call parallel_fill_halo(state(1)%u_d, all_halo=.true.)
+
+    state(1)%v_c(:,:) = 0.0
+    state(1)%v_d(:,:) = 0.0
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       if (j == parallel%full_lat_start_idx) then
@@ -84,11 +87,11 @@ contains
 
     real, intent(in) :: lat
 
-    real u, f
+    real u_c, f
 
-    u = u_function(lat)
+    u_c = u_function(lat)
     f = 2 * omega * sin(lat)
-    res = radius * u * (f + tan(lat) / radius * u)
+    res = radius * u_c * (f + tan(lat) / radius * u_c)
 
   end function gh_integrand
 

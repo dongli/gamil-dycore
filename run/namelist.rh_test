@@ -1,6 +1,6 @@
 &dycore_params
 test_case = 'rossby_haurwitz_wave'
-case_name = 'rh_c_u_01.180x90.dt480'
+case_name = 'rh_cd_01.180x90.dt480'
 case_desc = 'Rossby-Haurwitz wave test'
 author = 'Li Dong <dongli@lasg.iap.ac.cn>'
 days = 100

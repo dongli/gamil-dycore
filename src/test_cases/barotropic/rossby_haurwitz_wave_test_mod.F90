@@ -52,11 +52,25 @@ contains
         a = cos_lat
         b = R * cos_lat**(R - 1) * sin_lat**2 * cos(R * lon)
         c = cos_lat**(R + 1) * cos(R * lon)
-        state(1)%u(i,j) = radius * omg * (a + b - c)
+        state(1)%u_c(i,j) = radius * omg * (a + b - c)
       end do
     end do
 
-    call parallel_fill_halo(state(1)%u, all_halo=.true.)
+    call parallel_fill_halo(state(1)%u_c, all_halo=.true.)
+
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      cos_lat = mesh%half_cos_lat(j)
+      sin_lat = mesh%half_sin_lat(j)
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        lon = mesh%full_lon(i)
+        a = cos_lat
+        b = R * cos_lat**(R - 1) * sin_lat**2 * cos(R * lon)
+        c = cos_lat**(R + 1) * cos(R * lon)
+        state(1)%u_d(i,j) = radius * omg * (a + b - c)
+      end do
+    end do
+
+    call parallel_fill_halo(state(1)%u_d, all_halo=.true.)
 
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       cos_lat = mesh%half_cos_lat(j)
@@ -64,11 +78,23 @@ contains
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         lon = mesh%full_lon(i)
         a = R * cos_lat**(R - 1) * sin_lat * sin(R * lon)
-        state(1)%v(i,j) = - radius * omg * a
+        state(1)%v_c(i,j) = - radius * omg * a
       end do
     end do
 
-    call parallel_fill_halo(state(1)%v, all_halo=.true.)
+    call parallel_fill_halo(state(1)%v_c, all_halo=.true.)
+
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      cos_lat = mesh%full_cos_lat(j)
+      sin_lat = mesh%full_sin_lat(j)
+      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+        lon = mesh%half_lon(i)
+        a = R * cos_lat**(R - 1) * sin_lat * sin(R * lon)
+        state(1)%v_d(i,j) = - radius * omg * a
+      end do
+    end do
+
+    call parallel_fill_halo(state(1)%v_d, all_halo=.true.)
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       cos_lat = mesh%full_cos_lat(j)
