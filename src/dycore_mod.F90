@@ -1,6 +1,6 @@
 module dycore_mod
 
-  use params_mod, time_scheme_in => time_scheme, split_scheme_in => split_scheme
+  use params_mod, split_scheme_in => split_scheme
   use data_mod
   use log_mod
   use types_mod
@@ -23,11 +23,6 @@ module dycore_mod
   public dycore_run
   public dycore_final
 
-  ! 1: predict_correct
-  ! 2: runge_kutta
-  ! 3: leap_frog
-  ! 4: middle_point
-  integer time_scheme
   ! 1: csp1: first order conservative split
   ! 2: csp2: second order conservative split
   ! 3: isp: inproved second order conservative split
@@ -41,9 +36,9 @@ module dycore_mod
   interface
     subroutine integrator_interface(time_step_size, old_time_idx, new_time_idx, pass)
       real, intent(in) :: time_step_size
-      integer, intent(in), optional :: old_time_idx
-      integer, intent(in), optional :: new_time_idx
-      integer, intent(in), optional :: pass
+      integer, intent(in) :: old_time_idx
+      integer, intent(in) :: new_time_idx
+      integer, intent(in) :: pass
     end subroutine
   end interface
 
@@ -72,17 +67,13 @@ contains
     call diffusion_init()
     call filter_init()
 
-    select case (time_scheme_in)
+    select case (time_scheme)
     case ('predict_correct')
-      time_scheme = 1
+      integrator => predict_correct
     case ('runge_kutta')
-      time_scheme = 2
-    case ('leap_frog')
-      time_scheme = 3
-    case ('middle_point')
-      time_scheme = 4
+      integrator => runge_kutta
     case default
-      call log_error('Unknown time_scheme ' // trim(time_scheme_in) // '!')
+      call log_error('Unknown time_scheme ' // trim(time_scheme) // '!')
     end select
 
     select case (split_scheme_in)
@@ -95,19 +86,6 @@ contains
     case default
       split_scheme = 0
       call log_notice('No fast-slow split.')
-    end select
-
-    select case (time_scheme)
-    case (1)
-      integrator => predict_correct
-    case (2)
-      integrator => runge_kutta
-    case (3)
-      integrator => leap_frog
-    case (4)
-      integrator => middle_point
-    case default
-      call log_error('Unknown time scheme!')
     end select
 
     call log_notice('Dycore module is initialized.')
@@ -635,7 +613,7 @@ contains
       end do
       call integrator(0.5 * time_step_size, time_idx1, new_time_idx, slow_pass)
     case default
-      call integrator(time_step_size)
+      call integrator(time_step_size, old_time_idx, new_time_idx, all_pass)
     end select
 
     if (use_diffusion) then
@@ -644,74 +622,15 @@ contains
 
   end subroutine time_integrate
 
-  subroutine middle_point(time_step_size, old_time_idx_, new_time_idx_, pass_)
+  subroutine predict_correct(time_step_size, old, new, pass)
 
     real, intent(in) :: time_step_size
-    integer, intent(in), optional :: old_time_idx_
-    integer, intent(in), optional :: new_time_idx_
-    integer, intent(in), optional :: pass_
+    integer, intent(in) :: old
+    integer, intent(in) :: new
+    integer, intent(in) :: pass
 
-    integer old, new, half, pass, iteration
-    real dt, e1, e2
-
-    if (present(old_time_idx_)) then
-      old = old_time_idx_
-    else
-      old = old_time_idx
-    end if
-    if (present(new_time_idx_)) then
-      new = new_time_idx_
-    else
-      new = new_time_idx
-    end if
-    if (present(pass_)) then
-      pass = pass_
-    else
-      pass = all_pass
-    end if
-    half = half_time_idx
-    dt = time_step_size
-
-    call copy_state(state(old), state(new))
-
-    e1 = diag_total_energy(state(old))
-    do iteration = 1, 8
-      call average_state(state(old), state(new), state(half))
-      call space_operators(state(half), tend(old), pass)
-      call update_state(dt, tend(old), state(old), state(new))
-      e2 = diag_total_energy(state(new))
-      if (abs(e2 - e1) * 2 / (e2 + e1) < 5.0e-15) then
-        exit
-      end if
-    end do
-
-  end subroutine middle_point
-
-  subroutine predict_correct(time_step_size, old_time_idx_, new_time_idx_, pass_)
-
-    real, intent(in) :: time_step_size
-    integer, intent(in), optional :: old_time_idx_
-    integer, intent(in), optional :: new_time_idx_
-    integer, intent(in), optional :: pass_
-
-    integer old, new, pass
     real dt, ip1, ip2, beta
 
-    if (present(old_time_idx_)) then
-      old = old_time_idx_
-    else
-      old = old_time_idx
-    end if
-    if (present(new_time_idx_)) then
-      new = new_time_idx_
-    else
-      new = new_time_idx
-    end if
-    if (present(pass_)) then
-      pass = pass_
-    else
-      pass = all_pass
-    end if
     dt = time_step_size * 0.5
 
     ! Do first predict step.
@@ -735,32 +654,17 @@ contains
 
   end subroutine predict_correct
 
-  subroutine runge_kutta(time_step_size, old_time_idx_, new_time_idx_, pass_)
+  subroutine runge_kutta(time_step_size, old, new, pass)
 
     real, intent(in) :: time_step_size
-    integer, intent(in), optional :: old_time_idx_
-    integer, intent(in), optional :: new_time_idx_
-    integer, intent(in), optional :: pass_
+    integer, intent(in) :: old
+    integer, intent(in) :: new
+    integer, intent(in) :: pass
 
-    integer old, new, tmp, pass, i, j
+    integer tmp, i, j
     real dt, ip00, ip12, ip23, ip34, beta
 
     tmp = -1
-    if (present(old_time_idx_)) then
-      old = old_time_idx_
-    else
-      old = old_time_idx
-    end if
-    if (present(new_time_idx_)) then
-      new = new_time_idx_
-    else
-      new = new_time_idx
-    end if
-    if (present(pass_)) then
-      pass = pass_
-    else
-      pass = all_pass
-    end if
     dt = time_step_size * 0.5d0
 
     ! Compute RK1
@@ -806,15 +710,6 @@ contains
     call update_state(dt, tend_rk(0), state(old), state(new))
 
   end subroutine runge_kutta
-
-  subroutine leap_frog(time_step_size, old_time_idx_, new_time_idx_, pass_)
-
-    real, intent(in) :: time_step_size
-    integer, intent(in), optional :: old_time_idx_
-    integer, intent(in), optional :: new_time_idx_
-    integer, intent(in), optional :: pass_
-
-  end subroutine leap_frog
 
   subroutine check_antisymmetry(tend, state)
 

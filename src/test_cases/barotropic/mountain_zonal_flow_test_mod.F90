@@ -40,7 +40,6 @@ contains
 
     call parallel_fill_halo(static%ghs, all_halo=.true.)
 
-
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       cos_lat = mesh%full_cos_lat(j)
       sin_lat = mesh%full_sin_lat(j)
