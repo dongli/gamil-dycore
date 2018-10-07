@@ -491,11 +491,11 @@ contains
         else
           select case (var%dims(i)%ptr%name)
           case ('lon')
-            lb = lbound(array, 1) + parallel%lon_halo_width_for_reduce
-            ub = ubound(array, 1) - parallel%lon_halo_width_for_reduce
+            lb = lbound(array, 1) + parallel%lon_halo_width
+            ub = ubound(array, 1) - parallel%lon_halo_width
           case ('lat')
-            lb = lbound(array, 1) + parallel%lat_halo_width_for_reduce
-            ub = ubound(array, 1) - parallel%lat_halo_width_for_reduce
+            lb = lbound(array, 1) + parallel%lat_halo_width
+            ub = ubound(array, 1) - parallel%lat_halo_width
           end select
           count(i) = var%dims(i)%ptr%size
         end if
@@ -533,10 +533,10 @@ contains
     end if
     var => dataset%get_var(name)
 
-    lb1 = lbound(array, 1) + parallel%lon_halo_width_for_reduce
-    ub1 = ubound(array, 1) - parallel%lon_halo_width_for_reduce
-    lb2 = lbound(array, 2) + parallel%lat_halo_width_for_reduce
-    ub2 = ubound(array, 2) - parallel%lat_halo_width_for_reduce
+    lb1 = lbound(array, 1) + parallel%lon_halo_width
+    ub1 = ubound(array, 1) - parallel%lon_halo_width
+    lb2 = lbound(array, 2) + parallel%lat_halo_width
+    ub2 = ubound(array, 2) - parallel%lat_halo_width
 
     do i = 1, 3
       start(i) = 1
@@ -640,10 +640,10 @@ contains
       dataset => get_dataset(mode='input')
     end if
 
-    lb1 = lbound(array, 1) + parallel%lon_halo_width_for_reduce
-    ub1 = ubound(array, 1) - parallel%lon_halo_width_for_reduce
-    lb2 = lbound(array, 2) + parallel%lat_halo_width_for_reduce
-    ub2 = ubound(array, 2) - parallel%lat_halo_width_for_reduce
+    lb1 = lbound(array, 1) + parallel%lon_halo_width
+    ub1 = ubound(array, 1) - parallel%lon_halo_width
+    lb2 = lbound(array, 2) + parallel%lat_halo_width
+    ub2 = ubound(array, 2) - parallel%lat_halo_width
     allocate(buffer(lb1:ub1,lb2:ub2))
 
     ierr = NF90_INQ_VARID(dataset%id, name, varid)

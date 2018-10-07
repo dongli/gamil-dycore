@@ -7,7 +7,6 @@ module history_mod
   use parallel_mod
   use types_mod
   use diag_mod
-  use reduce_mod
   use string_mod
 
   implicit none
@@ -28,8 +27,6 @@ contains
   subroutine history_init()
 
     call io_create_dataset(desc=case_desc, file_prefix=case_name // '.h0')
-    call io_add_meta('use_zonal_reduce', use_zonal_reduce)
-    call io_add_meta('zonal_reduce_factors', to_string(pack(zonal_reduce_factors, zonal_reduce_factors /= 0)))
     call io_add_meta('time_step_size', time_step_size)
     call io_add_meta('time_scheme', time_scheme)
     call io_add_meta('split_scheme', split_scheme)
@@ -41,9 +38,8 @@ contains
     call io_add_var('v', long_name='v wind component', units='m s-1', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('gd', long_name='geopotential depth', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('ghs', long_name='surface geopotential', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
-    call io_add_var('rf', long_name='reduce factor', units='1', dim_names=['lat ', 'time'])
-    ! call io_add_var('vor', long_name='relative vorticity', units='s-1', dim_names=['lon ', 'lat ', 'time'])
-    ! call io_add_var('div', long_name='divergence', units='s-1', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('vor', long_name='relative vorticity', units='s-1', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('div', long_name='divergence', units='s-1', dim_names=['lon ', 'lat ', 'time'])
 
     call io_create_dataset(name='debug', desc=case_desc, file_prefix=case_name // '.debug')
     call io_add_dim('lon', 'debug', size=mesh%num_full_lon)
@@ -88,9 +84,8 @@ contains
     call io_output('v', state%v(:,:))
     call io_output('gd', state%gd(:,:))
     call io_output('ghs', static%ghs(:,:))
-    call io_output('rf', full_reduce_factor(:))
-    ! call io_output('vor', diag%vor(:,:))
-    ! call io_output('div', diag%div(:,:))
+    call io_output('vor', diag%vor(:,:))
+    call io_output('div', diag%div(:,:))
     call io_end_output()
 
   end subroutine history_write_state

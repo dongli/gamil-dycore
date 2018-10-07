@@ -1,8 +1,7 @@
 module dycore_mod
 
-  use params_mod, time_scheme_in => time_scheme, split_scheme_in => split_scheme
+  use params_mod, split_scheme_in => split_scheme
   use data_mod
-  use reduce_mod
   use log_mod
   use types_mod
   use mesh_mod
@@ -24,11 +23,6 @@ module dycore_mod
   public dycore_run
   public dycore_final
 
-  ! 1: predict_correct
-  ! 2: runge_kutta
-  ! 3: leap_frog
-  ! 4: middle_point
-  integer time_scheme
   ! 1: csp1: first order conservative split
   ! 2: csp2: second order conservative split
   ! 3: isp: inproved second order conservative split
@@ -70,21 +64,16 @@ contains
     call history_init()
     call restart_init()
     call data_init()
-    call reduce_init()
     call diffusion_init()
     call filter_init()
 
-    select case (time_scheme_in)
+    select case (time_scheme)
     case ('predict_correct')
-      time_scheme = 1
+      integrator => predict_correct
     case ('runge_kutta')
-      time_scheme = 2
-    case ('leap_frog')
-      time_scheme = 3
-    case ('middle_point')
-      time_scheme = 4
+      integrator => runge_kutta
     case default
-      call log_error('Unknown time_scheme ' // trim(time_scheme_in) // '!')
+      call log_error('Unknown time_scheme ' // trim(time_scheme) // '!')
     end select
 
     select case (split_scheme_in)
@@ -97,19 +86,6 @@ contains
     case default
       split_scheme = 0
       call log_notice('No fast-slow split.')
-    end select
-
-    select case (time_scheme)
-    case (1)
-      integrator => predict_correct
-    case (2)
-      integrator => runge_kutta
-    case (3)
-      integrator => leap_frog
-    case (4)
-      integrator => middle_point
-    case default
-      call log_error('Unknown time scheme!')
     end select
 
     call log_notice('Dycore module is initialized.')
@@ -154,7 +130,6 @@ contains
     call diag_final()
     call history_final()
     call data_final()
-    call reduce_final()
     call diffusion_final()
     call filter_final()
 
@@ -168,13 +143,13 @@ contains
 
     j = parallel%full_lat_south_pole_idx
     mesh%full_cos_lat(j) = mesh%half_cos_lat(parallel%half_lat_south_pole_idx) * 0.25
-    coef%full_dlon(j) = 2.0 * radius * mesh%dlon * mesh%full_cos_lat(j)
-    coef%full_dlat(j) = 2.0 * radius * mesh%dlat * mesh%full_cos_lat(j)
+    coef%full_dlon(j) = radius * mesh%dlon * mesh%full_cos_lat(j)
+    coef%full_dlat(j) = radius * mesh%dlat * mesh%full_cos_lat(j)
 
     j = parallel%full_lat_north_pole_idx
     mesh%full_cos_lat(j) = mesh%half_cos_lat(parallel%half_lat_north_pole_idx) * 0.25
-    coef%full_dlon(j) = 2.0 * radius * mesh%dlon * mesh%full_cos_lat(j)
-    coef%full_dlat(j) = 2.0 * radius * mesh%dlat * mesh%full_cos_lat(j)
+    coef%full_dlon(j) = radius * mesh%dlon * mesh%full_cos_lat(j)
+    coef%full_dlat(j) = radius * mesh%dlat * mesh%full_cos_lat(j)
 
   end subroutine reset_cos_lat_at_poles
 
@@ -196,8 +171,6 @@ contains
 
     integer i, j, i1, i2
     real s1, s2
-
-    call reduce_run(state, static)
 
     ! Allow me to use i1 and i2 as shorthands.
     i1 = parallel%full_lon_start_idx
@@ -337,6 +310,11 @@ contains
       end do
     end select
 
+    tag = tag + 1
+    if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6)) then
+     call history_write(tend, tag)
+    end if
+
     ! call check_antisymmetry(tend, state)
 
   end subroutine space_operators
@@ -346,51 +324,24 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real reduced_tend(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
-    integer i, j, k
+    integer i, j
 
     ! U
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      if (full_reduce_factor(j) == 1 .or. .not. reduce_adv_lon) then
-        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%u_adv_lon(i,j) = 0.5 / coef%full_dlon(j) * &
-            ((state%u(i,j) + state%u(i+1,j)) * state%iap%u(i+1,j) - &
-             (state%u(i,j) + state%u(i-1,j)) * state%iap%u(i-1,j))
-        end do
-      else
-        tend%u_adv_lon(:,j) = 0.0
-        do k = 1, full_reduce_factor(j)
-          do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
-            reduced_tend(i) = 0.5 / coef%full_dlon(j) / full_reduce_factor(j) * &
-              ((full_reduced_state(j)%u(i,k,2) + full_reduced_state(j)%u(i+1,k,2)) * full_reduced_state(j)%iap%u(i+1,k,2) - &
-               (full_reduced_state(j)%u(i,k,2) + full_reduced_state(j)%u(i-1,k,2)) * full_reduced_state(j)%iap%u(i-1,k,2))
-          end do
-          call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%u_adv_lon(:,j))
-        end do
-        call parallel_overlay_inner_halo(tend%u_adv_lon(:,j), left_halo=.true.)
-      end if
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        tend%u_adv_lon(i,j) = 0.25 / coef%full_dlon(j) * &
+          ((state%u(i,j) + state%u(i+1,j)) * state%iap%u(i+1,j) - &
+           (state%u(i,j) + state%u(i-1,j)) * state%iap%u(i-1,j))
+      end do
     end do
 
     ! V
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      if (full_reduce_factor(j) == 1 .or. .not. reduce_adv_lon) then
-        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%v_adv_lon(i,j) = 0.5 / coef%full_dlon(j) * &
-            ((state%u(i,j) + state%u(i+1,j)) * state%iap%v(i+1,j) - &
-             (state%u(i,j) + state%u(i-1,j)) * state%iap%v(i-1,j))
-        end do
-      else
-        tend%v_adv_lon(:,j) = 0.0
-        do k = 1, full_reduce_factor(j)
-          do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
-            reduced_tend(i) = 0.5 / coef%full_dlon(j) / full_reduce_factor(j) * &
-              ((full_reduced_state(j)%u(i,k,2) + full_reduced_state(j)%u(i+1,k,2)) * full_reduced_state(j)%iap%v(i+1,k,2) - &
-               (full_reduced_state(j)%u(i,k,2) + full_reduced_state(j)%u(i-1,k,2)) * full_reduced_state(j)%iap%v(i-1,k,2))
-          end do
-          call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%v_adv_lon(:,j))
-        end do
-        call parallel_overlay_inner_halo(tend%v_adv_lon(:,j), left_halo=.true.)
-      end if
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        tend%v_adv_lon(i,j) = 0.25 / coef%full_dlon(j) * &
+          ((state%u(i,j) + state%u(i+1,j)) * state%iap%v(i+1,j) - &
+           (state%u(i,j) + state%u(i-1,j)) * state%iap%v(i-1,j))
+      end do
     end do
 
   end subroutine zonal_momentum_advection_operator
@@ -405,7 +356,7 @@ contains
     ! U
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%u_adv_lat(i,j) = 0.5 / coef%full_dlat(j) * &
+        tend%u_adv_lat(i,j) = 0.25 / coef%full_dlat(j) * &
           ((state%v(i,j) * mesh%full_cos_lat(j) + state%v(i,j+1) * mesh%full_cos_lat(j+1)) * state%iap%u(i,j+1) - &
            (state%v(i,j) * mesh%full_cos_lat(j) + state%v(i,j-1) * mesh%full_cos_lat(j-1)) * state%iap%u(i,j-1))
                               
@@ -415,7 +366,7 @@ contains
     ! V
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%v_adv_lat(i,j) = 0.5 / coef%full_dlat(j) * &
+        tend%v_adv_lat(i,j) = 0.25 / coef%full_dlat(j) * &
           ((state%v(i,j) * mesh%full_cos_lat(j) + state%v(i,j+1) * mesh%full_cos_lat(j+1)) * state%iap%v(i,j+1) - &
            (state%v(i,j) * mesh%full_cos_lat(j) + state%v(i,j-1) * mesh%full_cos_lat(j-1)) * state%iap%v(i,j-1))
       end do
@@ -428,74 +379,39 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real reduced_tend(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
 #ifdef AVERAGE_CORIOLIS
     real c1, c2
 #endif
-    integer i, j, k
+    integer i, j
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
 #ifdef AVERAGE_CORIOLIS
       c1 = mesh%full_cos_lat(j-1) / mesh%full_cos_lat(j)
       c2 = mesh%full_cos_lat(j+1) / mesh%full_cos_lat(j)
 #endif
-      if (full_reduce_factor(j) == 1) then
-        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
 #ifdef AVERAGE_CORIOLIS
-          tend%fv(i,j) = 0.25 * (coef%cori(j) + coef%curv(j) * state%u(i,j)) * &
-            (c1 * (state%iap%v(i-1,j-1) + state%iap%v(i+1,j-1)) + &
-             c2 * (state%iap%v(i-1,j+1) + state%iap%v(i+1,j+1)))
+        tend%fv(i,j) = 0.25 * (coef%full_f(j) + coef%full_c(j) * state%u(i,j)) * &
+          (c1 * (state%iap%v(i-1,j-1) + state%iap%v(i+1,j-1)) + &
+           c2 * (state%iap%v(i-1,j+1) + state%iap%v(i+1,j+1)))
 #else
-          tend%fv(i,j) = (coef%cori(j) + coef%curv(j) * state%u(i,j)) * state%iap%v(i,j)
+        tend%fv(i,j) = (coef%full_f(j) + coef%full_c(j) * state%u(i,j)) * state%iap%v(i,j)
 #endif
-        end do
-      else
-        tend%fv(:,j) = 0.0
-        do k = 1, full_reduce_factor(j)
-          do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
-#ifdef AVERAGE_CORIOLIS
-#else
-            reduced_tend(i) = (coef%cori(j) + coef%curv(j) * full_reduced_state(j)%u(i,k,2)) * &
-              full_reduced_state(j)%iap%v(i,k,2)
-#endif
-          end do
-          call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%fv(:,j))
-        end do
-        call parallel_overlay_inner_halo(tend%fv(:,j), left_halo=.true.)
-      end if
+      end do
     end do
-!$OMP END PARALLEL DO
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      if (full_reduce_factor(j) == 1) then
-        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
 #ifdef AVERAGE_CORIOLIS
-          tend%fu(i,j) = 0.25 * ((coef%cori(j-1) + coef%curv(j-1) * state%u(i-1,j-1)) * state%iap%u(i-1,j-1) + &
-                                 (coef%cori(j-1) + coef%curv(j-1) * state%u(i+1,j-1)) * state%iap%u(i+1,j-1) + &
-                                 (coef%cori(j+1) + coef%curv(j+1) * state%u(i-1,j+1)) * state%iap%u(i-1,j+1) + &
-                                 (coef%cori(j+1) + coef%curv(j+1) * state%u(i+1,j+1)) * state%iap%u(i+1,j+1))
+        tend%fu(i,j) = 0.25 * ((coef%full_f(j-1) + coef%full_c(j-1) * state%u(i-1,j-1)) * state%iap%u(i-1,j-1) + &
+                               (coef%full_f(j-1) + coef%full_c(j-1) * state%u(i+1,j-1)) * state%iap%u(i+1,j-1) + &
+                               (coef%full_f(j+1) + coef%full_c(j+1) * state%u(i-1,j+1)) * state%iap%u(i-1,j+1) + &
+                               (coef%full_f(j+1) + coef%full_c(j+1) * state%u(i+1,j+1)) * state%iap%u(i+1,j+1))
 #else
-          tend%fu(i,j) = (coef%cori(j) + coef%curv(j) * state%u(i,j)) * state%iap%u(i,j)
+        tend%fu(i,j) = (coef%full_f(j) + coef%full_c(j) * state%u(i,j)) * state%iap%u(i,j)
 #endif
-        end do
-      else
-        tend%fu(:,j) = 0.0
-        do k = 1, full_reduce_factor(j)
-          do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
-#ifdef AVERAGE_CORIOLIS
-#else
-            reduced_tend(i) = (coef%cori(j) + coef%curv(j) * full_reduced_state(j)%u(i,k,2)) * &
-              full_reduced_state(j)%iap%u(i,k,2)
-#endif
-          end do
-          call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%fu(:,j))
-        end do
-        call parallel_overlay_inner_halo(tend%fu(:,j), left_halo=.true.)
-      end if
+      end do
     end do
-!$OMP END PARALLEL DO
 
   end subroutine coriolis_operator
 
@@ -504,31 +420,14 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real reduced_tend(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
-    integer i, j, k
+    integer i, j
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      if (full_reduce_factor(j) == 1) then
-        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%u_pgf(i,j) = state%iap%gd(i,j) / coef%full_dlon(j) * &
-            (state%gd(i+1,j) + static%ghs(i+1,j) - state%gd(i-1,j) - static%ghs(i-1,j))
-        end do
-      else
-        tend%u_pgf(:,j) = 0.0
-        do k = 1, full_reduce_factor(j)
-          do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
-            reduced_tend(i) = full_reduced_state(j)%iap%gd(i,k,2) * &
-              ((full_reduced_state(j)%gd(i+1,k,2) + full_reduced_static(j)%ghs(i+1,k,2)) - &
-               (full_reduced_state(j)%gd(i-1,k,2) + full_reduced_static(j)%ghs(i-1,k,2))) / &
-              coef%full_dlon(j) / full_reduce_factor(j)
-          end do
-          call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%u_pgf(:,j))
-        end do
-        call parallel_overlay_inner_halo(tend%u_pgf(:,j), left_halo=.true.)
-      end if
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        tend%u_pgf(i,j) = 0.5 * state%iap%gd(i,j) / coef%full_dlon(j) * &
+          (state%gd(i+1,j) + static%ghs(i+1,j) - state%gd(i-1,j) - static%ghs(i-1,j))
+      end do
     end do
-!$OMP END PARALLEL DO
 
   end subroutine zonal_pressure_gradient_force_operator
 
@@ -541,7 +440,7 @@ contains
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%v_pgf(i,j) = state%iap%gd(i,j) / coef%full_dlat(j) * mesh%full_cos_lat(j) * &
+        tend%v_pgf(i,j) = 0.5 * state%iap%gd(i,j) / coef%full_dlat(j) * mesh%full_cos_lat(j) * &
           (state%gd(i,j+1) + static%ghs(i,j+1) - state%gd(i,j-1) - static%ghs(i,j-1))
       end do
     end do
@@ -553,31 +452,15 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real reduced_tend(parallel%full_lon_start_idx:parallel%full_lon_end_idx)
-    integer i, j, k
+    integer i, j
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, k, reduced_tend)
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      if (full_reduce_factor(j) == 1) then
-        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          tend%mass_div_lon(i,j) = (state%iap%gd(i+1,j) * state%iap%u(i+1,j) - &
-                                    state%iap%gd(i-1,j) * state%iap%u(i-1,j)) &
-                                   / coef%full_dlon(j)
-        end do
-      else
-        tend%mass_div_lon(:,j) = 0.0
-        do k = 1, full_reduce_factor(j)
-          do i = reduced_start_idx_at_full_lat(j), reduced_end_idx_at_full_lat(j)
-            reduced_tend(i) = (full_reduced_state(j)%iap%gd(i+1,k,2) * full_reduced_state(j)%iap%u(i+1,k,2) - &
-                               full_reduced_state(j)%iap%gd(i-1,k,2) * full_reduced_state(j)%iap%u(i-1,k,2)) / &
-                              coef%full_dlon(j) / full_reduce_factor(j)
-          end do
-          call append_reduced_tend_to_raw_tend_at_full_lat(j, k, reduced_tend, tend%mass_div_lon(:,j))
-        end do
-        call parallel_overlay_inner_halo(tend%mass_div_lon(:,j), left_halo=.true.)
-      end if
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        tend%mass_div_lon(i,j) = (state%iap%gd(i+1,j) * state%iap%u(i+1,j) - &
+                                  state%iap%gd(i-1,j) * state%iap%u(i-1,j)) &
+                                 * 0.5 / coef%full_dlon(j)
+      end do
     end do
-!$OMP END PARALLEL DO
 
   end subroutine zonal_mass_divergence_operator
 
@@ -592,8 +475,8 @@ contains
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%mass_div_lat(i,j) = (state%iap%gd(i,j+1) * state%iap%v(i,j+1) * mesh%full_cos_lat(j+1) - &
-                                  state%iap%gd(i,j-1) * state%iap%v(i,j-1) * mesh%full_cos_lat(j-1)) / &
-                                 coef%full_dlat(j)
+                                  state%iap%gd(i,j-1) * state%iap%v(i,j-1) * mesh%full_cos_lat(j-1)) &
+                                 * 0.5 / coef%full_dlat(j)
       end do
     end do
 
@@ -604,7 +487,7 @@ contains
         sp = sp + state%iap%gd(i,j+1) * state%iap%v(i,j+1) * mesh%full_cos_lat(j+1)
       end do
       call parallel_zonal_sum(sp)
-      sp = sp / mesh%num_full_lon / coef%full_dlat(j)
+      sp = sp / mesh%num_full_lon * 0.5 / coef%full_dlat(j)
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%mass_div_lat(i,j) = sp
       end do
@@ -617,7 +500,7 @@ contains
         np = np - state%iap%gd(i,j-1) * state%iap%v(i,j-1) * mesh%full_cos_lat(j-1)
       end do
       call parallel_zonal_sum(np)
-      np = np / mesh%num_full_lon / coef%full_dlat(j)
+      np = np / mesh%num_full_lon * 0.5 / coef%full_dlat(j)
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%mass_div_lat(i,j) = np
       end do
@@ -649,7 +532,7 @@ contains
 
     ! Transform from IAP to normal state.
     do j = parallel%full_lat_lb, parallel%full_lat_ub
-      do i = parallel%full_lon_lb_for_reduce, parallel%full_lon_ub_for_reduce
+      do i = parallel%full_lon_lb, parallel%full_lon_ub
         new_state%iap%gd(i,j) = sqrt(new_state%gd(i,j))
         new_state%u(i,j) = new_state%iap%u(i,j) / new_state%iap%gd(i,j)
         new_state%v(i,j) = new_state%iap%v(i,j) / new_state%iap%gd(i,j)
@@ -707,53 +590,10 @@ contains
     end select
 
     if (use_diffusion) then
-      call diffusion_run(time_step_size, state(new_time_idx))
+      call ordinary_diffusion(time_step_size, state(new_time_idx))
     end if
 
   end subroutine time_integrate
-
-  subroutine middle_point(time_step_size, old_time_idx_, new_time_idx_, pass_)
-
-    real, intent(in) :: time_step_size
-    integer, intent(in), optional :: old_time_idx_
-    integer, intent(in), optional :: new_time_idx_
-    integer, intent(in), optional :: pass_
-
-    integer old, new, half, pass, iteration
-    real dt, e1, e2
-
-    if (present(old_time_idx_)) then
-      old = old_time_idx_
-    else
-      old = old_time_idx
-    end if
-    if (present(new_time_idx_)) then
-      new = new_time_idx_
-    else
-      new = new_time_idx
-    end if
-    if (present(pass_)) then
-      pass = pass_
-    else
-      pass = all_pass
-    end if
-    half = half_time_idx
-    dt = time_step_size
-
-    call copy_state(state(old), state(new))
-
-    e1 = diag_total_energy(state(old))
-    do iteration = 1, 8
-      call average_state(state(old), state(new), state(half))
-      call space_operators(state(half), tend(old), dt, pass)
-      call update_state(dt, tend(old), state(old), state(new))
-      e2 = diag_total_energy(state(new))
-      if (abs(e2 - e1) * 2 / (e2 + e1) < 5.0e-15) then
-        exit
-      end if
-    end do
-
-  end subroutine middle_point
 
   subroutine predict_correct(time_step_size, old_time_idx_, new_time_idx_, pass_)
 
@@ -874,15 +714,6 @@ contains
     call update_state(dt, tend_rk(0), state(old), state(new))
 
   end subroutine runge_kutta
-
-  subroutine leap_frog(time_step_size, old_time_idx_, new_time_idx_, pass_)
-
-    real, intent(in) :: time_step_size
-    integer, intent(in), optional :: old_time_idx_
-    integer, intent(in), optional :: new_time_idx_
-    integer, intent(in), optional :: pass_
-
-  end subroutine leap_frog
 
   subroutine check_antisymmetry(tend, state)
 
