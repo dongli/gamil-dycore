@@ -362,31 +362,13 @@ contains
     end do
 
     ! V
-    do j = parallel%half_lat_start_idx_no_pole, parallel%half_lat_end_idx_no_pole
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%v_adv_lat(i,j) = 0.25 / coef%half_dlat(j) * &
           ((state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j+1) * mesh%half_cos_lat(j+1)) * state%iap%v(i,j+1) - &
            (state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j-1) * mesh%half_cos_lat(j-1)) * state%iap%v(i,j-1))
       end do
     end do
-
-    ! Handle meridional advection at South Pole.
-    if (parallel%has_south_pole) then
-      j = parallel%half_lat_south_pole_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%v_adv_lat(i,j) = 0.25 / coef%half_dlat(j) * &
-          (state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j+1) * mesh%half_cos_lat(j+1)) * state%iap%v(i,j+1)
-      end do
-    end if
-
-    ! Handle meridional advection at North Pole.
-    if (parallel%has_north_pole) then
-      j = parallel%half_lat_north_pole_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend%v_adv_lat(i,j) = - 0.25 / coef%half_dlat(j) * &
-          (state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j-1) * mesh%half_cos_lat(j-1)) * state%iap%v(i,j-1)
-      end do
-    end if
 
   end subroutine meridional_momentum_advection_operator
 
