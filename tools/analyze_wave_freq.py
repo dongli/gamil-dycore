@@ -19,6 +19,7 @@ w  = symbols('w',  real=True, positive=True)
 k  = symbols('k',  real=True, positive=True, integer=True)
 l  = symbols('l',  real=True, positive=True, integer=True)
 H  = symbols('H',  real=True, positive=True)
+g  = symbols('g',  real=True, positive=True)
 x  = symbols('x',  real=True)
 y  = symbols('y',  real=True)
 dx = symbols('dx', real=True, positive=True)
@@ -33,8 +34,8 @@ freq_relation_expr = {}
 if args.coord_type == 'plane':
 	# Continuous linearized barotropic equations
 	eqn = [
-		[ diff(wave(), t), - f * wave(), H * diff(wave(), x) ],
-		[ diff(wave(), t),   f * wave(), H * diff(wave(), y) ],
+		[ diff(wave(), t), - f * wave(), g * diff(wave(), x) ],
+		[ diff(wave(), t),   f * wave(), g * diff(wave(), y) ],
 		[ diff(wave(), t),   H * diff(wave(), x), H * diff(wave(), y) ]
 	]
 	M = trigsimp(simplify(Matrix([
@@ -46,8 +47,8 @@ if args.coord_type == 'plane':
 
 	# A-grid linearized barotropic equations
 	eqn = [
-		[ diff(wave(), t), - f * wave(), H * (wave(xd=dx) - wave(xd=-dx)) / (2 * dx) ],
-		[ diff(wave(), t),   f * wave(), H * (wave(yd=dy) - wave(yd=-dy)) / (2 * dy) ],
+		[ diff(wave(), t), - f * wave(), g * (wave(xd=dx) - wave(xd=-dx)) / (2 * dx) ],
+		[ diff(wave(), t),   f * wave(), g * (wave(yd=dy) - wave(yd=-dy)) / (2 * dy) ],
 		[ diff(wave(), t),   H * (wave(xd=dx) - wave(xd=-dx)) / (2 * dx), H * (wave(yd=dy) - wave(yd=-dy)) / (2 * dy) ]
 	]
 	M = trigsimp(simplify(Matrix([
@@ -61,8 +62,8 @@ if args.coord_type == 'plane':
 	va = (wave(xd=-dx,   yd=-dy/2) + wave(yd=-dy/2) + wave(xd=-dx,  yd=dy/2) + wave(yd=dy/2)) / 4
 	ua = (wave(xd=-dx/2, yd=-dy  ) + wave(xd=-dx/2) + wave(xd=dx/2, yd=-dy ) + wave(xd=dx/2)) / 4
 	eqn = [
-		[ diff(wave(xd=-dx/2), t), - f * va, H * (wave() - wave(xd=-dx)) / dx ],
-		[ diff(wave(yd=-dy/2), t),   f * ua, H * (wave() - wave(yd=-dy)) / dy ],
+		[ diff(wave(xd=-dx/2), t), - f * va, g * (wave() - wave(xd=-dx)) / dx ],
+		[ diff(wave(yd=-dy/2), t),   f * ua, g * (wave() - wave(yd=-dy)) / dy ],
 		[ diff(wave(),         t),   H * (wave(xd=dx/2) - wave(xd=-dx/2)) / dx, H * (wave(yd=dy/2) - wave(yd=-dy/2)) / dy ]
 	]
 	M = trigsimp(simplify(Matrix([
@@ -86,8 +87,8 @@ if args.coord_type == 'plane':
 		(1 - a) * (a * (wave(xd=-dx/2, yd=   dy) + wave(xd=dx/2, yd=   dy)) + (1 - a) * (wave(xd=-3*dx/2, yd=   dy) + wave(xd=3*dx/2, yd=   dy)))
 	)
 	eqn = [
-		[ diff(wave(xd=-dx/2), t), - f * va, H * (wave() - wave(xd=-dx)) / dx ],
-		[ diff(wave(yd=-dy/2), t),   f * ua, H * (wave() - wave(yd=-dy)) / dy ],
+		[ diff(wave(xd=-dx/2), t), - f * va, g * (wave() - wave(xd=-dx)) / dx ],
+		[ diff(wave(yd=-dy/2), t),   f * ua, g * (wave() - wave(yd=-dy)) / dy ],
 		[ diff(wave(),         t),   H * (wave(xd=dx/2) - wave(xd=-dx/2)) / dx, H * (wave(yd=dy/2) - wave(yd=-dy/2)) / dy ]
 	]
 	M = trigsimp(simplify(Matrix([
