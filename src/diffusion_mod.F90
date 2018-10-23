@@ -97,11 +97,11 @@ contains
     ! 2nd order:
     !
     ! ∂² u                 u        2 sin𝞿   ∂ v
-    ! ----           - --------- + --------- ---
+    ! ----           - --------- - --------- ---
     ! ∂ λ²             a² cos²𝞿    a² cos²𝞿  ∂ 𝞴
     !
     ! ∂          ∂ v       v        2 sin𝞿   ∂ u
-    ! --- cos(φ) --- - --------- - --------- ---
+    ! --- cos(φ) --- - --------- + --------- ---
     ! ∂ φ        ∂ φ   a² cos²𝞿    a² cos²𝞿  ∂ 𝞴
 
     do order = 1, diffusion_order / 2
@@ -137,7 +137,7 @@ contains
           ud(i,j) = (u(i+1,j) - 2 * u(i,j) + u(i-1,j)) / coef%full_dlon(j)**2 + &
                     ((u(i,j+1) - u(i,j  )) * mesh%half_cos_lat(j  ) - &
                      (u(i,j  ) - u(i,j-1)) * mesh%half_cos_lat(j-1)) / coef%full_dlat(j)**2 * mesh%full_cos_lat(j) !- &
-                    ! (u(i,j) - mesh%full_sin_lat(j) * (v(i+1,j-1) + v(i+1,j) - v(i,j-1) - v(i,j)) / mesh%dlon) / &
+                    ! (u(i,j) + mesh%full_sin_lat(j) * (v(i+1,j-1) + v(i+1,j) - v(i,j-1) - v(i,j)) / mesh%dlon) / &
                     !  radius**2 / mesh%full_cos_lat(j)**2
         end do
       end do
@@ -151,7 +151,7 @@ contains
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           vd(i,j) = vd(i,j) + ((v(i,j+1) - v(i,j  )) * mesh%full_cos_lat(j+1) - &
                                (v(i,j  ) - v(i,j-1)) * mesh%full_cos_lat(j  )) / coef%half_dlat(j)**2 * mesh%half_cos_lat(j) !- &
-                              ! (v(i,j) + mesh%half_sin_lat(j) * (u(i,j) + u(i,j+1) - u(i-1,j) - u(i-1,j+1)) / mesh%dlon) / &
+                              ! (v(i,j) - mesh%half_sin_lat(j) * (u(i,j) + u(i,j+1) - u(i-1,j) - u(i-1,j+1)) / mesh%dlon) / &
                               !  radius**2 / mesh%half_cos_lat(j)**2
         end do
       end do
@@ -159,14 +159,14 @@ contains
         j = parallel%half_lat_south_pole_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           vd(i,j) = vd(i,j) + (v(i,j+1) - v(i,j)) * mesh%full_cos_lat(j+1) / coef%half_dlat(j)**2 * mesh%half_cos_lat(j) !- &
-                              ! (v(i,j) + mesh%half_sin_lat(j) * (u(i,j+1) - u(i-1,j+1)) / mesh%dlon) / radius**2 / mesh%half_cos_lat(j)**2
+                              ! (v(i,j) - mesh%half_sin_lat(j) * (u(i,j+1) - u(i-1,j+1)) / mesh%dlon) / radius**2 / mesh%half_cos_lat(j)**2
         end do
       end if
       if (parallel%has_north_pole) then
         j = parallel%half_lat_north_pole_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           vd(i,j) = vd(i,j) - (v(i,j) - v(i,j-1)) * mesh%full_cos_lat(j) / coef%half_dlat(j)**2 * mesh%half_cos_lat(j) !- &
-                              ! (v(i,j) + mesh%half_sin_lat(j) * (u(i,j) - u(i-1,j)) / mesh%dlon) / radius**2 / mesh%half_cos_lat(j)**2
+                              ! (v(i,j) - mesh%half_sin_lat(j) * (u(i,j) - u(i-1,j)) / mesh%dlon) / radius**2 / mesh%half_cos_lat(j)**2
         end do
       end if
       if (order /= diffusion_order / 2) then

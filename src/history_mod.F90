@@ -64,6 +64,9 @@ contains
     call io_add_var('du', 'debug', long_name='du', units='', dim_names=['ilon', 'lat ', 'time'])
     call io_add_var('dv', 'debug', long_name='dv', units='', dim_names=['lon ', 'ilat', 'time'])
     call io_add_var('dgd', 'debug', long_name='dgd', units='', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('iap_u', 'debug', long_name='IAP u', units='', dim_names=['ilon', 'lat ', 'time'])
+    call io_add_var('iap_v', 'debug', long_name='IAP v', units='', dim_names=['lon ', 'ilat', 'time'])
+    call io_add_var('iap_gd', 'debug', long_name='geopotential depth', units='', dim_names=['lon ', 'lat ', 'time'])
 
     if (.not. allocated(u)) call parallel_allocate(u)
     if (.not. allocated(v)) call parallel_allocate(v)
@@ -113,8 +116,9 @@ contains
 
   end subroutine history_write_state
 
-  subroutine history_write_tendency(tend, tag)
+  subroutine history_write_tendency(state, tend, tag)
 
+    type(state_type), intent(in) :: state
     type(tend_type), intent(in) :: tend
     integer, intent(in) :: tag
 
@@ -136,6 +140,9 @@ contains
     call io_output('du', tend%du(:,:), 'debug')
     call io_output('dv', tend%dv(:,:), 'debug')
     call io_output('dgd', tend%dgd(:,:), 'debug')
+    call io_output('iap_u', state%iap%u(:,:), 'debug')
+    call io_output('iap_v', state%iap%v(:,:), 'debug')
+    call io_output('iap_gd', state%iap%gd(:,:), 'debug')
     call io_end_output('debug')
 
   end subroutine history_write_tendency

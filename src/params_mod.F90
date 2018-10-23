@@ -50,6 +50,11 @@ module params_mod
   ! - none
   character(30) split_scheme
 
+  ! Options:
+  ! - center-difference
+  ! - upwind
+  character(30) :: uv_adv_scheme = 'center-difference'
+
   logical is_restart_run
 
   logical :: use_zonal_tend_filter = .true.
