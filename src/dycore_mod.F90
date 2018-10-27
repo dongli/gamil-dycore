@@ -13,6 +13,7 @@ module dycore_mod
   use restart_mod
   use diffusion_mod
   use filter_mod
+  use weno_mod
 
   implicit none
 
@@ -34,6 +35,7 @@ module dycore_mod
   integer uv_adv_scheme
   integer, parameter :: center_difference = 0
   integer, parameter :: upwind = 1
+  integer, parameter :: weno = 2
 
   integer, parameter :: half_time_idx = 0
 
@@ -97,6 +99,9 @@ contains
       uv_adv_scheme = center_difference
     case ('upwind')
       uv_adv_scheme = upwind
+    case ('weno')
+      uv_adv_scheme = weno
+      call weno_init()
     case default
       call log_error('Unknown uv_adv_scheme ' // trim(uv_adv_scheme_in) // '!')
     end select
@@ -145,6 +150,7 @@ contains
     call data_final()
     call diffusion_final()
     call filter_final()
+    call weno_final()
 
     call log_notice('Dycore module is finalized.')
 
@@ -382,6 +388,8 @@ contains
              (u2 - u1) * state%iap%v(i,j))
         end do
       end do
+    case (weno)
+      call weno_zonal_momentum_advection_operator(state, tend)
     end select
 
   end subroutine zonal_momentum_advection_operator
@@ -437,6 +445,8 @@ contains
              (v2 - v1) * state%iap%v(i,j))
         end do
       end do
+    case (weno)
+      call weno_meridional_momentum_advection_operator(state, tend)
     end select
 
   end subroutine meridional_momentum_advection_operator

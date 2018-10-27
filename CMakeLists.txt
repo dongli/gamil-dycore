@@ -58,6 +58,7 @@ set(source_files
   src/data_mod.F90
   src/diffusion_mod.F90
   src/filter_mod.F90
+  src/weno_mod.F90
   src/dycore_mod.F90
   src/dycore_test.F90
   src/test_cases/barotropic/rossby_haurwitz_wave_test_mod.F90
