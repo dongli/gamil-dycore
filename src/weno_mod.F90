@@ -43,7 +43,7 @@ contains
         allocate(wo(2))
         c(:,1) = [- 1.0 / 2.0,   3.0 / 2.0]
         c(:,2) = [  1.0 / 2.0,   1.0 / 2.0]
-        wo(:)  = [  2.0 / 3.0,   1.0 / 3.0]
+        wo(:)  = [  1.0 / 3.0,   2.0 / 3.0]
         cb(1)  = 1.0
       case (3)
         allocate(c(3,3))
@@ -52,7 +52,7 @@ contains
         c(:,1) = [  1.0 /  3.0, - 7.0 /  6.0,  11.0 /  6.0]
         c(:,2) = [- 1.0 /  6.0,   5.0 /  6.0,   1.0 /  3.0]
         c(:,3) = [  1.0 /  3.0,   5.0 /  6.0, - 1.0 /  6.0]
-        wo(:)  = [  3.0 / 10.0,   6.0 / 10.0,   1.0 / 10.0]
+        wo(:)  = [  1.0 / 10.0,   6.0 / 10.0,   3.0 / 10.0]
         cb(:)  = [ 13.0 / 12.0,   1.0 /  4.0]
       end select
 
@@ -103,16 +103,16 @@ contains
     case (2)
       do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-          call weno_2nd_order_pass(fp_u(i-1,j), fp_u(i,j), fp_u(i+1,j), fp_u(i+2,j), &
-                                   fn_u(i-1,j), fn_u(i,j), fn_u(i+1,j), fn_u(i+2,j), &
+          call weno_2nd_order_pass(fp_u(i-1,j), fp_u(i,j  ), fp_u(i+1,j), &
+                                   fn_u(i,j  ), fn_u(i+1,j), fn_u(i+2,j), &
                                    f_u(i,j))
         end do
       end do
 
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          call weno_2nd_order_pass(fp_v(i-1,j), fp_v(i,j), fp_v(i+1,j), fp_v(i+2,j), &
-                                   fn_v(i-1,j), fn_v(i,j), fn_v(i+1,j), fn_v(i+2,j), &
+          call weno_2nd_order_pass(fp_v(i-1,j), fp_v(i,j  ), fp_v(i+1,j), &
+                                   fn_v(i,j  ), fn_v(i+1,j), fn_v(i+2,j), &
                                    f_v(i,j))
         end do
       end do
@@ -200,16 +200,16 @@ contains
     case (2)
       do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-          call weno_2nd_order_pass(fp_u(i,j-1), fp_u(i,j), fp_u(i,j+1), fp_u(i,j+2), &
-                                   fn_u(i,j-1), fn_u(i,j), fn_u(i,j+1), fn_u(i,j+2), &
+          call weno_2nd_order_pass(fp_u(i,j-1), fp_u(i,j  ), fp_u(i,j+1), &
+                                   fn_u(i,j  ), fn_u(i,j+1), fn_u(i,j+2), &
                                    f_u(i,j))
         end do
       end do
 
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-          call weno_2nd_order_pass(fp_v(i,j-1), fp_v(i,j), fp_v(i,j+1), fp_v(i,j+2), &
-                                   fn_v(i,j-1), fn_v(i,j), fn_v(i,j+1), fn_v(i,j+2), &
+          call weno_2nd_order_pass(fp_v(i,j-1), fp_v(i,j  ), fp_v(i,j+1), &
+                                   fn_v(i,j  ), fn_v(i,j+1), fn_v(i,j+2), &
                                    f_v(i,j))
         end do
       end do
@@ -220,7 +220,7 @@ contains
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         tend%u_adv_lat(i,j) = (f_u(i,j) - f_u(i,j-1) - &
-          (state%v(i-1,j-1) + state%v(i,j-1) - state%v(i-1,j) - state%v(i,j)) * state%iap%u(i,j) * 0.25) / coef%full_dlat(j)
+          (state%v(i-1,j) + state%v(i,j) - state%v(i-1,j-1) - state%v(i,j-1)) * state%iap%u(i,j) * 0.25) / coef%full_dlat(j)
       end do
     end do
     do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
@@ -245,13 +245,11 @@ contains
 
   end subroutine weno_final
 
-  subroutine weno_2nd_order_pass(fp1, fp2, fp3, fp4, fn1, fn2, fn3, fn4, f)
+  subroutine weno_2nd_order_pass(fp1, fp2, fp3, fn2, fn3, fn4, f)
 
     real, intent(in) :: fp1
     real, intent(in) :: fp2
     real, intent(in) :: fp3
-    real, intent(in) :: fp4
-    real, intent(in) :: fn1
     real, intent(in) :: fn2
     real, intent(in) :: fn3
     real, intent(in) :: fn4
@@ -284,7 +282,7 @@ contains
     !              |_______S2______|
     !                      |_______S1______|
     !           ...|---o---|---o---|---o---|...
-    !              |   2   |   3   |   4  |
+    !              |   2   |   3   |   4   |
     !                      |+
     !                      *
     !
