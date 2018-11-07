@@ -240,7 +240,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (filter_full_zonal_tend(j)) then
           s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
-          if (abs(s1) > 1.0e-16) then
+          if (abs(s1) > filter_inner_product_threshold) then
             call filter_array_at_full_lat(j, tend%du(:,j))
             s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
             tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
@@ -256,7 +256,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (filter_half_zonal_tend(j)) then
           s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
-          if (abs(s1) > 1.0e-16) then
+          if (abs(s1) > filter_inner_product_threshold) then
             call filter_array_at_half_lat(j, tend%dv(:,j))
             s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
             tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
@@ -286,7 +286,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (filter_full_zonal_tend(j)) then
           s1 = sum(tend%dgd(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
-          if (abs(s1) > 1.0e-16) then
+          if (abs(s1) > filter_inner_product_threshold) then
             call filter_array_at_full_lat(j, tend%dgd(:,j))
             s2 = sum(tend%dgd(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
             tend%dgd(i1:i2,j) = tend%dgd(i1:i2,j) * s1 / s2
@@ -302,7 +302,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (filter_full_zonal_tend(j)) then
           s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
-          if (abs(s1) > 1.0e-16) then
+          if (abs(s1) > filter_inner_product_threshold) then
             call filter_array_at_full_lat(j, tend%du(:,j))
             s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
             tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
@@ -318,7 +318,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (filter_half_zonal_tend(j)) then
           s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
-          if (abs(s1) > 1.0e-16) then
+          if (abs(s1) > filter_inner_product_threshold) then
             call filter_array_at_half_lat(j, tend%dv(:,j))
             s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
             tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
