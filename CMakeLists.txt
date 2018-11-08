@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
 
 project(gamil-dycore LANGUAGES Fortran)
 
+option(AVERAGE_CORIOLIS "Set macro AVERAGE_CORIOLIS" OFF)
+
+if (AVERAGE_CORIOLIS)
+  set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DAVERAGE_CORIOLIS")
+endif ()
+
 find_package(MPI)
 if (NOT MPI_Fortran_FOUND)
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -DNO_MPI")
