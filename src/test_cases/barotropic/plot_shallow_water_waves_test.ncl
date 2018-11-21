@@ -10,48 +10,48 @@ end if
 
 file_names = systemfunc("ls " + file_prefix + "*h0*.nc")
 
-wks = gsn_open_wks("pdf", file_prefix + ".hov")
+wks = gsn_open_wks("pdf", file_prefix + ".fft")
 
-gsn_define_colormap(wks, "BlWhRe")
+; res = True
+; res@gsnDraw = False
+; res@gsnFrame = False
+; res@mpOutlineOn = False
+; res@mpFillOn = False
+; res@cnLineLabelsOn = False
+; res@cnFillOn = True
+; res@cnLinesOn = False
+; res@cnFillPalette = "BlWhRe"
+; res@lbOrientation = "Vertical"
+; if (NH) then
+;   res@gsnPolar = "NH"
+; end if
 
-res = True
-res@gsnDraw = False
-res@gsnFrame = False
-res@mpOutlineOn = False
-res@mpFillOn = False
-res@cnLineLabelsOn = False
-res@cnFillOn = True
-res@cnLinesOn = False
-if (NH) then
-  res@gsnPolar = "NH"
-end if
+; res_h = res
+; res_h@cnLevelSelectionMode = "ManualLevels"
+; res_h@cnMinLevelValF = -1
+; res_h@cnMaxLevelValF =  1
+; res_h@cnLevelSpacingF = 0.1
+; res_h@gsnLeftString = "Height (m)"
+; res_h@lbLabelBarOn = True
 
-res_h = res
-res_h@cnLevelSelectionMode = "ManualLevels"
-res_h@cnMinLevelValF = -1
-res_h@cnMaxLevelValF =  1
-res_h@cnLevelSpacingF = 0.1
-res_h@gsnLeftString = "Height (m)"
-res_h@lbLabelBarOn = False
+; res_u = res
+; res_u@cnLevelSelectionMode = "ManualLevels"
+; res_u@cnMinLevelValF = -1
+; res_u@cnMaxLevelValF =  1
+; res_u@cnLevelSpacingF = 0.1
+; res_u@gsnLeftString = "U (m/s)"
+; res_u@lbLabelBarOn = True
 
-res_u = res
-res_u@cnLevelSelectionMode = "ManualLevels"
-res_u@cnMinLevelValF = -1
-res_u@cnMaxLevelValF =  1
-res_u@cnLevelSpacingF = 0.1
-res_u@gsnLeftString = "U (m/s)"
-res_u@lbLabelBarOn = False
-
-res_v = res
-res_v@cnLevelSelectionMode = "ManualLevels"
-res_v@cnMinLevelValF = -1
-res_v@cnMaxLevelValF =  1
-res_v@cnLevelSpacingF = 0.1
-res_v@gsnLeftString = "V (m/s)"
-res_v@lbLabelBarOn = True
+; res_v = res
+; res_v@cnLevelSelectionMode = "ManualLevels"
+; res_v@cnMinLevelValF = -1
+; res_v@cnMaxLevelValF =  1
+; res_v@cnLevelSpacingF = 0.1
+; res_v@gsnLeftString = "V (m/s)"
+; res_v@lbLabelBarOn = True
 
 ; days = 0
-; do t = 0, dimsizes(file_names) - 1
+; do t = 0, dimsizes(file_names) - 1, 13
 ;   system("echo '=> " + file_names(t) + "'")
 ;   f = addfile(file_names(t), "r")
 
@@ -87,31 +87,61 @@ res_v@lbLabelBarOn = True
 
 ;   gsn_panel(wks, (/plot0, plot1, plot2/), (/3, 1/), False)
 
-;   days = days + 10
+;   days = days + 13
 ; end do
 
-res_hov = True
-res_hov@cnLevelSelectionMode = "ManualLevels"
-res_hov@cnMinLevelValF = -1
-res_hov@cnMaxLevelValF =  1
-res_hov@cnLevelSpacingF = 0.1
-res_hov@cnFillOn = True
-res_hov@cnLinesOn = False
-res_hov@cnLineLabelsOn = False
-res_hov@cnFillMode = "RasterFill"
-; res_h@gsnLeftString = "Height (m)"
+; res_hov = True
+; res_hov@cnLevelSelectionMode = "ManualLevels"
+; res_hov@cnMinLevelValF = -1
+; res_hov@cnMaxLevelValF =  1
+; res_hov@cnLevelSpacingF = 0.1
+; res_hov@cnFillOn = True
+; res_hov@cnLinesOn = False
+; res_hov@cnLineLabelsOn = False
+; ; res_hov@cnFillMode = "RasterFill"
+; res_hov@tiXAxisString = "Longitude"
+; res_hov@tiYAxisString = "Time (Days)"
+; res_hov@gsnLeftString = ""
+; res_hov@gsnRightString = ""
+; res_hov@vpWidthF = 0.8
+; res_hov@vpHeightF = 0.6
+
+; f = addfile(file_names(0), "r")
+; start_time_idx = 1142
+; end_time_idx = 1202
+; v = new((/end_time_idx - start_time_idx, dimsizes(f->lon({0:180}))/), typeof(f->v))
+; do t = 0, end_time_idx - start_time_idx - 1
+;   system("echo '=> " + file_names(t + start_time_idx) + "'")
+;   f = addfile(file_names(t), "r")
+;   v(t,:) = f->v(0,{44},{0:180})
+;   v(t,:) = (/v(t,:) / max(abs(v(t,:)))/)
+; end do
+; v!0 = "time"
+; v!1 = "lon"
+; v&lon = f->lon({0:180})
+; plot = gsn_csm_contour(wks, v, res_hov)
+; draw(plot)
+; frame(wks)
 
 f = addfile(file_names(0), "r")
-v = new((/dimsizes(file_names), dimsizes(f->lon)/), typeof(f->v))
-do t = 0, dimsizes(file_names) - 1
-  system("echo '=> " + file_names(t) + "'")
+start_time_idx = 0
+end_time_idx = dimsizes(file_names)
+v = new((/end_time_idx - start_time_idx/), typeof(f->v))
+do t = 0, end_time_idx - start_time_idx - 1
+  system("echo '=> " + file_names(t + start_time_idx) + "'")
   f = addfile(file_names(t), "r")
-  v(t,:) = f->v(0,{44},:)
-  v(t,:) = (/v(t,:) / max(abs(v(t,:)))/)
+  v(t) = f->v(0,{44},{45})
 end do
-v!0 = "time"
-v!1 = "lon"
-v&lon = f->lon
-plot = gsn_csm_contour(wks, v, res_hov)
-draw(plot)
-frame(wks)
+frq = ezfftf(v)
+
+print(maxind(frq(0,:)))
+print((dimsizes(file_names) - 1) / int2flt(maxind(frq(0,:))))
+C0 = -0.6061436374682E-06
+
+res_fft = True
+res_fft@gsnMaximize = True
+res_fft@xyLineThicknessF = 3
+res_fft@vpWidthF = 0.8
+res_fft@vpHeightF = 0.4
+
+plot = gsn_csm_xy(wks, ispan(0, frq@npts / 2 - 1, 1), frq(0,:), res_fft)

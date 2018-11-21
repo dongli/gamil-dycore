@@ -72,33 +72,6 @@ if args.coord_type == 'plane':
 		[ eqn[2][1] / wave(),         eqn[2][2] / wave(),         eqn[2][0] / wave() ]
 	])).expand(complex=True), method='fu')
 	freq_relation_expr['\\section{C-grid case}'] = [ M, simplify(M.det()) ]
-
-	# C-grid linearized barotropic equations with modified Coriolis terms
-	va = (
-		(1 - a) * (a * (wave(xd=-dx,  yd=-3*dy/2) + wave(yd=-3*dy/2)) + (1 - a) * (wave(xd=-2*dx, yd=-3*dy/2) + wave(xd=dx, yd=-3*dy/2))) +
-		     a  * (a * (wave(xd=-dx,  yd=  -dy/2) + wave(yd=  -dy/2)) + (1 - a) * (wave(xd=-2*dx, yd=  -dy/2) + wave(xd=dx, yd=  -dy/2))) +
-		     a  * (a * (wave(xd=-dx,  yd=   dy/2) + wave(yd=   dy/2)) + (1 - a) * (wave(xd=-2*dx, yd=   dy/2) + wave(xd=dx, yd=   dy/2))) +
-		(1 - a) * (a * (wave(xd=-dx,  yd= 3*dy/2) + wave(yd= 3*dy/2)) + (1 - a) * (wave(xd=-2*dx, yd= 3*dy/2) + wave(xd=dx, yd= 3*dy/2)))
-	)
-	ua = (
-		(1 - a) * (a * (wave(xd=-dx/2, yd=-2*dy) + wave(xd=dx/2, yd=-2*dy)) + (1 - a) * (wave(xd=-3*dx/2, yd=-2*dy) + wave(xd=3*dx/2, yd=-2*dy))) +
-		     a  * (a * (wave(xd=-dx/2, yd=  -dy) + wave(xd=dx/2, yd=  -dy)) + (1 - a) * (wave(xd=-3*dx/2, yd=  -dy) + wave(xd=3*dx/2, yd=  -dy))) +
-		     a  * (a * (wave(xd=-dx/2          ) + wave(xd=dx/2          )) + (1 - a) * (wave(xd=-3*dx/2          ) + wave(xd=3*dx/2          ))) +
-		(1 - a) * (a * (wave(xd=-dx/2, yd=   dy) + wave(xd=dx/2, yd=   dy)) + (1 - a) * (wave(xd=-3*dx/2, yd=   dy) + wave(xd=3*dx/2, yd=   dy)))
-	)
-	eqn = [
-		[ diff(wave(xd=-dx/2), t), - f * va, g * (wave() - wave(xd=-dx)) / dx ],
-		[ diff(wave(yd=-dy/2), t),   f * ua, g * (wave() - wave(yd=-dy)) / dy ],
-		[ diff(wave(),         t),   H * (wave(xd=dx/2) - wave(xd=-dx/2)) / dx, H * (wave(yd=dy/2) - wave(yd=-dy/2)) / dy ]
-	]
-	M = trigsimp(simplify(Matrix([
-		[ eqn[0][0] / wave(xd=-dx/2), eqn[0][1] / wave(xd=-dx/2), eqn[0][2] / wave(xd=-dx/2) ],
-		[ eqn[1][1] / wave(yd=-dy/2), eqn[1][0] / wave(yd=-dy/2), eqn[1][2] / wave(yd=-dy/2) ],
-		[ eqn[2][1] / wave(),         eqn[2][2] / wave(),         eqn[2][0] / wave() ]
-	])).expand(complex=True), method='fu')
-	freq_relation_expr['\\section{Modified C-grid case}'] = [ M, simplify(M.det()) ]
-	inertial_error = Poly(freq_relation_expr['\\section{Modified C-grid case}'][1], f).coeffs()[0] / I / w
-	print(inertial_error)
 elif args.coord_type == 'sphere':
 	pass
 

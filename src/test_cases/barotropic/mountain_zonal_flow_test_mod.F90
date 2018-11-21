@@ -27,7 +27,7 @@ contains
 
   subroutine mountain_zonal_flow_test_set_initial_condition()
 
-    real cos_lat, sin_lat, cos_lon, sin_lon, cos_alpha, sin_alpha, d
+    real cos_lat, sin_lat, cos_lon, sin_lon, cos_alpha, sin_alpha, dlon, d
     integer i, j, k
 
     write(6, *) '[Notice]: Use mountain zonal flow initial condition.'
@@ -41,7 +41,9 @@ contains
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        d = min(R, sqrt((mesh%full_lon(i) - lon0)**2 + (mesh%full_lat(j) - lat0)**2))
+        dlon = abs(mesh%full_lon(i) - lon0)
+        dlon = min(dlon, 2 * pi - dlon)
+        d = min(R, sqrt(dlon**2 + (mesh%full_lat(j) - lat0)**2))
         static%ghs(i,j) = ghs0 * (1.0 - d / R)
       end do
     end do

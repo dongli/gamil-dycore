@@ -581,7 +581,6 @@ contains
     type(state_type), intent(in) :: old_state
     type(state_type), intent(inout) :: new_state
 
-    real s1, s2
     integer i, j, i1, i2
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx

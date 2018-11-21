@@ -28,7 +28,7 @@ module filter_mod
   logical, allocatable :: filter_full_zonal_tend(:)
   logical, allocatable :: filter_half_zonal_tend(:)
 
-  real, parameter :: filter_inner_product_threshold = 1.0e-10
+  real, parameter :: filter_inner_product_threshold = 1.0e-16
 
 contains
 
