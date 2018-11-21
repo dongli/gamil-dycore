@@ -52,6 +52,8 @@ module shallow_water_waves_test_mod
   use mesh_mod
   use parallel_mod
   use data_mod
+  use log_mod
+  use string_mod
 
   implicit none
 
@@ -92,6 +94,7 @@ contains
   subroutine shallow_water_waves_test_set_initial_condition()
 
     real(dp), allocatable :: u(:,:,:), v(:,:,:), h(:,:,:)
+    real(dp) C
     integer i, j
 
     write(6, *) '[Notice]: Use shallow water waves initial condition.'
@@ -100,6 +103,8 @@ contains
     allocate(v(mesh%num_full_lon,mesh%num_half_lat,1))
     allocate(h(mesh%num_full_lon,mesh%num_full_lat,1))
     call getFields(mesh%full_lat, mesh%full_lon, mesh%half_lat, mesh%half_lon, [0.0], u, v, h, 0)
+    call getPhaseSpeed(C, 0)
+    call log_notice('Phase speed is ' // trim(to_string(C, 20)))
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
