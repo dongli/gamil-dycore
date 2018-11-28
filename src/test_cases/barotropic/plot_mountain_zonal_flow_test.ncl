@@ -72,7 +72,7 @@ end do
 ; res_h@cnFillPalette = "MPL_viridis"
 ; res_h@lbBoxEndCapStyle = "TriangleBothEnds"
 ; res_h@pmLabelBarHeightF = 0.05
-
+; 
 ; res_uv_vector = True
 ; res_uv_vector@gsnDraw = False
 ; res_uv_vector@gsnFrame = False
@@ -81,9 +81,9 @@ end do
 ; res_uv_vector@vcRefLengthF = 0.01
 ; res_uv_vector@gsnLeftString = ""
 ; res_uv_vector@gsnRightString = ""
-
+; 
 ; uv_stride = 5
-
+; 
 ; do t = 0, dimsizes(file_names) - 1
 ;   system("echo '=> " + file_names(t) + "'")
 ;   f = addfile(file_names(t), "r")
@@ -95,13 +95,32 @@ end do
 ;   h&lon = f->lon
 ;   res_h@gsnRightString = cd_string(f->time, "Day %d Hour %H Min %M")
 ;   plot0 = gsn_csm_contour_map(wks, h, res_h)
-
+; 
 ;   u := f->u(0,::uv_stride,::uv_stride)
 ;   v := f->v(0,::uv_stride,::uv_stride)
 ;   plot1 = gsn_csm_vector(wks, u, v, res_uv_vector)
-
+; 
 ;   overlay(plot0, plot1)
-
+; 
 ;   draw(plot0)
 ;   frame(wks)
 ; end do
+
+; res_hs = True
+; res_hs@mpOutlineOn = False
+; res_hs@gsnLeftString = "Mountain (m)"
+
+; f = addfile(file_names(0), "r")
+; hs = f->ghs(0,:,:) / 9.80616
+; hs!0 = "lat"
+; hs!1 = "lon"
+; hs&lat = f->lat
+; hs&lon = f->lon
+; plot = gsn_csm_contour_map(wks, hs, res_hs)
+
+; res_hs := True
+; res_hs@gsnLeftString = "Mountain (m)"
+; res_hs@xyLineThicknessF = 5.0
+; res_hs@trYMinF = -10
+
+; plot = gsn_csm_xy(wks, (/f->lon/), hs(118,:), res_hs)

@@ -96,8 +96,8 @@ contains
     parallel%has_south_pole = parallel%full_lat_start_idx == parallel%full_lat_south_pole_idx
     parallel%has_north_pole = parallel%full_lat_end_idx == parallel%full_lat_north_pole_idx
 
-    parallel%lon_halo_width = 1
-    parallel%lat_halo_width = 1
+    parallel%lon_halo_width = 2
+    parallel%lat_halo_width = 2
 
     parallel%full_lon_lb = parallel%full_lon_start_idx - parallel%lon_halo_width
     parallel%full_lon_ub = parallel%full_lon_end_idx + parallel%lon_halo_width

@@ -14,6 +14,8 @@ module filter_mod
   public filter_array_at_half_lat
   public filter_final
 
+  public filter_inner_product_threshold
+
   public filter_full_zonal_tend
   public filter_half_zonal_tend
 
@@ -25,6 +27,8 @@ module filter_mod
 
   logical, allocatable :: filter_full_zonal_tend(:)
   logical, allocatable :: filter_half_zonal_tend(:)
+
+  real, parameter :: filter_inner_product_threshold = 1.0e-16
 
 contains
 

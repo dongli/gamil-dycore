@@ -64,6 +64,7 @@ set(source_files
   src/test_cases/barotropic/steady_geostrophic_flow_test_mod.F90
   src/test_cases/barotropic/mountain_zonal_flow_test_mod.F90
   src/test_cases/barotropic/jet_zonal_flow_test_mod.F90
+  src/test_cases/barotropic/shallow_water_waves_test_mod.F90
   lib/quadpack.f90
 )
 
