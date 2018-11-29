@@ -32,7 +32,7 @@ contains
 
   subroutine diag_init()
 
-    if (.not. allocated(diag%vor)) call parallel_allocate(diag%vor)
+    if (.not. allocated(diag%vor)) call parallel_allocate(diag%vor, half_lon=.true., half_lat=.true.)
     if (.not. allocated(diag%div)) call parallel_allocate(diag%div)
 
     call log_notice('Diag module is initialized.')
@@ -48,11 +48,6 @@ contains
 
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        vm1 = state%v(i-1,j-1) + state%v(i-1,j)
-        vp1 = state%v(i+1,j-1) + state%v(i+1,j)
-        um1 = (state%u(i-1,j-1) + state%u(i,j-1) + state%u(i-1,j) + state%u(i,j)) * mesh%half_cos_lat(j-1)
-        up1 = (state%u(i-1,j+1) + state%u(i,j+1) + state%u(i-1,j) + state%u(i,j)) * mesh%half_cos_lat(j)
-        diag%vor(i,j) = (vp1 - vm1) / coef%full_dlon(j) - (up1 - um1) / coef%full_dlat(j)
         um1 = state%u(i-1,j)
         up1 = state%u(i,j)
         vm1 = state%v(i,j-1) * mesh%half_cos_lat(j-1)
@@ -61,6 +56,17 @@ contains
       end do
     end do
     call parallel_fill_halo(diag%div, all_halo=.true.)
+
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+        um1 = state%u(i,j)
+        up1 = state%u(i,j+1)
+        vm1 = state%v(i,j)
+        vp1 = state%v(i+1,j)
+        diag%vor(i,j) = (vp1 - vm1) / coef%half_dlon(j) - (up1 - um1) / coef%half_dlat(j)
+      end do
+    end do
+    call parallel_fill_halo(diag%vor, all_halo=.true.)
 
     diag%total_mass = 0.0
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
