@@ -15,17 +15,11 @@ module data_mod
   public tend
   public data_init
   public data_final
-  
-  ! For RK4
-  public tend_rk
 
   type(coef_type) coef
   type(state_type) state(-1:2)
   type(static_type) static
   type(tend_type) tend(0:2)
-  
-  ! For RK4
-  type(tend_type) tend_rk(0:4)
 
 contains
 
@@ -58,12 +52,6 @@ contains
     end do
     call allocate_data(static)
     
-    if (time_scheme == 'runge_kutta') then
-      do i = 0, 4
-        call allocate_data(tend_rk(i))
-      end do
-    end if
-    
     call log_notice('Data module is initialized.')
 
   end subroutine data_init
@@ -80,12 +68,6 @@ contains
       call deallocate_data(tend(time_idx))
     end do
     call deallocate_data(static)
-
-    if (time_scheme == 'runge_kutta') then
-      do i = 0, 4
-        call deallocate_data(tend_rk(i))
-      end do
-    end if
     
     call log_notice('Data module is finalized.')
 
