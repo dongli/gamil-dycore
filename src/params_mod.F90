@@ -50,6 +50,13 @@ module params_mod
   ! - none
   character(30) split_scheme
 
+  ! Options:
+  ! - center-difference
+  ! - upwind
+  ! - weno
+  character(30) :: uv_adv_scheme = 'center-difference'
+  integer :: weno_order = 2
+
   logical is_restart_run
 
   logical :: use_zonal_tend_filter = .true.
@@ -77,6 +84,7 @@ module params_mod
     time_order, &
     qcon_modified, &
     split_scheme, &
+    uv_adv_scheme, &
     use_zonal_tend_filter, &
     zonal_tend_filter_cutoff_wavenumber, &
     use_diffusion, &

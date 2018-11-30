@@ -1,14 +1,9 @@
-if (.not. isdefined("file_path")) then
-  system("echo '[Error]: Argument file_path should be set!'")
-  exit
-end if
+dlon = 2.0
+dlat = 2.0
 
-f = addfile(file_path, "r")
-
-dlon = 360.0 / dimsizes(f->lon)
-dlat = 180.0 / (dimsizes(f->lat) - 1)
-
-rf = f->rf(0,:dimsizes(f->lat)-2)
+rf = new(90, integer)
+rf(:) = 1
+rf(0:2) = (/4, 2, 2/)
 
 wks = gsn_open_wks("pdf", "reduce_grids")
 
@@ -16,13 +11,14 @@ res_base = True
 res_base@gsnDraw = False
 res_base@gsnFrame = False
 res_base@mpProjection = "Satellite"
-res_base@mpCenterLonF = 0
+res_base@mpCenterLonF = 105
 res_base@mpCenterLatF = 45
 res_base@mpPerimOn = False
 res_base@mpGridAndLimbOn = True
 res_base@mpGridLonSpacingF = dlon
 res_base@mpGridLatSpacingF = dlat
-res_base@mpGridLineThicknessF = 0.0001
+res_base@mpGridLineColor = "gray"
+res_base@mpGridLineThicknessF = 0.00005
 
 res_reduce = True
 res_reduce@gsFillColor = "green"

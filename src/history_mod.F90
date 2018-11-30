@@ -37,12 +37,14 @@ contains
     call io_add_meta('subcycles', subcycles)
     call io_add_dim('lon', size=mesh%num_full_lon)
     call io_add_dim('lat', size=mesh%num_full_lat)
+    call io_add_dim('ilon', size=mesh%num_half_lon)
+    call io_add_dim('ilat', size=mesh%num_half_lat)
     call io_add_dim('time')
     call io_add_var('u', long_name='u wind component', units='m s-1', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('v', long_name='v wind component', units='m s-1', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('gd', long_name='geopotential depth', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
     call io_add_var('ghs', long_name='surface geopotential', units='m2 s-2', dim_names=['lon ', 'lat ', 'time'])
-    call io_add_var('vor', long_name='relative vorticity', units='s-1', dim_names=['lon ', 'lat ', 'time'])
+    call io_add_var('vor', long_name='relative vorticity', units='s-1', dim_names=['ilon', 'ilat', 'time'])
     call io_add_var('div', long_name='divergence', units='s-1', dim_names=['lon ', 'lat ', 'time'])
 
     call io_create_dataset(name='debug', desc=case_desc, file_prefix=case_name // '.debug')
@@ -103,6 +105,8 @@ contains
     call io_start_output()
     call io_output('lon', mesh%full_lon_deg(:))
     call io_output('lat', mesh%full_lat_deg(:))
+    call io_output('ilon', mesh%half_lon_deg(:))
+    call io_output('ilat', mesh%half_lat_deg(:))
     call io_output('u', u(:,:))
     call io_output('v', v(:,:))
     call io_output('gd', state%gd(:,:))
@@ -113,8 +117,9 @@ contains
 
   end subroutine history_write_state
 
-  subroutine history_write_tendency(tend, tag)
+  subroutine history_write_tendency(state, tend, tag)
 
+    type(state_type), intent(in) :: state
     type(tend_type), intent(in) :: tend
     integer, intent(in) :: tag
 

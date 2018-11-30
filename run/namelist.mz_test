@@ -7,14 +7,15 @@ days = 20
 num_lon = 180
 num_lat = 90
 time_step_size = 480
-history_periods = '6 hours'
+history_periods = '1 hours'
 restart_period = '6 hours'
 time_scheme = 'predict_correct' ! 'predict_correct' or 'runge_kutta'
 qcon_modified = .true.
 split_scheme = 'csp2' ! 'csp2' or 'csp1' or 'isp'
 subcycles = 6
-use_zonal_reduce = .false.
-zonal_reduce_factors = 4, 2, 2
 use_zonal_tend_filter = .true.
 zonal_tend_filter_cutoff_wavenumber = 4, 4, 4
+/
+&mountain_zonal_flow_test_params
+smooth_moutain = .false.
 /

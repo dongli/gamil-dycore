@@ -70,8 +70,6 @@ contains
     select case (time_scheme)
     case ('predict_correct')
       integrator => predict_correct
-    case ('runge_kutta')
-      integrator => runge_kutta
     case default
       call log_error('Unknown time_scheme ' // trim(time_scheme) // '!')
     end select
@@ -291,7 +289,7 @@ contains
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (filter_full_zonal_tend(j)) then
           s1 = sum(tend%dgd(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
-          if (abs(s1) > 1.0e-16) then
+          if (abs(s1) > filter_inner_product_threshold) then
             call filter_array_at_full_lat(j, tend%dgd(:,j))
             s2 = sum(tend%dgd(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
             tend%dgd(i1:i2,j) = tend%dgd(i1:i2,j) * s1 / s2
@@ -349,10 +347,10 @@ contains
 
     ! tag = tag + 1
     ! if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6)) then
-    !  call history_write(tend, tag)
+    !  call history_write(state, tend, tag)
     ! end if
 
-    call check_antisymmetry(tend, state)
+    ! call check_antisymmetry(tend, state)
 
   end subroutine space_operators
 
@@ -663,7 +661,6 @@ contains
     type(state_type), intent(in) :: old_state
     type(state_type), intent(inout) :: new_state
 
-    real s1, s2
     integer i, j, i1, i2
 
     do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
@@ -806,63 +803,6 @@ contains
     call update_state(dt, tend(new), state(old), state(new))
 
   end subroutine predict_correct
-
-  subroutine runge_kutta(time_step_size, old, new, pass)
-
-    real, intent(in) :: time_step_size
-    integer, intent(in) :: old
-    integer, intent(in) :: new
-    integer, intent(in) :: pass
-
-    integer tmp, i, j
-    real dt, ip00, ip12, ip23, ip34, beta
-
-    tmp = -1
-    dt = time_step_size * 0.5d0
-
-    ! Compute RK1
-    call space_operators(state(old), tend_rk(1), pass)
-
-    ! Compute RK2
-    call update_state(dt, tend_rk(1), state(old), state(tmp))
-    call space_operators(state(tmp), tend_rk(2), pass)
-
-    ! Compute RK3
-    call update_state(dt, tend_rk(2), state(old), state(tmp))
-    call space_operators(state(tmp), tend_rk(3), pass)
-
-    ! Compute RK4
-    call update_state(time_step_size, tend_rk(3), state(old), state(tmp))
-    call space_operators(state(tmp), tend_rk(4), pass)
-
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend_rk(0)%dgd(i,j) = tend_rk(1)%dgd(i,j) / 6.0d0 + tend_rk(2)%dgd(i,j) / 3.0d0 + tend_rk(3)%dgd(i,j) / 3.0d0 + tend_rk(4)%dgd(i,j) / 6.0d0
-      end do
-    end do
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        tend_rk(0)%du_c(i,j) = tend_rk(1)%du_c(i,j) / 6.0d0 + tend_rk(2)%du_c(i,j) / 3.0d0 + tend_rk(3)%du_c(i,j) / 3.0d0 + tend_rk(4)%du_c(i,j) / 6.0d0
-      end do
-    end do
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        tend_rk(0)%dv_c(i,j) = tend_rk(1)%dv_c(i,j) / 6.0d0 + tend_rk(2)%dv_c(i,j) / 3.0d0 + tend_rk(3)%dv_c(i,j) / 3.0d0 + tend_rk(4)%dv_c(i,j) / 6.0d0
-      end do
-    end do
-
-    ip00 = inner_product(tend_rk(0), tend_rk(0))
-    ip12 = inner_product(tend_rk(1), tend_rk(2))
-    ip23 = inner_product(tend_rk(2), tend_rk(3))
-    ip34 = inner_product(tend_rk(3), tend_rk(4))
-    beta = 1.0d0 / (3.0d0 * ip00) * (ip12 + ip23 + ip34)
-    call log_add_diag('beta', beta)
-
-    dt = time_step_size * beta
-
-    call update_state(dt, tend_rk(0), state(old), state(new))
-
-  end subroutine runge_kutta
 
   subroutine check_antisymmetry(tend, state)
 
