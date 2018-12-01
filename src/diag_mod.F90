@@ -102,7 +102,7 @@ contains
     integer i, j
 
     res = 0.0
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
         res = res + state%iap%u(i,j)**2 * mesh%full_cos_lat(j)
       end do

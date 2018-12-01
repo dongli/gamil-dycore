@@ -40,6 +40,8 @@ contains
     end do
 
     do j = 1, mesh%num_half_lat
+      coef%half_f(j) = 2.0 * omega * mesh%half_sin_lat(j)
+      coef%half_c(j) = mesh%half_sin_lat(j) / mesh%half_cos_lat(j) / radius
       coef%half_dlon(j) = radius * mesh%dlon * mesh%half_cos_lat(j)
       coef%half_dlat(j) = radius * mesh%dlat * mesh%half_cos_lat(j)
     end do
