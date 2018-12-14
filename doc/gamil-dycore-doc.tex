@@ -212,9 +212,9 @@ The hydrostatic primitive equations does not conserve total energy!
 
 Forecast equations:
 \begin{align*}
-  \dt{\vec{v}} & = - {\color{red}\alpha \grad{p^\prime}} - \left(1 + {\color{red}\pd{p^\prime}{\pi}}\right) \grad{\phi^\prime} - f^* \vec{k} \times \vec{v} \\
-  {\color{red}\gamma \dt{w}} & = {\color{red}g \pd{p^\prime}{\pi}} \\
-  \dt{T^\prime} & = \frac{\alpha}{C_p} \left({\color{red}\dt{p^\prime}} + \dot{\pi}\right) - \dot{\pi} \pdz{\overline{T}} \\
+  \dt{\vec{v}} & = - {\color{red}\alpha \grad{p^\prime}} - {\color{red}\pd{p}{\pi}} \grad{\phi^\prime} - f^* \vec{k} \times \vec{v} \\
+  {\color{red}\gamma \dt{w}} & = {\color{red}g \left(\pd{p}{\pi} - 1\right)} \\
+  \dt{T^\prime} & = \frac{\alpha}{C_p} \left(\dt{p^\prime} + \dot{\pi}\right) - \dot{\pi} \pdz{\overline{T}} \\
   {\color{red}\dt{\phi^\prime}} & = {\color{red}w g - \dot{\pi} \pdz{\overline{\phi}}}
 \end{align*}
 
@@ -296,17 +296,16 @@ For $\sigma$ coordinate
 \end{align*}
 
 \begin{align*}
-  \alpha \grad[\pi]{p^\prime} & = \alpha \grad[\eta]{p^\prime} - \alpha \pd{\eta}{\pi} \pd{p^\prime}{\eta} \grad[\eta]{\pi} \\
-  \left(1 + \pd{p^\prime}{\pi}\right) \grad[\pi]{\phi^\prime} & = \left(1 + \pd{\eta}{\pi} \pd{p^\prime}{\eta}\right) \left(\grad[\eta]{\phi^\prime} - \pd{\eta}{\pi} \pd{\phi^\prime}{\eta} \grad[\eta]{\pi}\right) \\
-  & = \left(1 + \pd{\eta}{\pi} \pd{p^\prime}{\eta}\right) \grad[\eta]{\phi^\prime} - \left(1 + \pd{\eta}{\pi} \pd{p^\prime}{\eta}\right) \pd{\phi^\prime}{\pi} \grad[\eta]{\pi} \\
-  & = \left(1 + \pd{\eta}{\pi} \pd{p^\prime}{\eta}\right) \grad[\eta]{\phi^\prime} + \alpha^\prime \grad[\eta]{\pi} + \alpha^\prime \pd{\eta}{\pi} \pd{p^\prime}{\eta} \grad[\eta]{\pi} \\
+  \alpha \grad[\pi]{p} & = \alpha \grad[\eta]{p} - \alpha \pd{\eta}{\pi} \pd{p}{\eta} \grad[\eta]{\pi} \\
+  \pd{p}{\pi} \grad[\pi]{\phi^\prime} & = \pd{\eta}{\pi} \pd{p}{\eta} \left(\grad[\eta]{\phi^\prime} - \pd{\eta}{\pi} \pd{\phi^\prime}{\eta} \grad[\eta]{\pi}\right) \\
+  & = \pd{\eta}{\pi} \pd{p}{\eta} \left(\grad[\eta]{\phi^\prime} + \alpha^\prime \grad[\eta]{\pi}\right)
 \end{align*}
 
 Forecast equations:
 \begin{align*}
-  \dt{\vec{v}} & = - {\color{red}\alpha \grad[\eta]{p^\prime}} - {\color{red}\left(1 + \pd{\eta}{\pi} \pd{p^\prime}{\eta}\right)} \grad[\eta]{\phi^\prime} - \left(\alpha^\prime - {\color{red}\overline{\alpha} \pd{\eta}{\pi} \pd{p^\prime}{\eta}}\right) \grad[\eta]{\pi} - f^* \vec{k} \times \vec{v} \\
-  {\color{red}\gamma \pdt{w}} & = {\color{red}g \pd{\eta}{\pi} \pd{p^\prime}{\eta}} \\
-  \dt{T^\prime} & = \frac{\alpha}{C_p} \left({\color{red}\dt{p^\prime}} + \dot{\pi}\right) - \dot{\pi} \pd{\overline{T}}{\pi} \\
+  \dt{\vec{v}} & = - {\color{red}\alpha \grad[\eta]{p}} - {\color{red}\pd{\eta}{\pi} \pd{p}{\eta}} \grad[\eta]{\phi^\prime} + {\color{red}\pd{\eta}{\pi} \pd{p}{\eta}} \overline{\alpha} \grad[\eta]{\pi} - f^* \vec{k} \times \vec{v} \\
+  {\color{red}\gamma \pdt{w}} & = {\color{red}g \left(\pd{\eta}{\pi} \pd{p}{\eta} - 1\right)} \\
+  \dt{T^\prime} & = \frac{\alpha}{C_p} \dt{p} - \dot{\pi} \pd{\overline{T}}{\pi} \\
   \pdt{} \pd{\pi}{\eta} & = - \div[\eta]{\left(\vec{v} \pd{\pi}{\eta}\right)} - \pd{}{\eta} \left(\dot{\eta} \pd{\pi}{\eta}\right) \\
   {\color{red}\dt{\phi^\prime}} & = {\color{red}w g - \dot{\pi} \pd{\overline{\phi}}{\pi}}
 \end{align*}
@@ -320,18 +319,26 @@ Diagnostic equations:
 
 \subsubsection{Kinetic energy}
 \begin{align*}
-  \dt{e_k} & = - {\color{red}\underbrace{\cancel{\alpha \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{p^\prime}}}_1} - {\color{red}\left(\pd{\pi}{\eta} + \pd{p^\prime}{\eta}\right) \vec{v} \cdot \grad[\eta]{\phi^\prime}} - \alpha^\prime \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{\pi} + {\color{red}\overline{\alpha} \pd{p^\prime}{\eta}} \vec{v} \cdot \grad[\eta]{\pi} + {\color{red}\underbrace{\cancel{w g \pd{p^\prime}{\eta}}}_2}
+  \dt{e_k} & = - {\color{red}\alpha \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{p}} - {\color{red}\pd{p}{\eta}} \vec{v} \cdot \grad[\eta]{\phi^\prime} + {\color{red}\pd{p}{\eta}} \overline{\alpha} \vec{v} \cdot \grad[\eta]{\pi} + {\color{red}w g \pd{p}{\eta}} - {\color{red}w g \pd{\pi}{\eta}} \\
+  & \text{use } \pd{\overline{\phi}}{\pi} \grad[\eta]{\pi} = \grad[\eta]{\overline{\phi}} \text{, so } - \pd{p}{\eta} \vec{v} \cdot \grad[\eta]{\phi^\prime} - \pd{p}{\eta} \vec{v} \cdot \grad[\eta]{\overline{\phi}} = \pd{p}{\eta} \vec{v} \cdot \grad[\eta]{\phi} \\
+  & = - {\color{red}\underbrace{\cancel{\alpha \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{p}}}_1} - \underbrace{\cancel{\pd{p}{\eta} \vec{v} \cdot \grad[\eta]{\phi}}}_4 + {\color{red}\underbrace{\cancel{w g \pd{p}{\eta}}}_3} - {\color{red}\underbrace{\cancel{w g \pd{\pi}{\eta}}}_5}
 \end{align*}
 
 \subsubsection{Internal energy}
 
 \begin{align*}
   & \dt{} \left(\pd{\pi}{\eta} C_p T^\prime\right) \\
-  & = \alpha \pd{\pi}{\eta} \left({\color{red}\dt{p^\prime}} + \dot{\pi}\right) - C_p \pd{\pi}{\eta} \dot{\pi} \pd{\overline{T}}{\pi} \\
-  & = \alpha \pd{\pi}{\eta} \left({\color{red}\pdt{p^\prime} + \vec{v} \cdot \grad[\eta]{p^\prime} + \dot{\eta} \pd{p^\prime}{\eta}} + \dot{\pi}\right) - C_p \pd{\pi}{\eta} \dot{\pi} \pd{\overline{T}}{\pi} \\
-  & = {\color{red}\alpha \pd{\pi}{\eta} \pdt{p^\prime}} + {\color{red}\underbrace{\cancel{\alpha \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{p^\prime}}}_1} + {\color{red}\alpha \pd{\pi}{\eta} \dot{\eta} \pd{p^\prime}{\eta}} + \alpha \pd{\pi}{\eta} \dot{\pi} - C_p \pd{\pi}{\eta} \dot{\pi} \pd{\overline{T}}{\pi} \\
-  & = {\color{red}\alpha \pd{\pi}{\eta} \pdt{p^\prime}} + {\color{red}\underbrace{\cancel{\alpha \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{p^\prime}}}_1} + {\color{red}\alpha \pd{\pi}{\eta} \pd{\eta}{\phi} \left(w g - \pdt{\phi} - \vec{v} \cdot \grad[\eta]{\phi}\right) \pd{p^\prime}{\eta}} \\
-  & + \left(\pd{\pi}{\eta}\right)^2 \left(\dot{\eta} - \pd{\eta}{\pi_s} \dot{\pi}_s\right) \left(\alpha - C_p \pd{\overline{T}}{\pi}\right)
+  & = \alpha \pd{\pi}{\eta} \dt{p} - C_p \pd{\pi}{\eta} \dot{\pi} \pd{\overline{T}}{\pi} \\
+  & = \alpha \pd{\pi}{\eta} \left(\pdt{p} + \vec{v} \cdot \grad[\eta]{p} + \dot{\eta} \pd{p}{\eta}\right) - C_p \pd{\pi}{\eta} \dot{\pi} \pd{\overline{T}}{\pi} \\
+  & = \alpha \pd{\pi}{\eta} \pdt{p} + \alpha \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{p} + \alpha \pd{\pi}{\eta} \dot{\eta} \pd{p}{\eta} - C_p \pd{\pi}{\eta} \dot{\pi} \pd{\overline{T}}{\pi} \\
+  & = \alpha \pd{\pi}{\eta} \pdt{p} + \alpha \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{p} + \alpha \pd{\pi}{\eta} \pd{\eta}{\phi} \left(w g - \pdt{\phi} - \vec{v} \cdot \grad[\eta]{\phi}\right) \pd{p}{\eta} - C_p \pd{\pi}{\eta} \dot{\pi} \pd{\overline{T}}{\pi} \\
+  & = \underbrace{\cancel{\alpha \pd{\pi}{\eta} \pdt{p}}}_2 + \underbrace{\cancel{\alpha \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{p}}}_1 - \underbrace{\cancel{w g \pd{p}{\eta}}}_3 - \underbrace{\cancel{\alpha \pd{\pi}{\eta} \pdt{p}}}_2 + \underbrace{\cancel{\pd{p}{\eta} \vec{v} \cdot \grad[\eta]{\phi}}}_4 - C_p \pd{\pi}{\eta} \dot{\pi} \pd{\overline{T}}{\pi}
+\end{align*}
+
+\subsubsection{Geopotential energy}
+
+\begin{align*}
+  {\color{red}\dt{e_p}} & = {\color{red}\underbrace{\cancel{w g \pd{\pi}{\eta}}}_5} - \pd{\pi}{\eta} \dot{\pi} \pd{\overline{\phi}}{\pi}
 \end{align*}
 
 \end{document}
