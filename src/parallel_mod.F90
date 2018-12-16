@@ -478,25 +478,25 @@ contains
     if (present(all_halo)) then
       all_halo_ = all_halo
     else
-      all_halo_ = .false.
+      all_halo_ = .true.
     end if
     if (present(left_halo)) then
       left_halo_ = left_halo
     else
-      left_halo_ = .false.
+      left_halo_ = .true.
     end if
     if (present(right_halo)) then
       right_halo_ = right_halo
     else
-      right_halo_ = .false.
+      right_halo_ = .true.
     end if
     if (present(top_halo)) then
       top_halo_ = top_halo
     else
-      top_halo_ = .false.
+      top_halo_ = .true.
     end if
     if (present(bottom_halo)) then
-      bottom_halo_ = .false.
+      bottom_halo_ = .true.
     end if
 
     if ((all_halo_) .or. (left_halo_)) then
@@ -535,12 +535,12 @@ contains
     if (present(left_halo)) then
       left_halo_ = left_halo
     else
-      left_halo_ = .false.
+      left_halo_ = .true.
     end if
     if (present(right_halo)) then
       right_halo_ = right_halo
     else
-      right_halo_ = .false.
+      right_halo_ = .true.
     end if
 
     if (left_halo_) then
