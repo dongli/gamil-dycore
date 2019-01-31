@@ -5,12 +5,14 @@
       processEscapes: true
     },
     TeX: {
+      extensions: ["color.js"],
       Macros: {
         vec: ["\\mathbf{#1}", 1],
         d: ["\\frac{d #1}{d #2}", 2],
         pd: ["\\frac{\\partial #1}{\\partial #2}", 2],
         dt: ["\\frac{d #1}{d t}", 1],
         pdt: ["\\frac{\\partial #1}{\\partial t}", 1],
+        pdtt: ["\\frac{\\partial^2 #1}{\\partial t^2}", 1],
         gradpi: ["\\nabla_{\\pi}{#1}", 1],
         divpi: ["\\nabla_{\\pi} \\cdot #1", 1]
       }
