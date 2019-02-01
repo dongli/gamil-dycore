@@ -17,9 +17,9 @@ module data_mod
   public data_final
 
   type(coef_type) coef
-  type(state_type) state(-1:2)
+  type(state_type), target :: state(-1:2)
   type(static_type) static
-  type(tend_type) tend(0:2)
+  type(tend_type), target :: tend(-2:2)
 
 contains
 
@@ -46,10 +46,10 @@ contains
       coef%half_dlat(j) = radius * mesh%dlat * mesh%half_cos_lat(j)
     end do
 
-    do time_idx = -1, 2
+    do time_idx = lbound(state, 1), ubound(state, 1)
       call allocate_data(state(time_idx))
     end do
-    do time_idx = 0, 2
+    do time_idx = lbound(tend, 1), ubound(tend, 1)
       call allocate_data(tend(time_idx))
     end do
     call allocate_data(static)

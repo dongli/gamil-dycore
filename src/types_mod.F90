@@ -9,6 +9,12 @@ module types_mod
 
   public allocate_data
   public deallocate_data
+  public copy_data
+  public zero_data
+  public add_data
+  public sub_data
+  public scale_data
+  public inner_product
   public iap_transform
   public coef_type
   public state_type
@@ -78,6 +84,32 @@ module types_mod
     module procedure deallocate_state_data
     module procedure deallocate_tend_data
   end interface deallocate_data
+
+  interface copy_data
+    module procedure copy_state_data
+    module procedure copy_tend_data
+  end interface copy_data
+
+  interface zero_data
+    module procedure zero_tend_data
+  end interface zero_data
+
+  interface add_data
+    module procedure add_tend_data
+  end interface add_data
+
+  interface sub_data
+    module procedure sub_tend_data
+  end interface sub_data
+
+  interface scale_data
+    module procedure scale_tend_data
+  end interface scale_data
+
+  interface inner_product
+    module procedure inner_product_tend_tend
+    module procedure inner_product_tend_state
+  end interface inner_product
 
 contains
 
@@ -193,6 +225,176 @@ contains
     if (allocated(tend%dgd))          deallocate(tend%dgd)
 
   end subroutine deallocate_tend_data
+
+  subroutine copy_state_data(state1, state2)
+
+    type(state_type), intent(in) :: state1
+    type(state_type), intent(inout) :: state2
+
+    state2%u           = state1%u
+    state2%v           = state1%v
+    state2%gd          = state1%gd
+    state2%iap%u       = state1%iap%u
+    state2%iap%v       = state1%iap%v
+    state2%iap%gd      = state1%iap%gd
+
+  end subroutine copy_state_data
+
+  subroutine copy_tend_data(tend1, tend2)
+
+    type(tend_type), intent(in) :: tend1
+    type(tend_type), intent(inout) :: tend2
+
+    tend2%u_adv_lon    = tend1%u_adv_lon
+    tend2%u_adv_lat    = tend1%u_adv_lat
+    tend2%v_adv_lon    = tend1%v_adv_lon
+    tend2%v_adv_lat    = tend1%v_adv_lat
+    tend2%fu           = tend1%fu
+    tend2%fv           = tend1%fv
+    tend2%u_pgf        = tend1%u_pgf
+    tend2%v_pgf        = tend1%v_pgf
+    tend2%mass_div_lon = tend1%mass_div_lon
+    tend2%mass_div_lat = tend1%mass_div_lat
+    tend2%du           = tend1%du
+    tend2%dv           = tend1%dv
+    tend2%dgd          = tend1%dgd
+
+  end subroutine copy_tend_data
+
+  subroutine zero_tend_data(tend)
+
+    type(tend_type), intent(inout) :: tend
+
+    tend%u_adv_lon    = 0.0
+    tend%u_adv_lat    = 0.0
+    tend%v_adv_lon    = 0.0
+    tend%v_adv_lat    = 0.0
+    tend%fu           = 0.0
+    tend%fv           = 0.0
+    tend%u_pgf        = 0.0
+    tend%v_pgf        = 0.0
+    tend%mass_div_lon = 0.0
+    tend%mass_div_lat = 0.0
+    tend%du           = 0.0
+    tend%dv           = 0.0
+    tend%dgd          = 0.0
+
+  end subroutine zero_tend_data
+
+  subroutine add_tend_data(tend1, tend2)
+
+    type(tend_type), intent(in) :: tend1
+    type(tend_type), intent(inout) :: tend2
+
+    tend2%u_adv_lon    = tend2%u_adv_lon    + tend1%u_adv_lon
+    tend2%u_adv_lat    = tend2%u_adv_lat    + tend1%u_adv_lat
+    tend2%v_adv_lon    = tend2%v_adv_lon    + tend1%v_adv_lon
+    tend2%v_adv_lat    = tend2%v_adv_lat    + tend1%v_adv_lat
+    tend2%fu           = tend2%fu           + tend1%fu
+    tend2%fv           = tend2%fv           + tend1%fv
+    tend2%u_pgf        = tend2%u_pgf        + tend1%u_pgf
+    tend2%v_pgf        = tend2%v_pgf        + tend1%v_pgf
+    tend2%mass_div_lon = tend2%mass_div_lon + tend1%mass_div_lon
+    tend2%mass_div_lat = tend2%mass_div_lat + tend1%mass_div_lat
+    tend2%du           = tend2%du           + tend1%du
+    tend2%dv           = tend2%dv           + tend1%dv
+    tend2%dgd          = tend2%dgd          + tend1%dgd
+
+  end subroutine add_tend_data
+
+  subroutine sub_tend_data(tend1, tend2)
+
+    type(tend_type), intent(in) :: tend1
+    type(tend_type), intent(inout) :: tend2
+
+    tend2%u_adv_lon    = tend2%u_adv_lon    - tend1%u_adv_lon
+    tend2%u_adv_lat    = tend2%u_adv_lat    - tend1%u_adv_lat
+    tend2%v_adv_lon    = tend2%v_adv_lon    - tend1%v_adv_lon
+    tend2%v_adv_lat    = tend2%v_adv_lat    - tend1%v_adv_lat
+    tend2%fu           = tend2%fu           - tend1%fu
+    tend2%fv           = tend2%fv           - tend1%fv
+    tend2%u_pgf        = tend2%u_pgf        - tend1%u_pgf
+    tend2%v_pgf        = tend2%v_pgf        - tend1%v_pgf
+    tend2%mass_div_lon = tend2%mass_div_lon - tend1%mass_div_lon
+    tend2%mass_div_lat = tend2%mass_div_lat - tend1%mass_div_lat
+    tend2%du           = tend2%du           - tend1%du
+    tend2%dv           = tend2%dv           - tend1%dv
+    tend2%dgd          = tend2%dgd          - tend1%dgd
+
+  end subroutine sub_tend_data
+
+  subroutine scale_tend_data(scale, tend)
+
+    real, intent(in) :: scale
+    type(tend_type), intent(inout) :: tend
+
+    tend%u_adv_lon    = tend%u_adv_lon    * scale
+    tend%u_adv_lat    = tend%u_adv_lat    * scale
+    tend%v_adv_lon    = tend%v_adv_lon    * scale
+    tend%v_adv_lat    = tend%v_adv_lat    * scale
+    tend%fu           = tend%fu           * scale
+    tend%fv           = tend%fv           * scale
+    tend%u_pgf        = tend%u_pgf        * scale
+    tend%v_pgf        = tend%v_pgf        * scale
+    tend%mass_div_lon = tend%mass_div_lon * scale
+    tend%mass_div_lat = tend%mass_div_lat * scale
+    tend%du           = tend%du           * scale
+    tend%dv           = tend%dv           * scale
+    tend%dgd          = tend%dgd          * scale
+
+  end subroutine scale_tend_data
+
+  real function inner_product_tend_tend(tend1, tend2) result(res)
+
+    type(tend_type), intent(in) :: tend1
+    type(tend_type), intent(in) :: tend2
+
+    integer i, j
+
+    res = 0.0
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+        res = res + tend1%du(i,j) * tend2%du(i,j) * mesh%full_cos_lat(j)
+      end do
+    end do
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        res = res + tend1%dv(i,j) * tend2%dv(i,j) * mesh%half_cos_lat(j)
+      end do
+    end do
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        res = res + tend1%dgd(i,j) * tend2%dgd(i,j) * mesh%full_cos_lat(j)
+      end do
+    end do
+
+  end function inner_product_tend_tend
+
+  real function inner_product_tend_state(tend, state) result(res)
+
+    type(tend_type), intent(in) :: tend
+    type(state_type), intent(in) :: state
+
+    integer i, j
+
+    res = 0.0
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+        res = res + tend%du(i,j) * state%iap%u(i,j) * mesh%full_cos_lat(j)
+      end do
+    end do
+    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        res = res + tend%dv(i,j) * state%iap%v(i,j) * mesh%half_cos_lat(j)
+      end do
+    end do
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        res = res + tend%dgd(i,j) * state%gd(i,j) * mesh%full_cos_lat(j)
+      end do
+    end do
+
+  end function inner_product_tend_state
 
   subroutine iap_transform(state)
 

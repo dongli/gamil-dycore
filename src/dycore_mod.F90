@@ -5,7 +5,7 @@ module dycore_mod
   use log_mod
   use types_mod
   use mesh_mod
-  use time_mod
+  use time_mod, old => old_time_idx, new => new_time_idx
   use parallel_mod
   use io_mod
   use diag_mod
@@ -28,6 +28,9 @@ module dycore_mod
   ! 2: csp2: second order conservative split
   ! 3: isp: inproved second order conservative split
   integer split_scheme
+  integer, parameter :: csp1 = 1
+  integer, parameter :: csp2 = 2
+  integer, parameter :: isp  = 3
   integer, parameter :: all_pass = 0
   integer, parameter :: fast_pass = 1
   integer, parameter :: slow_pass = 2
@@ -36,14 +39,13 @@ module dycore_mod
   integer, parameter :: center_difference = 0
   integer, parameter :: weno = 1
 
-  integer, parameter :: half_time_idx = 0
-
   interface
-    subroutine integrator_interface(time_step_size, old_time_idx, new_time_idx, pass)
+    subroutine integrator_interface(time_step_size, old_time_idx, new_time_idx, pass, qcon_modified_)
       real, intent(in) :: time_step_size
       integer, intent(in) :: old_time_idx
       integer, intent(in) :: new_time_idx
       integer, intent(in) :: pass
+      logical, intent(in), optional :: qcon_modified_
     end subroutine
   end interface
 
@@ -81,11 +83,11 @@ contains
 
     select case (split_scheme_in)
     case ('csp1')
-      split_scheme = 1
+      split_scheme = csp1
     case ('csp2')
-      split_scheme = 2
+      split_scheme = csp2
     case ('isp')
-      split_scheme = 3
+      split_scheme = isp
     case default
       split_scheme = 0
       call log_notice('No fast-slow split.')
@@ -107,7 +109,7 @@ contains
 
   subroutine dycore_restart()
 
-    call restart_read(state(old_time_idx), static)
+    call restart_read(state(old), static)
 
   end subroutine dycore_restart
 
@@ -115,10 +117,10 @@ contains
 
     call reset_cos_lat_at_poles()
 
-    call iap_transform(state(old_time_idx))
+    call iap_transform(state(old))
 
-    call diag_run(state(old_time_idx))
-    call output(state(old_time_idx))
+    call diag_run(state(old))
+    call output(state(old))
     call log_add_diag('total_mass', diag%total_mass)
     call log_add_diag('total_energy', diag%total_energy)
     call log_step()
@@ -127,8 +129,8 @@ contains
       tag = 0
       call time_integrate()
       call time_advance()
-      call diag_run(state(old_time_idx))
-      call output(state(old_time_idx))
+      call diag_run(state(old))
+      call output(state(old))
       call log_add_diag('total_mass', diag%total_mass)
       call log_add_diag('total_energy', diag%total_energy)
       call log_step()
@@ -203,18 +205,48 @@ contains
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
           tend%du(i,j) = - tend%u_adv_lon(i,j) - tend%u_adv_lat(i,j) + tend%fv(i,j) - tend%u_pgf(i,j)
         end do
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (filter_full_zonal_tend(j)) then
+          s1 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
+          if (abs(s1) > filter_inner_product_threshold) then
+            call filter_array_at_full_lat(j, tend%du(:,j))
+            s2 = sum(tend%du(i1:i2,j) * state%iap%u(i1:i2,j))
+            tend%du(i1:i2,j) = tend%du(i1:i2,j) * s1 / s2
+          end if
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
 
       do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dv(i,j) = - tend%v_adv_lon(i,j) - tend%v_adv_lat(i,j) - tend%fu(i,j) - tend%v_pgf(i,j)
         end do
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (filter_half_zonal_tend(j)) then
+          s1 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
+          if (abs(s1) > filter_inner_product_threshold) then
+            call filter_array_at_half_lat(j, tend%dv(:,j))
+            s2 = sum(tend%dv(i1:i2,j) * state%iap%v(i1:i2,j))
+            tend%dv(i1:i2,j) = tend%dv(i1:i2,j) * s1 / s2
+          end if
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
 
       do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
         do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
           tend%dgd(i,j) = - tend%mass_div_lon(i,j) - tend%mass_div_lat(i,j)
         end do
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!SMOOTHING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (filter_full_zonal_tend(j)) then
+          s1 = sum(tend%dgd(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
+          if (abs(s1) > filter_inner_product_threshold) then
+            call filter_array_at_full_lat(j, tend%dgd(:,j))
+            s2 = sum(tend%dgd(i1:i2,j) * (state%gd(i1:i2,j) + static%ghs(i1:i2,j)))
+            tend%dgd(i1:i2,j) = tend%dgd(i1:i2,j) * s1 / s2
+          end if
+        end if
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end do
     case (slow_pass)
 #ifndef NDEBUG
@@ -320,10 +352,10 @@ contains
       end do
     end select
 
-    tag = tag + 1
-    if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6)) then
-     call history_write(state, tend, tag)
-    end if
+    ! tag = tag + 1
+    ! if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6)) then
+    !  call history_write(state, tend, tag)
+    ! end if
 
     ! call check_antisymmetry(tend, state)
 
@@ -570,67 +602,124 @@ contains
 
   end subroutine update_state
 
-  real function inner_product(tend1, tend2) result(res)
-
-    type(tend_type), intent(in) :: tend1
-    type(tend_type), intent(in) :: tend2
-
-    integer i, j
-
-    res = 0.0
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
-        res = res + tend1%du(i,j) * tend2%du(i,j) * mesh%full_cos_lat(j)
-      end do
-    end do
-    do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        res = res + tend1%dv(i,j) * tend2%dv(i,j) * mesh%half_cos_lat(j)
-      end do
-    end do
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        res = res + tend1%dgd(i,j) * tend2%dgd(i,j) * mesh%full_cos_lat(j)
-      end do
-    end do
-
-  end function inner_product
-
   subroutine time_integrate()
 
-    real subcycle_time_step_size
-    integer subcycle, time_idx1, time_idx2
-
-    subcycle_time_step_size = time_step_size / subcycles
-    time_idx1 = 0
-    time_idx2 = old_time_idx
-
     select case (split_scheme)
-    case (2) ! csp2
-      call integrator(0.5 * time_step_size, old_time_idx, time_idx1, slow_pass)
-      do subcycle = 1, subcycles
-        call integrator(subcycle_time_step_size, time_idx1, time_idx2, fast_pass)
-        call time_swap_indices(time_idx1, time_idx2)
-      end do
-      call integrator(0.5 * time_step_size, time_idx1, new_time_idx, slow_pass)
+    case (csp2)
+      call csp2_splitting()
+    case (isp)
+      call isp_splitting()
     case default
-      call integrator(time_step_size, old_time_idx, new_time_idx, all_pass)
+      call integrator(time_step_size, old, new, all_pass)
     end select
 
     if (use_diffusion) then
-      call ordinary_diffusion(time_step_size, state(new_time_idx))
+      call ordinary_diffusion(time_step_size, state(new))
     end if
 
   end subroutine time_integrate
 
-  subroutine predict_correct(time_step_size, old, new, pass)
+  subroutine csp2_splitting()
+
+    real fast_dt
+    integer subcycle, t1, t2
+
+    type(tend_type), pointer :: sum_fast_tend
+
+    fast_dt = time_step_size / subcycles
+    t1 = 0
+    t2 = old
+
+    call integrator(0.5 * time_step_size, old, t1, slow_pass)
+    do subcycle = 1, subcycles
+      call integrator(fast_dt, t1, t2, fast_pass)
+      call time_swap_indices(t1, t2)
+    end do
+    call integrator(0.5 * time_step_size, t1, new, slow_pass)
+
+  end subroutine csp2_splitting
+
+  subroutine isp_splitting()
+
+    integer subcycle, t1, t2
+    real fast_dt, half_dt, ip1, ip2, beta
+
+    type(state_type), pointer :: saved_state
+    type(tend_type), pointer :: slow_tend
+    type(tend_type), pointer :: accum_fast_tend
+
+    fast_dt = time_step_size / subcycles
+    half_dt = time_step_size * 0.5
+    t1 = old
+    t2 = 0
+    saved_state => state(-1)
+    slow_tend => tend(-2)
+    accum_fast_tend => tend(-1)
+
+    call copy_data(state(old), saved_state)                            ! F^n
+    call zero_data(accum_fast_tend)
+    call space_operators(state(old), slow_tend, slow_pass)             ! L2(F^n)
+
+    ! Fast pass
+    do subcycle = 1, subcycles
+      call space_operators(state(t1), tend(t1), fast_pass)             ! L1(P^{n,k})
+      call add_data(slow_tend, tend(t1))                               ! L1(P^{n,k}) + L2(F^n)
+      call update_state(fast_dt * 0.5, tend(t1), state(t1), state(t2)) ! P1^{n,k+1/2}
+
+      call space_operators(state(t2), tend(t1), fast_pass)             ! L1(P1^{n,k+1/2})
+      call add_data(slow_tend, tend(t1))                               ! L1(P1^{n,k+1/2}) + L2(F^n)
+      call update_state(fast_dt * 0.5, tend(t1), state(t1), state(t2)) ! P2^{n,k+1/2}
+
+      call space_operators(state(t2), tend(t2), fast_pass)             ! L1(P2^{n,k+1/2})
+      call add_data(tend(t2), accum_fast_tend)                         ! sum(L1(P2^{n,k+1/2}))
+      call add_data(slow_tend, tend(t2))                               ! L1(P2^{n,k+1/2}) + L2(F^n)
+      call update_state(fast_dt, tend(t2), state(t1), state(t2))       ! P^{n,k+1}
+
+      call time_swap_indices(t1, t2)
+    end do
+    call scale_data(2.0 / subcycles, accum_fast_tend)                  ! 2 / m sum(L1(P2^{n,k+1/2}))
+
+    ! Slow pass
+    call space_operators(state(t1), tend(t1), slow_pass)               ! L2(Q^n)
+    call sub_data(slow_tend, tend(t1))                                 ! L2(Q^n) - L2(F^n)
+    call update_state(half_dt, tend(t1), state(t1), state(new))        ! Q1^{n+1}
+
+    call space_operators(state(new), tend(t1), slow_pass)              ! L2(Q1^{n+1})
+    call sub_data(slow_tend, tend(t1))                                 ! L2(Q1^{n+1}) - L2(F^n)
+    call update_state(half_dt, tend(t1), state(t1), state(new))        ! Q2^{n+1}
+
+    call space_operators(state(new), tend(new), slow_pass)             ! L2(Q2^{n+1})
+
+    call add_data(slow_tend, tend(new))                                ! L2(Q2^{n+1}) + L2(F^n)
+    call add_data(accum_fast_tend, tend(new))                          ! L2(Q2^{n+1}) + L2(F^n) + 2 / m sum(L1(P2^{n,k+1/2})) -> R2^n 
+
+    ip1 = inner_product(tend(new), saved_state)                        ! (R2^n, F^n)
+    ip2 = inner_product(tend(new), tend(new))                          ! (R2^n, R2^n)
+    beta = merge(ip1 / ip2, 1.0, qcon_modified .and. ip1 /= 0.0 .and. ip2 /= 0.0)
+    beta = beta * 4.0 / time_step_size
+    call log_add_diag('beta', beta)
+
+    half_dt = half_dt * beta
+    call update_state(half_dt, tend(new), saved_state, state(new))
+
+  end subroutine isp_splitting
+
+  subroutine predict_correct(time_step_size, old, new, pass, qcon_modified_)
 
     real, intent(in) :: time_step_size
     integer, intent(in) :: old
     integer, intent(in) :: new
     integer, intent(in) :: pass
+    logical, intent(in), optional :: qcon_modified_
 
     real dt, ip1, ip2, beta
+    logical flag
+
+    if (present(qcon_modified_)) then
+      flag = qcon_modified_
+    else
+      flag = qcon_modified
+    end if
 
     dt = time_step_size * 0.5
 
@@ -647,7 +736,7 @@ contains
 
     ip1 = inner_product(tend(old), tend(new))
     ip2 = inner_product(tend(new), tend(new))
-    beta = merge(ip1 / ip2, 1.0, qcon_modified .and. ip1 /= 0.0 .and. ip2 /= 0.0)
+    beta = merge(ip1 / ip2, 1.0, flag .and. ip1 /= 0.0 .and. ip2 /= 0.0)
     call log_add_diag('beta', beta)
 
     dt = time_step_size * beta

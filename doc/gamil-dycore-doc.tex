@@ -5,6 +5,8 @@
 \usepackage{hyperref}
 \usepackage{cancel}
 
+\numberwithin{equation}{section}
+
 \renewcommand{\d}[2]{\frac{d #1}{d #2}}
 \newcommand{\dt}[1]{\d{#1}{t}}
 \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
@@ -29,18 +31,71 @@
 
 \maketitle
 
+\section{Navier-Stokes equations}
+
+Without diffusing viscous and diadiabatic terms, the forecast equations are
+\begin{align}
+  \dt{\vec{v}} & = - \frac{1}{\rho} \nabla{p} - f \vec{k} \times \vec{v} \label{eqn:ns-horz-momentum} \\
+  \dt{w} & = - g - \frac{1}{\rho} \pd{p}{z} \label{eqn:ns-vert-momentum} \\
+  C_V \dt{T} & = \frac{p}{\rho^2} \dt{\rho} \label{eqn:ns-thermo} \\
+  \dt{\rho} & = - \rho D_3 \label{eqn:ns-mass}
+\end{align}
+with the definitions:
+\begin{align}
+  \dt{\phi} & = g w \label{eqn:geopotential} \\
+  D_3 & = \nabla \cdot \vec{v} + \pd{w}{z} \label{eqn:ns-divergence}
+\end{align}
+
+Adopt ideal gas assumption, the dry air state equation is
+\begin{equation}
+  p = \rho R_d T \label{eqn:ideal-gas-state}
+\end{equation}
+Combine (\ref{eqn:ns-thermo}) and (\ref{eqn:ideal-gas-state}), we get another form of thermodynamic equation:
+\begin{equation}
+  C_p \dt{T} = \frac{1}{\rho} \dt{p}
+\end{equation}
+
+\subsection{Energetics}
+
+Multiply $\rho \vec{v}$ and $\frac{\vec{v}^2}{2}$ to (\ref{eqn:ns-horz-momentum}) and (\ref{eqn:ns-mass}) respectively, and add them
+\begin{equation}
+  \dt{} \left(\frac{\rho \vec{v}^2}{2}\right) = - \vec{v} \cdot \nabla p 
+\end{equation}
+Multiply $\rho w$ and $\frac{w^2}{2}$ to (\ref{eqn:ns-vert-momentum}) and ($\ref{eqn:ns-mass}$) respectively, and add them
+\begin{equation}
+  \dt{} \left(\frac{\rho w^2}{2}\right) = - \rho g w - w \pd{p}{z}
+\end{equation}
+Then the kinetic energy equation is
+\begin{equation}
+  \dt{E_k} = - \rho g w - \vec{v} \cdot \nabla{p} - w \pd{p}{z}
+\end{equation}
+where $E_k = \frac{\rho}{2} \left(\vec{v}^2 + w^2\right)$. Multiply $\rho$ and $C_V T$ to (\ref{eqn:ns-thermo}) and (\ref{eqn:ns-mass}) respectively, and add them 
+\begin{equation}
+  \dt{E_t} = - p D_3
+\end{equation}
+where $E_t = \rho C_V T$ is the internal energy. Multiply $\rho$ and $\phi$ to (\ref{eqn:geopotential}) and (\ref{eqn:ns-mass}) respectively, and add them
+\begin{equation}
+  \dt{E_p} = \rho g w
+\end{equation}
+Finally, the spatial integrated total energy is
+\begin{equation}
+  \dt{} \iiint \left(E_k + E_t + E_p\right) dV = - \iiint \left(\nabla \cdot p \vec{v} + \pd{p w}{z}\right) dV
+\end{equation}
+Considering the zonal periodic condition, Pole condition and vertical boundary condition
+\begin{align}
+  w = 0 \text{ when } z = 0 \text{ or } z_T
+\end{align}
+where we do not take into account of terrain, the total energy is conserved.
+
 \section{Primitive equations}
 
 The precise form of the primitive equations depends on the vertical coordinate system chosen. The isobaric coordinate system is used for the synoptic scales of motion to simplify matters. At such scales, the atmosphere is decidedly hydrostatic, but these equations must be generalized (using fewer approximations) for applications to mesoscale and cloud-scale phenomena.
 Start from the hydrostatic-pressure equations (Laprise 1992), the coordinate transformations are as follows:
-
 \begin{align*}
   \pd{}{z} & = - \rho g \pd{}{\pi} \\
   \nabla_z & = \nabla_\pi + \rho \nabla_\pi \phi \pd{}{\pi}
 \end{align*}
-
-\subsection{Vertical velocity relations}
-
+Vertical velocity relations are
 \begin{equation}
   w = \left(\pdt{z}\right)_\pi + \vec{v} \cdot \nabla_\pi z + \dot{\pi} \pdz{z}
   \label{eqn:vert-speed-relation1}
@@ -51,202 +106,215 @@ or
   \label{eqn:vert-speed-relation2}
 \end{equation}
 
-\subsection{Momentum equations}
-
-\begin{align*}
-         \dt{u} & = {\color{red}- \pdx[\alpha]{p}} - \pd{p}{\pi} \pdx{\phi} + f^* v \\
-         \dt{v} & = {\color{red}- \pdy[\alpha]{p}} - \pd{p}{\pi} \pdy{\phi} - f^* u \\
-  \gamma {\color{red}\dt{w}} & =   g \left( \pd{p}{\pi} - 1 \right)
-\end{align*}
-The red terms come from the nonhydrostatic.
-
-\subsection{Mass continuity equation}
-
 There are multiple forms of mass continuity equation, such as
-\begin{align*}
-  \dt{\phi} & = w g \\
+\begin{align}
+  \div{\vec{v}} + \pd{\dot{\pi}}{\pi} & = 0 \label{eqn:hydrostatic-mass-nondivergent-form} \\
   \dt{p} & = - \cpocv p D_3
-\end{align*}
+\end{align}
 where $D_3$ is the divergence
 
 \begin{equation}
-  D_3 = \nabla_\pi \cdot \vec{v} + \rho \nabla_\pi \phi \pd{\vec{v}}{\pi} - \rho g \pd{w}{\pi}
+  D_3 = \div{\vec{v}} + \rho \grad{\phi} \cdot \pd{\vec{v}}{\pi} - \rho g \pd{w}{\pi}
 \end{equation}
 
-\subsubsection{General form}
+% \subsubsection{General form}
 
-Assume the vertical coordinate is $\eta$, then the mass continuity equation is
-\begin{equation}
-  \left[\pdt{} \left(\rho \pd{z}{\eta}\right)\right]_\eta + \div[\eta]{\left(\rho \vec{v} \pd{z}{\eta}\right)} + \pd{}{\eta} \left(\rho \dot{\eta} \pd{z}{\eta}\right) = 0
-  \label{eqn:general-continuity-equation}
-\end{equation}
-Integrate (\ref{eqn:general-continuity-equation}) vertically from $\eta_s$ to $\eta_t$,
-\begin{align*}
-  \int_{\eta_s}^{\eta_t} \left[\pdt{} \left(\rho \pd{z}{\eta}\right)\right]_\eta d\eta & = - \int_{\eta_s}^{\eta_t} \div[\eta]{\left(\vec{v} \rho \pd{z}{\eta}\right)} d\eta - \int_{\eta_s}^{\eta_t} \pd{}{\eta} \left(\rho \dot{\eta} \pd{z}{\eta}\right) d\eta \\
-  & \text{use boundary conditions: } \dot{\eta}_t = 0 \\
-  & = - \int_{\eta_s}^{\eta_t} \div[\eta]{\left(\vec{v} \rho \pd{z}{\eta}\right)} d\eta + \rho_s \left(\pd{z}{\eta}\right)_s \dot{\eta}_s
-\end{align*}
-Since the bottom coordinate $\eta_s$ may be a function of $\lambda$, $\varphi$ and $t$, when change the order of integral and differential, we need to take into account of the low limit $\eta_s$ of the integral.
-\begin{align*}
-  \int_{\eta_s}^{\eta_t} \left[\pdt{} \left(\rho \pd{z}{\eta}\right)\right]_\eta d\eta & = \pdt{} \left[\int_{\eta_s}^{\eta_t} \left(\rho \pd{z}{\eta}\right) d\eta\right] + \rho_s \left(\pd{z}{\eta}\right)_s \pdt{\eta_s} \\
-  \int_{\eta_s}^{\eta_t} \div[\eta]{\left(\vec{v} \rho \pd{z}{\eta}\right)} d\eta & = \div[\eta]{\left[\int_{\eta_s}^{\eta_t} \left(\vec{v} \rho \pd{z}{\eta}\right) d\eta\right]} + \rho_s \left(\pd{z}{\eta}\right)_s \vec{v}_s \cdot \grad[\eta]{\eta_s}
-\end{align*}
-and
-\begin{equation}
-  \dot{\eta}_s = \pdt{\eta}_s + \vec{v}_s \cdot \grad[\eta]{\eta_s}
-\end{equation}
-Then the vertical integral of (\ref{eqn:general-continuity-equation}) becomes
-\begin{equation}
-  \pdt{} \left[\int_{\eta_s}^{\eta_t} \left(\rho \pd{z}{\eta}\right) d\eta\right] = - \div[\eta]{\left[\int_{\eta_s}^{\eta_t} \left(\vec{v} \rho \pd{z}{\eta}\right) d\eta\right]}
-\end{equation}
-When $\eta = \pi$
-\begin{equation}
-  \div{\vec{v}} + \pd{\dot{\pi}}{\pi} = 0 \label{eqn:incompressible-continuity-equation}
-\end{equation}
-which is in diagnostic form. By integrate from top to bottom
-\begin{align*}
-  \int_{\pi_t}^{\pi_s} \pdz{\dot{\pi}} d \pi & = - \int_{\pi_t}^{\pi_s} \div{\vec{v}} d \pi \\
-  \pdt{\pi_s} & = - \int_{\pi_t}^{\pi_s} \div{\vec{v}} d \pi
-\end{align*}
+% Assume the vertical coordinate is $\eta$, then the mass continuity equation (\ref{eqn:hydrostatic-mass-nondivergent-form}) is
+% \begin{equation}
+%   \left[\pdt{} \left(\rho \pd{z}{\eta}\right)\right]_\eta + \div[\eta]{\left(\rho \vec{v} \pd{z}{\eta}\right)} + \pd{}{\eta} \left(\rho \dot{\eta} \pd{z}{\eta}\right) = 0
+%   \label{eqn:general-continuity-equation}
+% \end{equation}
+% Integrate (\ref{eqn:general-continuity-equation}) vertically from $\eta_s$ to $\eta_t$,
+% \begin{align*}
+%   \int_{\eta_s}^{\eta_t} \left[\pdt{} \left(\rho \pd{z}{\eta}\right)\right]_\eta d\eta & = - \int_{\eta_s}^{\eta_t} \div[\eta]{\left(\vec{v} \rho \pd{z}{\eta}\right)} d\eta - \int_{\eta_s}^{\eta_t} \pd{}{\eta} \left(\rho \dot{\eta} \pd{z}{\eta}\right) d\eta \\
+%   & \text{use boundary conditions: } \dot{\eta}_t = 0 \\
+%   & = - \int_{\eta_s}^{\eta_t} \div[\eta]{\left(\vec{v} \rho \pd{z}{\eta}\right)} d\eta + \rho_s \left(\pd{z}{\eta}\right)_s \dot{\eta}_s
+% \end{align*}
+% Since the bottom coordinate $\eta_s$ may be a function of $\lambda$, $\varphi$ and $t$, when change the order of integral and differential, we need to take into account of the low limit $\eta_s$ of the integral.
+% \begin{align*}
+%   \int_{\eta_s}^{\eta_t} \left[\pdt{} \left(\rho \pd{z}{\eta}\right)\right]_\eta d\eta & = \pdt{} \left[\int_{\eta_s}^{\eta_t} \left(\rho \pd{z}{\eta}\right) d\eta\right] + \rho_s \left(\pd{z}{\eta}\right)_s \pdt{\eta_s} \\
+%   \int_{\eta_s}^{\eta_t} \div[\eta]{\left(\vec{v} \rho \pd{z}{\eta}\right)} d\eta & = \div[\eta]{\left[\int_{\eta_s}^{\eta_t} \left(\vec{v} \rho \pd{z}{\eta}\right) d\eta\right]} + \rho_s \left(\pd{z}{\eta}\right)_s \vec{v}_s \cdot \grad[\eta]{\eta_s}
+% \end{align*}
+% and
+% \begin{equation}
+%   \dot{\eta}_s = \pdt{\eta}_s + \vec{v}_s \cdot \grad[\eta]{\eta_s}
+% \end{equation}
+% Then the vertical integral of (\ref{eqn:general-continuity-equation}) becomes
+% \begin{equation}
+%   \pdt{} \left[\int_{\eta_s}^{\eta_t} \left(\rho \pd{z}{\eta}\right) d\eta\right] = - \div[\eta]{\left[\int_{\eta_s}^{\eta_t} \left(\vec{v} \rho \pd{z}{\eta}\right) d\eta\right]}
+% \end{equation}
+% When $\eta = \pi$
+% \begin{equation}
+%   \div{\vec{v}} + \pd{\dot{\pi}}{\pi} = 0 \label{eqn:incompressible-continuity-equation}
+% \end{equation}
+% which is in diagnostic form. By integrate from top to bottom
+% \begin{align*}
+%   \int_{\pi_t}^{\pi_s} \pdz{\dot{\pi}} d \pi & = - \int_{\pi_t}^{\pi_s} \div{\vec{v}} d \pi \\
+%   \pdt{\pi_s} & = - \int_{\pi_t}^{\pi_s} \div{\vec{v}} d \pi
+% \end{align*}
 
-\subsection{Themodynamics equation}
+The hydrostatic-pressure equations with nonhydrostatic terms are
+\begin{align}
+  \dt{\vec{v}} & = - {\color{red}\alpha \grad{p}} - \pd{p}{\pi} \grad{\phi} - f^* \vec{k} \times \vec{v} \label{eqn:hydrostatic-horz-momentum} \\
+  {\color{red}\gamma \dt{w}} & = {\color{red}g \left(\pd{p}{\pi} - 1\right)} \label{eqn:hydrostatic-vert-momentum} \\
+  \dt{T} & = - \frac{R T}{C_V} D_3 \text{\quad or \quad} \dt{T} = \frac{\alpha}{C_p} \dt{p} \label{eqn:hydrostatic-thermo} \\
+  0 & = \div{\vec{v}} + \pd{\dot{\pi}}{\pi} \\
+  {\color{red}\dt{\phi}} & = {\color{red}w g} \text{\quad or \quad} {\color{red}\dt{p}} = {\color{red}- \frac{C_p p}{C_V} D_3} \\
+  \pd{\phi}{\pi} & = - \alpha
+\end{align}
+The red terms come from the nonhydrostatic.
 
+Integrate (\ref{eqn:hydrostatic-mass-nondivergent-form}) from $\pi_s$ to $\pi_T$
 \begin{align*}
-  \dt{T} & =   \frac{\alpha}{C_p} \dt{p}
-\end{align*}
-
-Forecast equations:
-\begin{align*}
-  \dt{\vec{v}} & = - {\color{red}\alpha \grad{p}} - \pd{p}{\pi} \grad{\phi} - f^* \vec{k} \times \vec{v} \\
-  {\color{red}\gamma \dt{w}} & = {\color{red}g \left(\pd{p}{\pi} - 1\right)} \\
-  \dt{T} & = \frac{\alpha}{C_p} \dt{p} \\
-  {\color{red}\dt{\phi}} & = {\color{red}w g}
-\end{align*}
-
-Diagnostic equations
-\begin{align*}
-  p & = \frac{R T}{\alpha} \\
-  \pd{\phi}{\pi} & = - \alpha \\
-  \nabla_\pi \cdot \vec{v} + \pd{\dot{\pi}}{\pi} & = 0
+  \dot{\pi}_s = \int_{\pi_s}^{\pi_T} \div{\vec{v}} d\pi
 \end{align*}
 
 \subsection{Energetics}
 
-\subsubsection{Kinetic energy}
-
+Multiply $\vec{v}$, $w$ and $\frac{1}{2} \left(\vec{v}^2 + w^2\right)$ to (\ref{eqn:hydrostatic-horz-momentum}), (\ref{eqn:hydrostatic-vert-momentum}) and (\ref{eqn:hydrostatic-mass-nondivergent-form}) respectively, and sum the three equations to form the equation of kinetic energy $E_k = \frac{1}{2} \left(\vec{v}^2 + w^2\right)$
 \begin{align*}
-  \frac{1}{2}      \dt{u^2} & = - \pdx[\alpha u]{p} - u \pd{p}{\pi} \pdx{\phi} + f^* u v \\
-  \frac{1}{2}      \dt{v^2} & = - \pdy[\alpha v]{p} - v \pd{p}{\pi} \pdy{\phi} - f^* u v \\
-  \frac{\gamma}{2} \dt{w^2} & =   w g \left( \pd{p}{\pi} - 1 \right)
+  \pdt{E_k} = & - \div{\left(\vec{v} E_k\right)} - \pd{\dot{\pi} E_k}{\pi} - \alpha \vec{v} \cdot \grad{p} - \pd{p}{\pi} \vec{v} \cdot \grad{\phi} + {\color{red}g w \left(\pd{p}{\pi} - 1\right)}
+\end{align*}
+Multiply $C_V$ and $C_V T$ to (\ref{eqn:hydrostatic-thermo}) and (\ref{eqn:hydrostatic-mass-nondivergent-form}) respectively, and sum them up to form the equation of internal energy $E_i = C_V T$
+\begin{align*}
+  \pdt{E_i} = & - \div{\left(\vec{v} E_i\right)} - \pd{\dot{\pi} E_i}{\pi} - \alpha p D_3
+\end{align*}
+If we use the enthalpy equation for $E_e = C_p T$
+\begin{align*}
+  \pdt{E_e} = & - \div{\left(\vec{v} E_e\right)} - \pd{\dot{\pi} E_e}{\pi} + \alpha \left(\pdt{p} + \vec{v} \cdot \grad{p} + \dot{\pi} \pd{p}{\pi}\right)
+\end{align*}
+The equation of geopotential energy $E_p = \phi$ is
+\begin{align*}
+  \pdt{E_p} & = - \div{\left(\vec{v} E_p\right)} - \pd{\dot{\pi} E_p}{\pi} + w g \\
+  \left(1 - \pd{p}{\pi}\right) \pdt{\phi} & = - \left(1 - \pd{p}{\pi}\right) \div{\left(\vec{v} \phi\right)} - \left(1 - \pd{p}{\pi}\right) \pd{\dot{\pi} \phi}{\pi} + w g \left(1 - \pd{p}{\pi}\right) \\
+  \pdt{} \left[\left(1 - \pd{p}{\pi}\right) \phi\right] & = - \div{\left[\left(1 - \pd{p}{\pi}\right) \vec{v} \phi\right]} - \pd{}{\pi} \left[\left(1 - \pd{p}{\pi}\right) \dot{\pi} \phi\right] + w g \left(1 - \pd{p}{\pi}\right) \\
+  & - \phi \left(\pdt{} \pd{p}{\pi} + \vec{v} \cdot \grad{\pd{p}{\pi}} + \dot{\pi} \pd{}{\pi} \pd{p}{\pi}\right)
+\end{align*}
+The equation of total energy $E = E_k + E_i + E_p$ is
+\begin{align*}
+  \pdt{E} & = - \div{\left(\vec{v} E\right)} - \pd{\dot{\pi} E}{\pi} - \alpha \vec{v} \cdot \grad{p} - \pd{p}{\pi} \vec{v} \cdot \grad{\phi} + g w \pd{p}{\pi} - \alpha p D_3 - \cancel{g w} + \cancel{w g} \\
+  & = - \div{\left(\vec{v} E\right)} - \pd{\dot{\pi} E}{\pi} \underbrace{- \alpha \vec{v} \cdot \grad{p}}_1 \underbrace{- \pd{p}{\pi} \vec{v} \cdot \grad{\phi}}_2 + \underbrace{g w \pd{p}{\pi}}_3 - \alpha p \left(\underbrace{\div{\vec{v}}}_1 + \underbrace{\rho \grad{\phi} \cdot \pd{\vec{v}}{\pi}}_2 - \underbrace{\rho g \pd{w}{\pi}}_3\right) \\
+  & = - \div{\left(\vec{v} E\right)} - \pd{\dot{\pi} E}{\pi} - \underbrace{\alpha \div{\left(p \vec{v}\right)}}_1 {\color{red}- p \vec{v} \cdot \grad{\alpha} + p \vec{v} \cdot \grad{\alpha}} - \underbrace{\grad{\phi} \cdot \pd{p \vec{v}}{\pi}}_2 + \underbrace{g \pd{p w}{\pi}}_3 \\
+  & = - \div{\left(\vec{v} E\right)} - \pd{\dot{\pi} E}{\pi} - \alpha \div{\left(p \vec{v}\right)} {\color{red}- p \vec{v} \cdot \grad{\alpha} - p \vec{v} \cdot \grad{} \pd{\phi}{\pi}} - \grad{\phi} \cdot \pd{p \vec{v}}{\pi} + g \pd{p w}{\pi} \\
+  & = - \div{\left(\vec{v} E\right)} - \pd{\dot{\pi} E}{\pi} - \alpha \div{\left(p \vec{v}\right)} {\color{red}- p \vec{v} \cdot \grad{\alpha} - p \vec{v} \cdot \pd{}{\pi} \grad{\phi}} - \grad{\phi} \cdot \pd{p \vec{v}}{\pi} + g \pd{p w}{\pi} \\
+  & = - \div{\left(\vec{v} E\right)} - \pd{\dot{\pi} E}{\pi} - \div{\left(\alpha p \vec{v}\right)} - \pd{}{\pi} \left(p \vec{v} \cdot \grad{\phi}\right) + g \pd{p w}{\pi}
 \end{align*}
 
 \begin{align*}
-  e_k = \frac{1}{2} \left(u^2 + v^2 + \gamma w^2\right)
+  \left(1 - \pd{p}{\pi}\right) \pdt{\phi} & = - \left(1 - \pd{p}{\pi}\right) \div{\left(\vec{v} \phi\right)} - \left(1 - \pd{p}{\pi}\right) \pd{\dot{\pi} \phi}{\pi} + w g \left(1 - \pd{p}{\pi}\right) \\
+  \pdt{} \left[\left(1 - \pd{p}{\pi}\right) \phi\right] & = - \div{\left[\left(1 - \pd{p}{\pi}\right) \vec{v} \phi\right]} - \pd{}{\pi} \left[\left(1 - \pd{p}{\pi}\right) \dot{\pi} \phi\right] + w g \left(1 - \pd{p}{\pi}\right) \\
+  & - \phi \left(\pdt{} \pd{p}{\pi} + \vec{v} \cdot \grad{\pd{p}{\pi}} + \dot{\pi} \pd{}{\pi} \pd{p}{\pi}\right)
 \end{align*}
 
 \begin{align*}
-  \dt{e_k} & = {\color{red}- \pdx[\alpha u]{p} - \pdy[\alpha v]{p}} - u \pd{p}{\pi} \pdx{\phi} - v \pd{p}{\pi} \pdy{\phi} + {\color{red}w g \left( \pd{p}{\pi}- 1 \right)} \\
-  & = {\color{red}- \alpha \vec{v} \cdot \nabla_\pi p} - \pd{p}{\pi} \vec{v} \cdot \nabla_\pi \phi + {\color{red}w g \left( \pd{p}{\pi} - 1 \right)}
+  & \pdt{} \left[K + C_p T + {\color{red}\left(1 - \pd{p}{\pi}\right) \phi}\right] \\
+  = & - \div{\left\{\vec{v} \left[K + C_p T + {\color{red}\left(1 - \pd{p}{\pi}\right) \phi}\right]\right\}} - \pd{}{\pi} \left\{\dot{\pi} \left[K + C_p T + {\color{red}\left(1 - \pd{p}{\pi}\right) \phi}\right]\right\} \\
+  & + \underbrace{\alpha \pdt{p}}_1 + \underbrace{\alpha \dot{\pi} \pd{p}{\pi}}_2 - \underbrace{\pd{p}{\pi} \vec{v} \cdot \grad{\phi}}_3 - {\color{red}\phi \left(\underbrace{\pdt{} \pd{p}{\pi}}_1 + \underbrace{\vec{v} \cdot \grad{\pd{p}{\pi}}}_3 + \underbrace{\dot{\pi} \pd{}{\pi} \pd{p}{\pi}}_2\right)} \\
+  = & - \div{\left\{\vec{v} \left[K + C_p T + \left(1 - \pd{p}{\pi}\right) \phi\right]\right\}} - \pd{}{\pi} \left\{\dot{\pi} \left[K + C_p T + \left(1 - \pd{p}{\pi}\right) \phi\right]\right\} \\
+  & - \underbrace{\pd{}{\pi} \left(\phi \pdt{p}\right)}_1 - \underbrace{\vec{v} \cdot \grad{\left(\phi \pd{p}{\pi}\right)}}_3 - \underbrace{\dot{\pi} \pd{}{\pi} \left(\phi \pd{p}{\pi}\right)}_2 {\color{gray}\text{\quad Use } \pd{\phi}{\pi} = - \alpha} \\
+  = & - \div{\left\{\vec{v} \left[K + C_p T + \left(1 - \cancel{\pd{p}{\pi}}\right) \phi\right]\right\}} - \pd{}{\pi} \left\{\dot{\pi} \left[K + C_p T + \left(1 - \cancel{\pd{p}{\pi}}\right) \phi\right]\right\} \\
+  & - \pd{}{\pi} \left(\phi \pdt{p}\right) - \cancel{\div{\left(\vec{v} \phi \pd{p}{\pi}\right)}} - \cancel{\pd{}{\pi} \left(\dot{\pi} \phi \pd{p}{\pi}\right)} {\color{gray}\text{\quad Use } \left(\phi \pd{p}{\pi}\right) \left(\div{\vec{v}} + \pd{\dot{\pi}}{\pi}\right) = 0} \\
+  = & - \div{\left[\vec{v} \left(K + C_p T + \phi\right)\right]} - \pd{}{\pi} \left[\dot{\pi} \left(K + C_p T + \phi\right)\right] - \pd{}{\pi} \left(\phi \pdt{p}\right)
 \end{align*}
-Multiply (\ref{eqn:incompressible-continuity-equation}) by $e_k$, and add it to the above, by which the advection terms turn into flux form
+Integrate the above total energy equation vertically from $\pi_s$ to $\pi_T$, where $\pi_s$ is a function of horziontal space and time and $\pi_T$ is a constant, and apply Leibniz rule:
+\pagebreak
+\begin{align*}
+  & \pdt{} \left\{\int_{\pi_s}^{\pi_T} \left[K + C_p T + \left(1 - \pd{p}{\pi}\right) \phi\right] d\pi\right\} + {\color{blue}\pdt{\pi_s} \left[K_s + C_p T_s + \left(1 {\color{magenta}- \pd{p}{\pi}}\right)_s \phi_s\right]} \\
+  & {\color{gray}\text{Use } \dt{\pi_s} = \pdt{\pi_s} + \vec{v}_s \cdot \grad{\pi_s}} \\
+  = & - \div{\left\{\int_{\pi_s}^{\pi_T} \vec{v} \left[K + C_p T + \phi\right] d\pi\right\}} - \cancel{\vec{v}_s \cdot \grad{\pi_s} \left(K_s + C_p T_s + \phi_s\right)} \\
+  & + {\color{blue}\left(\pdt{\pi_s} + \cancel{\vec{v}_s \cdot \grad{\pi_s}}\right) \left(K_s + C_p T_s + \phi_s\right)} \\
+  & - \left(\phi \pdt{p}\right)_{\pi = \pi_T} + {\color{brown}\left(\phi \pdt{p}\right)_{\pi = \pi_s}}
+\end{align*}
+Apply Leibniz rule on the last term
+\begin{equation}
+  \left(\phi \pdt{p}\right)_{\pi = \pi_s} = \phi_s \pdt{p_s} - \phi_s \left(\pd{p}{\pi}\right)_s \pdt{\pi_s}
+\end{equation}
+After some manipulation
+\begin{align*}
+  & \pdt{} \left\{\int_{\pi_s}^{\pi_T} \left[K + C_p T + \left(1 - \pd{p}{\pi}\right) \phi\right] d\pi\right\} \\
+  = & - \div{\left\{\int_{\pi_s}^{\pi_T} \vec{v} \left[K + C_p T + \phi\right] d\pi\right\}} + \cancel{\color{magenta}\pdt{\pi_s} \phi_s \left(\pd{p}{\pi}\right)_s} \\
+  & - \phi_T \pdt{p_T} + {\color{brown}\phi_s \pdt{p_s}} - \cancel{\color{brown}\phi_s \left(\pd{p}{\pi}\right)_s \pdt{\pi_s}} \\
+  = & - \div{\left\{\int_{\pi_s}^{\pi_T} \vec{v} \left[K + C_p T + \phi\right] d\pi\right\}} - \phi_T \pdt{p_T} + \phi_s \pdt{p_s}
+\end{align*}
+Finally, the vertically integrated total energy equation is
+\begin{equation}
+  \begin{split}
+    & \pdt{} \int_{\pi_s}^{\pi_T} \left[K + C_p T + \left(1 - \pd{p}{\pi}\right) \phi\right] d\pi \\
+    & = - \div{\int_{\pi_s}^{\pi_T} \vec{v} \left[K + C_p T + \phi\right] d\pi} - \phi_T \pdt{p_T} + \phi_s \pdt{p_s}
+  \end{split}
+  \label{eqn:total-energy}
+\end{equation}
+
+\pagebreak
+When choose hydrostatic equations, $p = \pi$, $p_T = \pi_T = \text{const}$, $p_s = \pi_s$
 \begin{equation*}
-  \pdt{e_k} = - \nabla_\pi \cdot \left(e_k \vec{v}\right) - \pdz{e_k \dot{\pi}} {\color{red}- \alpha \vec{v} \cdot \nabla_\pi p} - \pd{p}{\pi} \vec{v} \cdot \nabla_\pi \phi + {\color{red}w g \pd{p}{\pi} - w g}
+  \pdt{} \int_{\pi_s}^{\pi_T} \phi_s d\pi = \int_{\pi_s}^{\pi_T} \pdt{\phi_s} d\pi + \phi_T \pdt{\pi_T} - \phi_s \pdt{\pi_s}
 \end{equation*}
+considering $\phi_s$ is not a function of time
+\begin{equation}
+  \pdt{} \int_{\pi_s}^{\pi_T} \phi_s d\pi = - \phi_s \pdt{\pi_s}
+\end{equation}
+Substitute it into (\ref{eqn:total-energy}), the vertically integrated total energy equation for hydrostatic system is
+\begin{equation}
+  \pdt{} \int_{\pi_s}^{\pi_T} \left[K + C_p T + \phi_s\right] d\pi = - \div{\int_{\pi_s}^{\pi_T} \vec{v} \left[K + C_p T + \phi\right] d\pi} \\
+\end{equation}
 
-\subsubsection{Internal energy}
+% For hydrostatic equations, due to the missing of forecast of geopotential, 
+% \begin{align*}
+%   & \int_{z_s}^{z_T} \rho \left(C_V T + \phi\right) dz \\
+%   = & - \frac{1}{g} \int_{\pi_s}^{\pi_T} \left(C_V T + \phi\right) d\pi \\
+%   = & - \frac{1}{g} \int_{\pi_s}^{\pi_T} C_V T d\pi - \int_{\pi_s}^{\pi_T} z d\pi \\
+%   = & - \frac{1}{g} \int_{\pi_s}^{\pi_T} C_V T d\pi - \left(z_T \pi_T - z_s \pi_s\right) + \int_{z_s}^{z_T} \pi dz \\
+%   = & - \frac{1}{g} \int_{\pi_s}^{\pi_T} C_V T d\pi - \left(z_T \pi_T - z_s \pi_s\right) - \frac{1}{g} \int_{\pi_s}^{\pi_T} R T d\pi \\
+%   = & - \frac{1}{g} \int_{\pi_s}^{\pi_T} \left(C_V T + R T\right) d\pi - \left(z_T \pi_T - z_s \pi_s\right) \\
+%   = & - \frac{1}{g} \int_{\pi_s}^{\pi_T} C_p T d\pi - \left(z_T \pi_T - z_s \pi_s\right)
+% \end{align*}
 
-\begin{align*}
-  e_i = C_p T
-\end{align*}
+% \begin{equation}
+%   \int_{\pi_s}^{\pi_T} \left(C_V T + \phi\right) d\pi = \int_{\pi_s}^{\pi_T} C_p T d\pi + \phi_T \pi_T - \phi_s \pi_s
+% \end{equation}
 
-\begin{align*}
-  C_p \dt{T} & = \alpha \dt{p} \\
-  & = \alpha \left({\color{red}\pdt{p}} + {\color{red}\vec{v} \cdot \nabla_\pi p} + \dot{\pi} {\color{red}\pd{p}{\pi}} \right)
-\end{align*}
-Use continuity equation (\ref{eqn:incompressible-continuity-equation}) as above, and substitute the last term by using vertical velocity transformation relation (\ref{eqn:vert-speed-relation2})
-\begin{align*}
-  \pdt{e_i} & = - \nabla_\pi \cdot \left(e_i \vec{v}\right) - \pdz{e_i \dot{\pi}} + {\color{red}\alpha \pdt{p}} + {\color{red}\alpha \vec{v} \cdot \nabla_\pi p} + \alpha \pd{\pi}{\phi} \left(w g - \pdt{\phi} - \vec{v} \cdot \nabla_\pi \phi\right) {\color{red}\pd{p}{\pi}} \\
-  & = - \nabla_\pi \cdot \left(e_i \vec{v}\right) - \pdz{e_i \dot{\pi}} + {\color{red}\alpha \pdt{p}} + {\color{red}\alpha \vec{v} \cdot \nabla_\pi p} - w g {\color{red}\pd{p}{\pi}} - \alpha \pd{\pi}{\phi} \pdt{\phi} {\color{red}\pd{p}{\pi}} + {\color{red}\pd{p}{\pi}} \vec{v} \cdot \nabla_\pi \phi
-\end{align*}
-
-\subsubsection{Geopotential energy}
-
-\begin{align*}
-  e_p = \phi
-\end{align*}
-
-Use continuity equation or geopotential forecast equation (\ref{eqn:incompressible-continuity-equation}) as above
-\begin{equation*}
-  {\color{red}\pdt{e_p} = - \nabla_\pi \cdot \left(e_p \vec{v}\right) - \pdz{e_p \dot{\pi}} + w g}
-\end{equation*}
-
-\subsubsection{Energy conservation}
-
-Total energy is $e = e_k + e_i + {\color{red}e_p}$.
-
-\begin{align*}
-  \pdt{e} & = - \nabla_\pi \cdot \left(e \vec{v}\right) - \pdz{e \dot{\pi}}
-\end{align*}
-
-For nonhydrostatic configuration:
-\begin{align*}
-  \pdt{e_k} & = - \nabla_\pi \cdot \left(e_k \vec{v}\right) - \pdz{e_k \dot{\pi}} - {\color{red}\underbrace{\cancel{\alpha \vec{v} \cdot \nabla_\pi p}}_2} - \underbrace{\cancel{\pd{p}{\pi} \vec{v} \cdot \nabla_\pi \phi}}_3 + {\color{red}\underbrace{\cancel{w g \pd{p}{\pi}}}_4 - \underbrace{\cancel{w g}}_5} \\
-  \pdt{e_i} & = - \nabla_\pi \cdot \left(e_i \vec{v}\right) - \pdz{e_i \dot{\pi}} + \underbrace{\color{red}\cancel{\alpha \pdt{p}}}_1 + {\color{red}\underbrace{\cancel{\alpha \vec{v} \cdot \nabla_\pi p}}_2} - \underbrace{\cancel{w g \pd{p}{\pi}}}_4 - \underbrace{\cancel{\alpha \pdt{p}}}_1 + \underbrace{\cancel{\pd{p}{\pi} \vec{v} \cdot \nabla_\pi \phi}}_3 \\
-  {\color{red}\pdt{e_p}} & = {\color{red}- \nabla_\pi \cdot \left(e_p \vec{v}\right) - \pdz{e_p \dot{\pi}} + \underbrace{\cancel{w g}}_5}
-\end{align*}
-
-For hydrostatic configuration:
-\begin{align*}
-  \pdt{e_k} & = - \nabla_\pi \cdot \left(e_k \vec{v}\right) - \pdz{e_k \dot{\pi}} - \underbrace{\cancel{\vec{v} \cdot \nabla_\pi \phi}}_1 \\
-  \pdt{e_i} & = - \nabla_\pi \cdot \left(e_i \vec{v}\right) - \pdz{e_i \dot{\pi}} - w g + \pdt{\phi} + \underbrace{\cancel{\vec{v} \cdot \nabla_\pi \phi}}_1
-\end{align*}
-The hydrostatic primitive equations does not conserve total energy!
-
+\pagebreak
 \section{Deduction of standard atmospheric profile}
 
 \begin{align*}
       T\left(\x, \y, \pi, t\right) & = \overline{T}   \left(\pi\right) +    T^\prime\left(\x, \y, \pi, t\right) \\
    \phi\left(\x, \y, \pi, t\right) & = \overline{\phi}\left(\pi\right) + \phi^\prime\left(\x, \y, \pi, t\right) \\
-      p\left(\x, \y, \pi, t\right) & =             \pi                 +    p^\prime\left(\x, \y, \pi, t\right)
+      p\left(\x, \y, \pi, t\right) & =                             \pi +    p^\prime\left(\x, \y, \pi, t\right)
+\end{align*}
+Introduce static stability parameter
+\begin{align}
+  \overline{c}^2 & = \frac{\pi R}{C_p} \left(\frac{R \overline{T}}{\pi} - C_p \pd{\overline{T}}{\pi} \right) \\
+  {c^\prime}^2 & = \frac{\pi R}{C_p}  \left(\frac{R \overline{T}}{\pi} - \frac{R T}{p}\right)
+\end{align}
+
+\begin{align*}
+  \dt{\vec{v}} & = - {\color{red}\alpha \grad{p^\prime}} - {\color{red}\left(1 + \pd{p^\prime}{\pi}\right)} \grad{\phi^\prime} - f^* \vec{k} \times \vec{v} \\
+  {\color{red}\gamma \dt{w}} & = {\color{red}g \pd{p^\prime}{\pi}} \\
+  % \dt{T^\prime} & = \frac{1}{C_p} \left(\frac{R T}{p} - C_p \pd{\overline{T}}{\pi} \right) \dot{\pi} + {\color{red}\frac{\alpha}{C_p} \dt{p^\prime}} \\
+  \dt{T^\prime} & = \frac{1}{C_p} \left(\frac{R T}{p} - C_p \pd{\overline{T}}{\pi} \right) \dot{\pi} - {\color{red}\frac{\alpha}{C_p} \left(\frac{C_p p}{C_V} D_3 + \dot{\pi}\right)} \\
+  % \dt{T^\prime} & = \frac{1}{\pi R} \left(\overline{c}^2 - {c^\prime}^2\right) \dot{\pi} + {\color{red}\frac{\alpha}{C_p} \dt{p^\prime}} \\
+  0 & = \div{\vec{v}} + \pd{\dot{\pi}}{\pi} \\
+  % {\color{red}\dt{\phi^\prime}} & = {\color{red}w g - \dot{\pi} \pdz{\overline{\phi}}} \text{\quad or \quad} {\color{red}\dt{p^\prime}} = {\color{red}-\frac{C_p p}{C_V} D_3 - \dot{\pi}} \\
+  {\color{red}\dt{\phi^\prime}} & = {\color{red}w g - \dot{\pi} \pdz{\overline{\phi}}} \text{\quad or \quad} {\color{red}\dt{p^\prime}} = {\color{red}-\frac{C_p p}{C_V} D_3 - \dot{\pi}} \\
+  \pd{\phi^\prime}{\pi} & = - \alpha - \pd{\overline{\phi}}{\pi}
 \end{align*}
 
-Forecast equations:
 \begin{align*}
-  \dt{\vec{v}} & = - {\color{red}\alpha \grad{p^\prime}} - {\color{red}\pd{p}{\pi}} \grad{\phi^\prime} - f^* \vec{k} \times \vec{v} \\
-  {\color{red}\gamma \dt{w}} & = {\color{red}g \left(\pd{p}{\pi} - 1\right)} \\
-  \dt{T^\prime} & = \frac{\alpha}{C_p} \left(\dt{p^\prime} + \dot{\pi}\right) - \dot{\pi} \pdz{\overline{T}} \\
-  {\color{red}\dt{\phi^\prime}} & = {\color{red}w g - \dot{\pi} \pdz{\overline{\phi}}}
-\end{align*}
-
-Diagnostic equations
-\begin{align*}
-  p & = \frac{R T}{\alpha} \\
-  \pd{\phi}{\pi} & = - \alpha \\
-  \nabla_\pi \cdot \vec{v} + \pd{\dot{\pi}}{\pi} & = 0
+  \dt{T^\prime} & = \frac{1}{C_p} \left(\frac{R T}{p} - C_p \pd{\overline{T}}{\pi}\right) \dot{\pi} + {\color{red}\frac{\alpha}{C_p} \dt{p^\prime}} \\
+  & = \frac{1}{C_p} \left(\frac{R T}{p} - C_p \pd{\overline{T}}{\pi}\right) \dot{\pi} - {\color{red}\frac{\alpha}{C_p} \left(\frac{C_p p}{C_V} D_3 + \dot{\pi}\right)} \\
+  & = \frac{1}{C_p} \left(\cancel{\frac{R T}{p}} - C_p \pd{\overline{T}}{\pi}\right) \dot{\pi} - {\color{red}\frac{R T}{C_V} D_3 - \cancel{\frac{1}{C_p} \frac{R T}{p} \dot{\pi}}} \\
+  & = \frac{1}{C_p} \left(- C_p \pd{\overline{T}}{\pi}\right) \dot{\pi} - {\color{red}\frac{R T}{C_V} D_3} \\
+  & = 
 \end{align*}
 
 \subsection{Energetics}
 
-\subsubsection{Kinetic energy}
-
 \begin{align*}
-  \pdt{e_k} & = - \nabla_\pi \cdot \left(e_k \vec{v}\right) - \pdz{e_k \dot{\pi}} - {\color{red}\alpha \vec{v} \cdot \nabla_\pi p^\prime} - {\color{red}\left(1 + \pd{p^\prime}{\pi}\right)} \vec{v} \cdot \nabla_\pi \phi^\prime + {\color{red}w g \pd{p^\prime}{\pi}}
-\end{align*}
-
-\subsubsection{Internal energy}
-
-\begin{align*}
-  \pdt{e_i^\prime} & = - \nabla_\pi \cdot \left(e_i^\prime \vec{v}\right) - \pdz{e_i^\prime \dot{\pi}} + \alpha \left({\color{red}\dt{p^\prime}} + \dot{\pi}\right) - C_p \dot{\pi} \pdz{\overline{T}} \\
-  & = - \nabla_\pi \cdot \left(e_i^\prime \vec{v}\right) - \pdz{e_i^\prime \dot{\pi}} + \alpha \left({\color{red}\pdt{p^\prime}} + {\color{red}\vec{v} \cdot \nabla_\pi p^\prime}\right) \\
-  & + \alpha \pd{\pi}{\phi} {\color{red}\left(1 + \pd{p^\prime}{\pi}\right)} \left(w g - \pdt{\phi^\prime} - \vec{v} \cdot \nabla_\pi \phi^\prime\right) - C_p \dot{\pi} \pd{\overline{T}}{\pi} \\
-  & = - \nabla_\pi \cdot \left(e_i^\prime \vec{v}\right) - \pdz{e_i^\prime \dot{\pi}} + \alpha {\color{red}\pdt{p^\prime}} + {\color{red}\alpha \vec{v} \cdot \nabla_\pi p^\prime} + {\color{red}\left(1 + \pd{p^\prime}{\pi}\right)} \vec{v} \cdot \nabla_\pi \phi^\prime \\
-  & - w g {\color{red}\pd{p^\prime}{\pi}} - w g - \alpha \pd{\pi}{\phi} {\color{red}\left(1 + \pd{p^\prime}{\pi}\right)} \pdt{\phi^\prime} - C_p \dot{\pi} \pd{\overline{T}}{\pi}
-\end{align*}
-
-\subsubsection{Geopotential energy}
-
-\begin{align*}
-  \pdt{e_p^\prime} & = - \nabla_\pi \cdot \left(e_p^\prime \vec{v}\right) - \pdz{e_p^\prime \dot{\pi}} + w g - \dot{\pi} \pd{\overline{\phi}}{\pi}
+  \dt{E_k} & = - {\color{red}\alpha \vec{v} \cdot \nabla_\pi p^\prime} - {\color{red}\pd{p}{\pi}} \vec{v} \cdot \nabla_\pi \phi^\prime + {\color{red}w g \pd{p}{\pi} - \cancel{w g}} \\
+  \dt{E_i^\prime} & = - \alpha p D_3 - C_V \dot{\pi} \pdz{\overline{T}} \\
+  & = - \alpha p \div{\vec{v}} - p \grad{\phi} \cdot \pd{\vec{v}}{\pi} + p g \pd{w}{\pi} - C_V \dot{\pi} \pdz{\overline{T}} \\
+  {\color{red}\dt{E_p^\prime}} & = {\color{red}\cancel{w g} - \dot{\pi} \pd{\overline{\phi}}{\pi}}
 \end{align*}
 
 \subsubsection{Energy conservation}
@@ -280,7 +348,6 @@ Coordinate transformation relations:
   \pd{F}{\pi} & = \pd{\eta}{\pi} \pd{F}{\eta}
 \end{align*}
 
-\pagebreak
 Assume $\eta = \eta\left(\pi, \pi_{s}\right)$
 \begin{equation*}
   \dot{\eta} = \pd{\eta}{\pi} \dot{\pi} + \pd{\eta}{\pi_s} \dot{\pi}_s
@@ -296,49 +363,20 @@ For $\sigma$ coordinate
 \end{align*}
 
 \begin{align*}
-  \alpha \grad[\pi]{p} & = \alpha \grad[\eta]{p} - \alpha \pd{\eta}{\pi} \pd{p}{\eta} \grad[\eta]{\pi} \\
-  \pd{p}{\pi} \grad[\pi]{\phi^\prime} & = \pd{\eta}{\pi} \pd{p}{\eta} \left(\grad[\eta]{\phi^\prime} - \pd{\eta}{\pi} \pd{\phi^\prime}{\eta} \grad[\eta]{\pi}\right) \\
-  & = \pd{\eta}{\pi} \pd{p}{\eta} \left(\grad[\eta]{\phi^\prime} + \alpha^\prime \grad[\eta]{\pi}\right)
+  \alpha \grad[\pi]{p^\prime} & = \alpha \grad[\eta]{p^\prime} - \alpha \pd{\eta}{\pi} \pd{p^\prime}{\eta} \grad[\eta]{\pi} \\
+  \left(1 + \pd{p^\prime}{\pi}\right) \grad[\pi]{\phi^\prime} & = \left(1 + \pd{\eta}{\pi} \pd{p^\prime}{\eta}\right) \left(\grad[\eta]{\phi^\prime} - \pd{\eta}{\pi} \pd{\phi^\prime}{\eta} \grad[\eta]{\pi}\right) \\
+  & = \left(1 + \pd{\eta}{\pi} \pd{p^\prime}{\eta}\right) \left(\grad[\eta]{\phi^\prime} + \alpha^\prime \grad[\eta]{\pi}\right)
 \end{align*}
 
-Forecast equations:
 \begin{align*}
-  \dt{\vec{v}} & = - {\color{red}\alpha \grad[\eta]{p}} - {\color{red}\pd{\eta}{\pi} \pd{p}{\eta}} \grad[\eta]{\phi^\prime} + {\color{red}\pd{\eta}{\pi} \pd{p}{\eta}} \overline{\alpha} \grad[\eta]{\pi} - f^* \vec{k} \times \vec{v} \\
-  {\color{red}\gamma \pdt{w}} & = {\color{red}g \left(\pd{\eta}{\pi} \pd{p}{\eta} - 1\right)} \\
-  \dt{T^\prime} & = \frac{\alpha}{C_p} \dt{p} - \dot{\pi} \pd{\overline{T}}{\pi} \\
+  \dt{\vec{v}} & = - {\color{red}\alpha \grad[\eta]{p^\prime}} - {\color{red}\left(1 + \pd{\eta}{\pi} \pd{p^\prime}{\eta}\right)} \grad[\eta]{\phi^\prime} + \left({\color{red}\pd{\eta}{\pi} \pd{p^\prime}{\eta} \overline{\alpha}} - \alpha^\prime\right) \grad[\eta]{\pi} - f^* \vec{k} \times \vec{v} \\
+  {\color{red}\gamma \dt{w}} & = {\color{red}g \pd{\eta}{\pi} \pd{p^\prime}{\eta}} \\
+  \dt{T^\prime} & = \frac{1}{\pi R} \left(\overline{c}^2 - {c^\prime}^2\right) \dot{\pi} + {\color{red}\frac{\alpha}{C_p} \dt{p^\prime}} \\
   \pdt{} \pd{\pi}{\eta} & = - \div[\eta]{\left(\vec{v} \pd{\pi}{\eta}\right)} - \pd{}{\eta} \left(\dot{\eta} \pd{\pi}{\eta}\right) \\
-  {\color{red}\dt{\phi^\prime}} & = {\color{red}w g - \dot{\pi} \pd{\overline{\phi}}{\pi}}
-\end{align*}
-
-Diagnostic equations:
-\begin{align*}
-  \pd{\phi}{\eta} & = - \alpha \pd{\pi}{\eta}
+  {\color{red}\dt{\phi^\prime}} & = {\color{red}w g - \dot{\pi} \pd{\overline{\phi}}{\pi}} \text{\quad or \quad} {\color{red}\dt{p^\prime}} = {\color{red}-\frac{C_p p}{C_V} D_3 - \dot{\pi}} \\
+  \pd{\phi^\prime}{\eta} & = - \pd{\pi}{\eta} \left(\alpha + \pd{\overline{\phi}}{\pi}\right)
 \end{align*}
 
 \subsection{Energetics}
-
-\subsubsection{Kinetic energy}
-\begin{align*}
-  \dt{e_k} & = - {\color{red}\alpha \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{p}} - {\color{red}\pd{p}{\eta}} \vec{v} \cdot \grad[\eta]{\phi^\prime} + {\color{red}\pd{p}{\eta}} \overline{\alpha} \vec{v} \cdot \grad[\eta]{\pi} + {\color{red}w g \pd{p}{\eta}} - {\color{red}w g \pd{\pi}{\eta}} \\
-  & \text{use } \pd{\overline{\phi}}{\pi} \grad[\eta]{\pi} = \grad[\eta]{\overline{\phi}} \text{, so } - \pd{p}{\eta} \vec{v} \cdot \grad[\eta]{\phi^\prime} - \pd{p}{\eta} \vec{v} \cdot \grad[\eta]{\overline{\phi}} = \pd{p}{\eta} \vec{v} \cdot \grad[\eta]{\phi} \\
-  & = - {\color{red}\underbrace{\cancel{\alpha \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{p}}}_1} - \underbrace{\cancel{\pd{p}{\eta} \vec{v} \cdot \grad[\eta]{\phi}}}_4 + {\color{red}\underbrace{\cancel{w g \pd{p}{\eta}}}_3} - {\color{red}\underbrace{\cancel{w g \pd{\pi}{\eta}}}_5}
-\end{align*}
-
-\subsubsection{Internal energy}
-
-\begin{align*}
-  & \dt{} \left(\pd{\pi}{\eta} C_p T^\prime\right) \\
-  & = \alpha \pd{\pi}{\eta} \dt{p} - C_p \pd{\pi}{\eta} \dot{\pi} \pd{\overline{T}}{\pi} \\
-  & = \alpha \pd{\pi}{\eta} \left(\pdt{p} + \vec{v} \cdot \grad[\eta]{p} + \dot{\eta} \pd{p}{\eta}\right) - C_p \pd{\pi}{\eta} \dot{\pi} \pd{\overline{T}}{\pi} \\
-  & = \alpha \pd{\pi}{\eta} \pdt{p} + \alpha \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{p} + \alpha \pd{\pi}{\eta} \dot{\eta} \pd{p}{\eta} - C_p \pd{\pi}{\eta} \dot{\pi} \pd{\overline{T}}{\pi} \\
-  & = \alpha \pd{\pi}{\eta} \pdt{p} + \alpha \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{p} + \alpha \pd{\pi}{\eta} \pd{\eta}{\phi} \left(w g - \pdt{\phi} - \vec{v} \cdot \grad[\eta]{\phi}\right) \pd{p}{\eta} - C_p \pd{\pi}{\eta} \dot{\pi} \pd{\overline{T}}{\pi} \\
-  & = \underbrace{\cancel{\alpha \pd{\pi}{\eta} \pdt{p}}}_2 + \underbrace{\cancel{\alpha \pd{\pi}{\eta} \vec{v} \cdot \grad[\eta]{p}}}_1 - \underbrace{\cancel{w g \pd{p}{\eta}}}_3 - \underbrace{\cancel{\alpha \pd{\pi}{\eta} \pdt{p}}}_2 + \underbrace{\cancel{\pd{p}{\eta} \vec{v} \cdot \grad[\eta]{\phi}}}_4 - C_p \pd{\pi}{\eta} \dot{\pi} \pd{\overline{T}}{\pi}
-\end{align*}
-
-\subsubsection{Geopotential energy}
-
-\begin{align*}
-  {\color{red}\dt{e_p}} & = {\color{red}\underbrace{\cancel{w g \pd{\pi}{\eta}}}_5} - \pd{\pi}{\eta} \dot{\pi} \pd{\overline{\phi}}{\pi}
-\end{align*}
 
 \end{document}
