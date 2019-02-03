@@ -8,11 +8,12 @@ program dycore_test
   use steady_geostrophic_flow_test_mod
   use mountain_zonal_flow_test_mod
   use jet_zonal_flow_test_mod
+  use shallow_water_waves_test_mod
 
   character(256) namelist_file_path
 
   if (command_argument_count() /= 1) then
-    write(6, *) 'Usage: ./dycore_test <namelist_file_path>'
+    write(6, *) 'Usage: ./dycore_test.exe <namelist_file_path>'
     stop 1
   end if
 
@@ -34,6 +35,8 @@ program dycore_test
       call mountain_zonal_flow_test_set_initial_condition()
     case ('jet_zonal_flow')
       call jet_zonal_flow_test_set_initial_condition()
+    case ('shallow_water_waves')
+      call shallow_water_waves_test_set_initial_condition()
     case default
       write(6, *) '[Error]: Unknown test case ' // trim(test_case) // '!'
     end select
