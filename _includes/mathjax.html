@@ -5,7 +5,8 @@
       processEscapes: true
     },
     TeX: {
-      extensions: ["color.js"],
+      extensions: ["color.js", "cancel.js"],
+      equationNumbers: { autoNumber: "AMS" },
       Macros: {
         vec: ["\\mathbf{#1}", 1],
         d: ["\\frac{d #1}{d #2}", 2],
