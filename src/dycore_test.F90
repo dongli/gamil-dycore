@@ -13,7 +13,7 @@ program dycore_test
   character(256) namelist_file_path
 
   if (command_argument_count() /= 1) then
-    write(6, *) 'Usage: ./qconswm <namelist_file_path>'
+    write(6, *) 'Usage: ./dycore_test.exe <namelist_file_path>'
     stop 1
   end if
 

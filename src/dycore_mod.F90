@@ -40,10 +40,10 @@ module dycore_mod
   integer, parameter :: weno = 1
 
   interface
-    subroutine integrator_interface(time_step_size, old_time_idx, new_time_idx, pass, qcon_modified_)
+    subroutine integrator_interface(time_step_size, old, new, pass, qcon_modified_)
       real, intent(in) :: time_step_size
-      integer, intent(in) :: old_time_idx
-      integer, intent(in) :: new_time_idx
+      integer, intent(in) :: old
+      integer, intent(in) :: new
       integer, intent(in) :: pass
       logical, intent(in), optional :: qcon_modified_
     end subroutine
@@ -366,7 +366,6 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real u1, u2
     integer i, j
 
     select case (uv_adv_scheme)
@@ -398,7 +397,6 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-    real v1, v2
     integer i, j
 
     select case (uv_adv_scheme)
@@ -524,10 +522,10 @@ contains
       j = parallel%full_lat_south_pole_idx
       sp = 0.0
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        sp = sp + (state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%iap%v(i,j) * mesh%half_cos_lat(j)
+        sp = sp + (state%iap%gd(i,j) + state%iap%gd(i,j+1)) * state%iap%v(i,j)
       end do
       call parallel_zonal_sum(sp)
-      sp = sp / mesh%num_full_lon * 0.5 / coef%full_dlat(j)
+      sp = sp * 2.0 / mesh%num_full_lon / radius / mesh%dlat
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%mass_div_lat(i,j) = sp
       end do
@@ -537,10 +535,10 @@ contains
       j = parallel%full_lat_north_pole_idx
       np = 0.0
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        np = np - (state%iap%gd(i,j) + state%iap%gd(i,j-1)) * state%iap%v(i,j-1) * mesh%half_cos_lat(j-1)
+        np = np - (state%iap%gd(i,j) + state%iap%gd(i,j-1)) * state%iap%v(i,j-1)
       end do
       call parallel_zonal_sum(np)
-      np = np / mesh%num_full_lon * 0.5 / coef%full_dlat(j)
+      np = np * 2.0 / mesh%num_full_lon / radius / mesh%dlat
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%mass_div_lat(i,j) = np
       end do
@@ -623,8 +621,6 @@ contains
 
     real fast_dt
     integer subcycle, t1, t2
-
-    type(tend_type), pointer :: sum_fast_tend
 
     fast_dt = time_step_size / subcycles
     t1 = 0
