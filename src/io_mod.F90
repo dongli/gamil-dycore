@@ -68,6 +68,7 @@ module io_mod
   real time_units_in_seconds
 
   interface io_output
+    module procedure io_output_0d
     module procedure io_output_1d
     module procedure io_output_2d
   end interface io_output
@@ -458,6 +459,35 @@ contains
     end if
 
   end subroutine io_start_output
+
+  subroutine io_output_0d(name, value, dataset_name)
+
+    character(*), intent(in) :: name
+    class(*), intent(in) :: value
+    character(*), intent(in), optional :: dataset_name
+
+    type(dataset_type), pointer :: dataset
+    type(var_type), pointer :: var
+    integer ierr
+
+    if (present(dataset_name)) then
+      dataset => get_dataset(name=dataset_name, mode='output')
+    else
+      dataset => get_dataset(mode='output')
+    end if
+    var => dataset%get_var(name)
+
+    select type (value)
+    type is (integer)
+      ierr = NF90_PUT_VAR(dataset%id, var%id, value)
+    type is (real(8))
+      ierr = NF90_PUT_VAR(dataset%id, var%id, value)
+    end select
+    if (ierr /= NF90_NOERR) then
+      call log_error('Failed to write variable ' // trim(name) // ' in dataset ' // trim(dataset%name) // '! ' // trim(NF90_STRERROR(ierr)))
+    end if
+
+  end subroutine io_output_0d
 
   subroutine io_output_1d(name, array, dataset_name)
 

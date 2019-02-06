@@ -29,11 +29,11 @@ contains
 
   subroutine diffusion_init()
 
-    if (.not. allocated(ud))  call parallel_allocate(ud, half_lon=.true.)
-    if (.not. allocated(vd))  call parallel_allocate(vd, half_lat=.true.)
+    if (.not. allocated(ud))  call parallel_allocate(ud)
+    if (.not. allocated(vd))  call parallel_allocate(vd)
     if (.not. allocated(gdd)) call parallel_allocate(gdd)
-    if (.not. allocated(u))   call parallel_allocate(u,  half_lon=.true.)
-    if (.not. allocated(v))   call parallel_allocate(v,  half_lat=.true.)
+    if (.not. allocated(u))   call parallel_allocate(u)
+    if (.not. allocated(v))   call parallel_allocate(v)
     if (.not. allocated(gd))  call parallel_allocate(gd)
 
   end subroutine diffusion_init

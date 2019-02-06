@@ -5,7 +5,7 @@ module dycore_mod
   use log_mod
   use types_mod
   use mesh_mod
-  use time_mod
+  use time_mod, old => old_time_idx, new => new_time_idx
   use parallel_mod
   use io_mod
   use diag_mod
@@ -23,10 +23,12 @@ module dycore_mod
   public dycore_run
   public dycore_final
 
-  ! 1: csp1: first order conservative split
   ! 2: csp2: second order conservative split
   ! 3: isp: inproved second order conservative split
   integer split_scheme
+  integer, parameter :: csp2 = 1
+  integer, parameter :: isp = 2
+
   integer, parameter :: all_pass = 0
   integer, parameter :: fast_pass = 1
   integer, parameter :: slow_pass = 2
@@ -34,11 +36,11 @@ module dycore_mod
   integer, parameter :: half_time_idx = 0
 
   interface
-    subroutine integrator_interface(time_step_size, old_time_idx, new_time_idx, pass)
+    subroutine integrator_interface(time_step_size, old, new, pass)
       real, intent(in) :: time_step_size
-      integer, intent(in), optional :: old_time_idx
-      integer, intent(in), optional :: new_time_idx
-      integer, intent(in), optional :: pass
+      integer, intent(in) :: old
+      integer, intent(in) :: new
+      integer, intent(in) :: pass
     end subroutine
   end interface
 
@@ -77,12 +79,10 @@ contains
     end select
 
     select case (split_scheme_in)
-    case ('csp1')
-      split_scheme = 1
     case ('csp2')
-      split_scheme = 2
+      split_scheme = csp2
     case ('isp')
-      split_scheme = 3
+      split_scheme = isp
     case default
       split_scheme = 0
       call log_notice('No fast-slow split.')
@@ -94,7 +94,7 @@ contains
 
   subroutine dycore_restart()
 
-    call restart_read(state(old_time_idx), static)
+    call restart_read(state(old), static)
 
   end subroutine dycore_restart
 
@@ -102,10 +102,10 @@ contains
 
     call reset_cos_lat_at_poles()
 
-    call iap_transform(state(old_time_idx))
+    call iap_transform(state(old))
 
-    call diag_run(state(old_time_idx))
-    call output(state(old_time_idx))
+    call diag_run(state(old))
+    call output(state(old))
     call log_add_diag('total_mass', diag%total_mass)
     call log_add_diag('total_energy', diag%total_energy)
     call log_step()
@@ -114,8 +114,8 @@ contains
       tag = 0
       call time_integrate()
       call time_advance()
-      call diag_run(state(old_time_idx))
-      call output(state(old_time_idx))
+      call diag_run(state(old))
+      call output(state(old))
       call log_add_diag('total_mass', diag%total_mass)
       call log_add_diag('total_energy', diag%total_energy)
       call log_step()
@@ -310,10 +310,10 @@ contains
       end do
     end select
 
-    tag = tag + 1
-    if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6)) then
-     call history_write(tend, tag)
-    end if
+    ! tag = tag + 1
+    ! if (time_is_alerted('hist0.output') .and. (tag == 3 .or. tag == 6)) then
+    !  call history_write(tend, tag)
+    ! end if
 
     ! call check_antisymmetry(tend, state)
 
@@ -362,7 +362,6 @@ contains
                               
       end do
     end do
-
     ! V
     do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
@@ -379,39 +378,31 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
-#ifdef AVERAGE_CORIOLIS
-    real c1, c2
-#endif
     integer i, j
 
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
 #ifdef AVERAGE_CORIOLIS
+    real c1, c2
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
       c1 = mesh%full_cos_lat(j-1) / mesh%full_cos_lat(j)
       c2 = mesh%full_cos_lat(j+1) / mesh%full_cos_lat(j)
-#endif
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-#ifdef AVERAGE_CORIOLIS
         tend%fv(i,j) = 0.25 * (coef%full_f(j) + coef%full_c(j) * state%u(i,j)) * &
           (c1 * (state%iap%v(i-1,j-1) + state%iap%v(i+1,j-1)) + &
            c2 * (state%iap%v(i-1,j+1) + state%iap%v(i+1,j+1)))
-#else
-        tend%fv(i,j) = (coef%full_f(j) + coef%full_c(j) * state%u(i,j)) * state%iap%v(i,j)
-#endif
-      end do
-    end do
-
-    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-#ifdef AVERAGE_CORIOLIS
         tend%fu(i,j) = 0.25 * ((coef%full_f(j-1) + coef%full_c(j-1) * state%u(i-1,j-1)) * state%iap%u(i-1,j-1) + &
                                (coef%full_f(j-1) + coef%full_c(j-1) * state%u(i+1,j-1)) * state%iap%u(i+1,j-1) + &
                                (coef%full_f(j+1) + coef%full_c(j+1) * state%u(i-1,j+1)) * state%iap%u(i-1,j+1) + &
                                (coef%full_f(j+1) + coef%full_c(j+1) * state%u(i+1,j+1)) * state%iap%u(i+1,j+1))
-#else
-        tend%fu(i,j) = (coef%full_f(j) + coef%full_c(j) * state%u(i,j)) * state%iap%u(i,j)
-#endif
       end do
     end do
+#else
+    do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        tend%fv(i,j) = (coef%full_f(j) + coef%full_c(j) * state%u(i,j)) * state%iap%v(i,j)
+        tend%fu(i,j) = (coef%full_f(j) + coef%full_c(j) * state%u(i,j)) * state%iap%u(i,j)
+      end do
+    end do
+#endif
 
   end subroutine coriolis_operator
 
@@ -484,10 +475,10 @@ contains
       j = parallel%full_lat_south_pole_idx
       sp = 0.0
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        sp = sp + state%iap%gd(i,j+1) * state%iap%v(i,j+1) * mesh%full_cos_lat(j+1)
+        sp = sp + state%iap%gd(i,j+1) * state%iap%v(i,j+1)
       end do
       call parallel_zonal_sum(sp)
-      sp = sp / mesh%num_full_lon * 0.5 / coef%full_dlat(j)
+      sp = sp * 2.0 / mesh%num_full_lon / radius / mesh%dlat * mesh%full_cos_lat(j+1) / mesh%half_cos_lat(j)
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%mass_div_lat(i,j) = sp
       end do
@@ -497,10 +488,10 @@ contains
       j = parallel%full_lat_north_pole_idx
       np = 0.0
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        np = np - state%iap%gd(i,j-1) * state%iap%v(i,j-1) * mesh%full_cos_lat(j-1)
+        np = np - state%iap%gd(i,j-1) * state%iap%v(i,j-1)
       end do
       call parallel_zonal_sum(np)
-      np = np / mesh%num_full_lon * 0.5 / coef%full_dlat(j)
+      np = np * 2.0 / mesh%num_full_lon / radius / mesh%dlat * mesh%full_cos_lat(j-1) / mesh%half_cos_lat(j-1)
       do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
         tend%mass_div_lat(i,j) = np
       end do
@@ -541,85 +532,51 @@ contains
 
   end subroutine update_state
 
-  real function inner_product(tend1, tend2) result(res)
-
-    type(tend_type), intent(in) :: tend1
-    type(tend_type), intent(in) :: tend2
-
-    integer i, j
-
-    res = 0.0
-
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        res = res + tend1%du(i,j) * tend2%du(i,j) * mesh%full_cos_lat(j)
-      end do
-    end do
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        res = res + tend1%dv(i,j) * tend2%dv(i,j) * mesh%full_cos_lat(j)
-      end do
-    end do
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        res = res + tend1%dgd(i,j) * tend2%dgd(i,j) * mesh%full_cos_lat(j)
-      end do
-    end do
-
-  end function inner_product
-
   subroutine time_integrate()
 
-    real subcycle_time_step_size
-    integer subcycle, time_idx1, time_idx2
-
-    subcycle_time_step_size = time_step_size / subcycles
-    time_idx1 = 0
-    time_idx2 = old_time_idx
-
     select case (split_scheme)
-    case (2) ! csp2
-      call integrator(0.5 * time_step_size, old_time_idx, time_idx1, slow_pass)
-      do subcycle = 1, subcycles
-        call integrator(subcycle_time_step_size, time_idx1, time_idx2, fast_pass)
-        call time_swap_indices(time_idx1, time_idx2)
-      end do
-      call integrator(0.5 * time_step_size, time_idx1, new_time_idx, slow_pass)
+    case (csp2)
+      call csp2_splitting()
+    case (isp)
+      call log_error('ISP splitting has not been implemented!')
     case default
-      call integrator(time_step_size)
+      call integrator(time_step_size, old, new, all_pass)
     end select
 
     if (use_diffusion) then
-      call ordinary_diffusion(time_step_size, state(new_time_idx))
+      call ordinary_diffusion(time_step_size, state(new))
     end if
 
   end subroutine time_integrate
 
-  subroutine predict_correct(time_step_size, old_time_idx_, new_time_idx_, pass_)
+  subroutine csp2_splitting()
+
+    real slow_dt, fast_dt
+    integer subcycle, t1, t2
+
+    slow_dt = time_step_size * 0.5
+    fast_dt = time_step_size / subcycles
+    t1 = 0
+    t2 = old
+
+    call integrator(slow_dt, old, t1, slow_pass)
+    do subcycle = 1, subcycles
+      call integrator(fast_dt, t1, t2, fast_pass)
+      call time_swap_indices(t1, t2)
+    end do
+    call integrator(slow_dt, t1, new, slow_pass)
+
+  end subroutine csp2_splitting
+
+  subroutine predict_correct(time_step_size, old, new, pass)
 
     real, intent(in) :: time_step_size
-    integer, intent(in), optional :: old_time_idx_
-    integer, intent(in), optional :: new_time_idx_
-    integer, intent(in), optional :: pass_
+    integer, intent(in) :: old
+    integer, intent(in) :: new
+    integer, intent(in) :: pass
 
-    integer old, new, pass
     real dt, ip1, ip2, beta
 
-    if (present(old_time_idx_)) then
-      old = old_time_idx_
-    else
-      old = old_time_idx
-    end if
-    if (present(new_time_idx_)) then
-      new = new_time_idx_
-    else
-      new = new_time_idx
-    end if
-    if (present(pass_)) then
-      pass = pass_
-    else
-      pass = all_pass
-    end if
     dt = time_step_size * 0.5
 
     ! Do first predict step.
@@ -643,32 +600,17 @@ contains
 
   end subroutine predict_correct
 
-  subroutine runge_kutta(time_step_size, old_time_idx_, new_time_idx_, pass_)
+  subroutine runge_kutta(time_step_size, old, new, pass)
 
     real, intent(in) :: time_step_size
-    integer, intent(in), optional :: old_time_idx_
-    integer, intent(in), optional :: new_time_idx_
-    integer, intent(in), optional :: pass_
+    integer, intent(in) :: old
+    integer, intent(in) :: new
+    integer, intent(in) :: pass
 
-    integer old, new, tmp, pass, i, j
+    integer tmp, i, j
     real dt, ip00, ip12, ip23, ip34, beta
 
     tmp = -1
-    if (present(old_time_idx_)) then
-      old = old_time_idx_
-    else
-      old = old_time_idx
-    end if
-    if (present(new_time_idx_)) then
-      new = new_time_idx_
-    else
-      new = new_time_idx
-    end if
-    if (present(pass_)) then
-      pass = pass_
-    else
-      pass = all_pass
-    end if
     dt = time_step_size * 0.5d0
 
     ! Compute RK1

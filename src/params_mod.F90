@@ -44,7 +44,6 @@ module params_mod
   logical qcon_modified ! Switch whether quadratic conservation modification is added
 
   ! Options:
-  ! - csp1
   ! - csp2
   ! - isp
   ! - none

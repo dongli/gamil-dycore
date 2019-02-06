@@ -94,12 +94,7 @@ contains
 
     integer i, j
 
-    res = 0.0
-    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
-      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
-        res = res + (state%iap%u(i,j)**2 + state%iap%v(i,j)**2 + (state%gd(i,j) + static%ghs(i,j))**2) * mesh%full_cos_lat(j)
-      end do
-    end do
+    res = inner_product(state, state, static)
 
   end function diag_total_energy
 

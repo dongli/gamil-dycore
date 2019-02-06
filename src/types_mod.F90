@@ -10,6 +10,7 @@ module types_mod
   public allocate_data
   public deallocate_data
   public iap_transform
+  public inner_product
   public coef_type
   public state_type
   public static_type
@@ -76,6 +77,11 @@ module types_mod
     module procedure deallocate_state_data
     module procedure deallocate_tend_data
   end interface deallocate_data
+
+  interface inner_product
+    module procedure inner_product_tend_tend
+    module procedure inner_product_state_state
+  end interface inner_product
 
 contains
 
@@ -218,5 +224,52 @@ contains
     call parallel_fill_halo(state%iap%v(:,:), all_halo=.true.)
 
   end subroutine iap_transform
+
+  real function inner_product_tend_tend(tend1, tend2) result(res)
+
+    type(tend_type), intent(in) :: tend1
+    type(tend_type), intent(in) :: tend2
+
+    integer i, j
+
+    res = 0.0
+
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        res = res + tend1%du(i,j) * tend2%du(i,j) * mesh%full_cos_lat(j)
+      end do
+    end do
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        res = res + tend1%dv(i,j) * tend2%dv(i,j) * mesh%full_cos_lat(j)
+      end do
+    end do
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        res = res + tend1%dgd(i,j) * tend2%dgd(i,j) * mesh%full_cos_lat(j)
+      end do
+    end do
+
+  end function inner_product_tend_tend
+
+  real function inner_product_state_state(state1, state2, static) result(res)
+
+    type(state_type), intent(in) :: state1
+    type(state_type), intent(in) :: state2
+    type(static_type), intent(in) :: static
+
+    integer i, j
+
+    res = 0.0
+    do j = parallel%full_lat_start_idx, parallel%full_lat_end_idx
+      do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+        res = res + (state1%iap%u(i,j) * state2%iap%u(i,j) + &
+                     state1%iap%v(i,j) * state2%iap%v(i,j) + &
+                     (state1%gd(i,j) + static%ghs(i,j)) * (state2%gd(i,j) + static%ghs(i,j)) &
+                    ) * mesh%full_cos_lat(j)
+      end do
+    end do
+
+  end function inner_product_state_state
 
 end module types_mod
