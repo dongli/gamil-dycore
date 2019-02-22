@@ -72,10 +72,13 @@ set(source_files
 set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/.mods")
 
 add_executable(dycore_test.exe ${source_files})
-target_link_libraries(dycore_test.exe
-  ${MPI_Fortran_LIBRARIES} fortran_datetime fortran_container fftpack netcdf netcdff)
 if (MPI_Fortran_FOUND)
+  target_link_libraries(dycore_test.exe
+    ${MPI_Fortran_LIBRARIES} fortran_datetime fortran_container fftpack netcdf netcdff)
   set_target_properties(dycore_test.exe PROPERTIES
     LINK_FLAGS "${MPI_Fortran_LINK_FLAGS}"
   )
+else ()
+  target_link_libraries(dycore_test.exe
+    fortran_datetime fortran_container fftpack netcdf netcdff)
 endif ()
