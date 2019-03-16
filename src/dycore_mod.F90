@@ -36,8 +36,9 @@ module dycore_mod
   integer, parameter :: slow_pass = 2
 
   integer uv_adv_scheme
-  integer, parameter :: center_difference = 0
-  integer, parameter :: weno = 1
+  integer, parameter :: center_diff = 0
+  integer, parameter :: upwind = 1
+  integer, parameter :: weno = 2
 
   interface
     subroutine integrator_interface(time_step_size, old, new, pass, qcon_modified_)
@@ -94,8 +95,10 @@ contains
     end select
 
     select case (uv_adv_scheme_in)
-    case ('center-difference')
-      uv_adv_scheme = center_difference
+    case ('center_diff')
+      uv_adv_scheme = center_diff
+    case ('upwind')
+      uv_adv_scheme = upwind
     case ('weno')
       uv_adv_scheme = weno
       call weno_init()
@@ -366,10 +369,12 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
+    real, parameter :: upwind_beta = 0
+    real u1, u2
     integer i, j
 
     select case (uv_adv_scheme)
-    case (center_difference)
+    case (center_diff)
       ! U
       do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
@@ -386,6 +391,29 @@ contains
              (state%u(i-1,j) + state%u(i-1,j+1)) * state%iap%v(i-1,j))
         end do
       end do
+    case (upwind)
+      ! U
+      do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+        do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+          u1 = state%u(i,j) + state%u(i-1,j)
+          u2 = state%u(i,j) + state%u(i+1,j)
+          tend%u_adv_lon(i,j) = 0.25 / coef%full_dlon(j) * &
+            (0.5 * u2 * (state%iap%u(i+1,j) + state%iap%u(i,  j)) - upwind_beta * 0.5 * abs(u2) * (state%iap%u(i+1,j) - state%iap%u(i,  j)) - &
+             0.5 * u1 * (state%iap%u(i,  j) + state%iap%u(i-1,j)) + upwind_beta * 0.5 * abs(u1) * (state%iap%u(i,  j) - state%iap%u(i-1,j)) - &
+             (u2 - u1) * state%iap%u(i,j))
+        end do
+      end do
+      ! V
+      do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+          u1 = state%u(i-1,j) + state%u(i-1,j+1)
+          u2 = state%u(i,  j) + state%u(i,  j+1)
+          tend%v_adv_lon(i,j) = 0.25 / coef%half_dlon(j) * &
+            (0.5 * u2 * (state%iap%v(i+1,j) + state%iap%v(i,  j)) - upwind_beta * 0.5 * abs(u2) * (state%iap%v(i+1,j) - state%iap%v(i,  j)) - &
+             0.5 * u1 * (state%iap%v(i,  j) + state%iap%v(i-1,j)) + upwind_beta * 0.5 * abs(u1) * (state%iap%v(i,  j) - state%iap%v(i-1,j)) - &
+             (u2 - u1) * state%iap%v(i,j))
+        end do
+      end do
     case (weno)
       call weno_zonal_momentum_advection_operator(state, tend)
     end select
@@ -397,10 +425,12 @@ contains
     type(state_type), intent(in) :: state
     type(tend_type), intent(inout) :: tend
 
+    real, parameter :: upwind_beta = 0
+    real v1, v2
     integer i, j
 
     select case (uv_adv_scheme)
-    case (center_difference)
+    case (center_diff)
       ! U
       do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
         do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
@@ -415,6 +445,29 @@ contains
           tend%v_adv_lat(i,j) = 0.25 / coef%half_dlat(j) * &
             ((state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j+1) * mesh%half_cos_lat(j+1)) * state%iap%v(i,j+1) - &
              (state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j-1) * mesh%half_cos_lat(j-1)) * state%iap%v(i,j-1))
+        end do
+      end do
+    case (upwind)
+      ! U
+      do j = parallel%full_lat_start_idx_no_pole, parallel%full_lat_end_idx_no_pole
+        do i = parallel%half_lon_start_idx, parallel%half_lon_end_idx
+          v1 = (state%v(i,j-1) + state%v(i+1,j-1)) * mesh%half_cos_lat(j  )
+          v2 = (state%v(i,j  ) + state%v(i+1,j  )) * mesh%half_cos_lat(j-1)
+          tend%u_adv_lat(i,j) = 0.25 / coef%full_dlat(j) * &
+            (0.5 * v2 * (state%iap%u(i,j+1) + state%iap%u(i,j  )) - upwind_beta * 0.5 * abs(v2) * (state%iap%u(i,j+1) - state%iap%u(i,j  )) - &
+             0.5 * v1 * (state%iap%u(i,j  ) + state%iap%u(i,j-1)) + upwind_beta * 0.5 * abs(v1) * (state%iap%u(i,j  ) - state%iap%u(i,j-1)) - &
+             (v2 - v1) * state%iap%u(i,j))
+        end do
+      end do
+      ! V
+      do j = parallel%half_lat_start_idx, parallel%half_lat_end_idx
+        do i = parallel%full_lon_start_idx, parallel%full_lon_end_idx
+          v1 = state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j-1) * mesh%half_cos_lat(j-1)
+          v2 = state%v(i,j) * mesh%half_cos_lat(j) + state%v(i,j+1) * mesh%half_cos_lat(j+1)
+          tend%v_adv_lat(i,j) = 0.25 / coef%half_dlat(j) * &
+            (0.5 * v2 * (state%iap%v(i,j+1) + state%iap%v(i,j  )) - upwind_beta * 0.5 * abs(v2) * (state%iap%v(i,j+1) + state%iap%v(i,j  )) - &
+             0.5 * v1 * (state%iap%v(i,j  ) + state%iap%v(i,j-1)) + upwind_beta * 0.5 * abs(v1) * (state%iap%v(i,j  ) + state%iap%v(i,j-1)) - &
+             (v2 - v1) * state%iap%v(i,j))
         end do
       end do
     case (weno)
