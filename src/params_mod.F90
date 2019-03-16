@@ -18,10 +18,11 @@ module params_mod
   logical :: use_diffusion = .false.
   real diffusion_coef
   integer :: diffusion_order = 2
- 
-  integer :: days = 0
-  integer :: hours = 0
-  integer :: minutes = 0
+
+  integer :: run_days    = 0
+  integer :: run_hours   = 0
+  integer :: run_minutes = 0
+  integer :: run_seconds = 0
   integer :: start_time(5) = [0, 0, 0, 0, 0]
   integer :: end_time(5) = [0, 0, 0, 0, 0]
   character(30) :: time_units = 'days'
@@ -66,9 +67,10 @@ module params_mod
     num_lon, &
     num_lat, &
     subcycles, &
-    days, &
-    hours, &
-    minutes, &
+    run_days, &
+    run_hours, &
+    run_minutes, &
+    run_seconds, &
     start_time, &
     end_time, &
     time_units, &

@@ -50,16 +50,16 @@ contains
 
   subroutine time_init()
 
-    if (days > 0 .or. hours > 0 .or. minutes > 0) then
-      start_time = datetime(days=0, hours=0, minutes=0)
+    if (run_days > 0 .or. run_hours > 0 .or. run_minutes > 0) then
+      start_time = create_datetime(days=0, hours=0, minutes=0)
     else if (sum(start_time_in) > 0) then
-      start_time = datetime(year=start_time_in(1), month=start_time_in(2), day=start_time_in(3), &
+      start_time = create_datetime(year=start_time_in(1), month=start_time_in(2), day=start_time_in(3), &
         hour=start_time_in(4), minute=start_time_in(5))
     end if
-    if (days > 0 .or. hours > 0 .or. minutes > 0) then
-      end_time = datetime(days=days, hours=hours, minutes=minutes)
+    if (run_days > 0 .or. run_hours > 0 .or. run_minutes > 0) then
+      end_time = create_datetime(days=run_days, hours=run_hours, minutes=run_minutes)
     else if (sum(end_time_in) > 0) then
-      end_time = datetime(year=end_time_in(1), month=end_time_in(2), day=end_time_in(3), &
+      end_time = create_datetime(year=end_time_in(1), month=end_time_in(2), day=end_time_in(3), &
         hour=end_time_in(4), minute=end_time_in(5))
     end if
 
@@ -71,8 +71,8 @@ contains
 
     curr_time = start_time
 
-    start_time_format = start_time%isoformat()
-    curr_time_format = curr_time%isoformat()
+    start_time_format = start_time%format('%Y-%m-%dT%H_%M_%S')
+    curr_time_format  = curr_time %format('%Y-%m-%dT%H_%M_%S')
 
     alerts = hash_table()
 
@@ -85,8 +85,8 @@ contains
     start_time = time
     curr_time = start_time
 
-    start_time_format = start_time%isoformat()
-    curr_time_format = curr_time%isoformat()
+    start_time_format = start_time%format('%Y-%m-%dT%H_%M_%S')
+    curr_time_format  = curr_time %format('%Y-%m-%dT%H_%M_%S')
 
   end subroutine time_reset_start_time
 
@@ -106,13 +106,11 @@ contains
   subroutine time_advance()
     
     type(hash_table_iterator_type) iter
-    class(*), pointer :: alert
 
     ! Update alerts.
     iter = hash_table_iterator(alerts)
     do while (.not. iter%ended())
-      alert => iter%value
-      select type (alert)
+      select type (alert => iter%value)
       type is (alert_type)
         if (alert%ring) then
           alert%last_time = curr_time
@@ -143,20 +141,27 @@ contains
 
   end function time_is_finished
 
-  subroutine time_add_alert(name, days, hours, minutes, seconds)
+  subroutine time_add_alert(name, months, days, hours, minutes, seconds)
 
     character(*), intent(in) :: name
+    real, intent(in), optional :: months
     real, intent(in), optional :: days
     real, intent(in), optional :: hours
     real, intent(in), optional :: minutes
     real, intent(in), optional :: seconds
 
+    real months_
     real days_
     real hours_
     real minutes_
     real seconds_
     type(alert_type) alert
 
+    if (present(months)) then
+      months_ = months
+    else
+      months_ = 0.0
+    end if
     if (present(days)) then
       days_ = days
     else
@@ -178,8 +183,8 @@ contains
       seconds_ = 0.0
     end if
 
-    alert%period = timedelta(days_, hours_, minutes_, seconds_)
-    alert%last_time = start_time - alert%period
+    alert%period = timedelta(months=months_, days=days_, hours=hours_, minutes=minutes_, seconds=seconds_)
+    alert%last_time = start_time
     call alerts%insert(trim(name), alert)
 
   end subroutine time_add_alert

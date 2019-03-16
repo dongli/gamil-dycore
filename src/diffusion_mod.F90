@@ -79,8 +79,8 @@ contains
     real sp, np
     integer i, j, order, sign
 
-    u(:,:) = state%u(:,:)
-    v(:,:) = state%v(:,:)
+    u (:,:) = state%u (:,:)
+    v (:,:) = state%v (:,:)
     gd(:,:) = state%gd(:,:)
 
     ! Scalar diffusion:
@@ -174,8 +174,8 @@ contains
         call parallel_fill_halo(ud,  all_halo=.true.)
         call parallel_fill_halo(vd,  all_halo=.true.)
         gd(:,:) = gdd(:,:)
-        u(:,:) = ud(:,:)
-        v(:,:) = vd(:,:)
+        u(:,:)  = ud(:,:)
+        v(:,:)  = vd(:,:)
       end if
     end do
 

@@ -2,11 +2,9 @@ module io_mod
 
   use netcdf
   use log_mod
-  use hash_table_mod, hash_table => hash_table, hash_table_iterator => hash_table_iterator
-  use params_mod, start_time_in => start_time
+  use params_mod
   use time_mod
   use string_mod
-  use parallel_mod
 
   implicit none
 
@@ -29,9 +27,11 @@ module io_mod
     integer :: id = -1
     character(30) name
     character(256) desc
-    character(256) author
+    character(256) :: author = 'N/A'
     character(256) file_prefix_or_path
     character(10) mode
+    character(10) :: new_file_alert = 'N/A'
+    character(256) last_file_path
     type(var_type), pointer :: time_var => null()
     type(hash_table_type) metas
     type(hash_table_type) dims
@@ -102,7 +102,7 @@ contains
 
   end subroutine io_init
 
-  subroutine io_create_dataset(name, desc, file_prefix, file_path, mode, period)
+  subroutine io_create_dataset(name, desc, file_prefix, file_path, mode, period, frames_per_file)
 
     character(*), intent(in), optional :: name
     character(*), intent(in), optional :: desc
@@ -110,12 +110,14 @@ contains
     character(*), intent(in), optional :: file_path
     character(*), intent(in), optional :: mode
     character(*), intent(in), optional :: period
+    character(*), intent(in), optional :: frames_per_file
 
-    character(30) name_, mode_, period_, period_value, period_unit
+    character(30) name_, mode_, period_, time_value, time_units
     character(256) desc_, file_prefix_, file_path_
     type(dataset_type) dataset
     logical is_exist
     integer i
+    real value
 
     if (present(name)) then
       name_ = name
@@ -171,7 +173,6 @@ contains
 
     dataset%name = name_
     dataset%desc = desc_
-    dataset%author = author
     dataset%metas = hash_table()
     dataset%dims = hash_table()
     dataset%vars = hash_table()
@@ -186,14 +187,16 @@ contains
       dataset%file_prefix_or_path = trim(dataset%file_prefix_or_path) // '.' // trim(name_)
     end if
     dataset%mode = mode_
+
+    ! Add alert for IO action.
     if (period_ /= 'once') then
-      period_value = string_split(period_, 1)
-      period_unit = string_split(period_, 2)
-      read(period_value, *) dataset%period 
+      time_value = string_split(period_, 1)
+      time_units = string_split(period_, 2)
+      read(time_value, *) dataset%period 
     else
-      period_unit = 'once'
+      time_units = 'once'
     end if
-    select case (period_unit)
+    select case (time_units)
     case ('days')
       dataset%period = dataset%period * 86400
     case ('hours')
@@ -211,6 +214,22 @@ contains
     end select
 
     call time_add_alert(trim(dataset%name) // '.' // trim(dataset%mode), seconds=dataset%period)
+
+    ! Add alert for create new file.
+    if (present(frames_per_file) .and. frames_per_file /= 'N/A') then
+      dataset%new_file_alert = trim(dataset%name) // '.new_file'
+      time_value = string_split(frames_per_file, 1)
+      time_units = string_split(frames_per_file, 2)
+      read(time_value, *) value
+      select case (time_units)
+      case ('months')
+        call time_add_alert(dataset%new_file_alert, months=value)
+      case ('days')
+        call time_add_alert(dataset%new_file_alert, days=value)
+      case default
+        call log_error('Invalid IO period ' // trim(period_) // '!')
+      end select
+    end if
 
     call datasets%insert(trim(dataset%name) // '.' // trim(dataset%mode), dataset)
 
@@ -236,13 +255,14 @@ contains
 
   end subroutine io_add_meta
 
-  subroutine io_add_dim(name, dataset_name, long_name, units, size)
+  subroutine io_add_dim(name, dataset_name, long_name, units, size, add_var)
 
     character(*), intent(in) :: name
     character(*), intent(in), optional :: dataset_name
     character(*), intent(in), optional :: long_name
     character(*), intent(in), optional :: units
     integer, intent(in), optional :: size
+    logical, intent(in), optional :: add_var
 
     type(dataset_type), pointer :: dataset
     type(dim_type) dim
@@ -262,11 +282,11 @@ contains
     if (.not. present(long_name)) then
       select case (name)
       case ('lon', 'ilon')
-        dim%long_name = 'longitude'
+        dim%long_name = 'Longitude'
       case ('lat', 'ilat')
-        dim%long_name = 'latitude'
-      case ('time')
-        dim%long_name = 'time'
+        dim%long_name = 'Latitude'
+      case ('time', 'Time')
+        dim%long_name = 'Time'
       case default
         dim%long_name = long_name
       end select
@@ -277,7 +297,7 @@ contains
         dim%units = 'degrees_east'
       case ('lat', 'ilat')
         dim%units = 'degrees_north'
-      case ('time')
+      case ('time', 'Time')
         write(dim%units, '(A, " since ", A)') trim(time_units), start_time_format
       case default
         dim%units = units
@@ -291,8 +311,10 @@ contains
 
     call dataset%dims%insert(name, dim)
 
-    ! Add corresponding dimension variable.
-    call io_add_var(name, dataset_name, long_name=dim%long_name, units=dim%units, dim_names=[name])
+    if (present(add_var) .and. add_var) then
+      ! Add corresponding dimension variable.
+      call io_add_var(name, dataset_name, long_name=dim%long_name, units=dim%units, dim_names=[name], data_type='real(8)')
+    end if
 
   end subroutine io_add_dim
 
@@ -336,11 +358,11 @@ contains
       end select
     else
       select case (data_type)
-      case ('real(4)')
+      case ('real', 'real(4)')
         var%data_type = NF90_FLOAT
       case ('real(8)')
         var%data_type = NF90_DOUBLE
-      case ('integer(4)')
+      case ('integer', 'integer(4)')
         var%data_type = NF90_INT
       case ('integer(8)')
         var%data_type = NF90_INT64
@@ -358,6 +380,7 @@ contains
         if (dim%name == trim(dim_names(i))) then
           var%dims(i)%ptr => dim
           found = .true.
+          exit
         end if
         call iter%next()
       end do
@@ -368,7 +391,7 @@ contains
 
     call dataset%vars%insert(name, var)
 
-    if (name == 'time') dataset%time_var => dataset%get_var(name)
+    if (name == 'Time' .or. name == 'time') dataset%time_var => dataset%get_var(name)
 
   end subroutine io_add_var
 
@@ -396,66 +419,78 @@ contains
       write(file_path, "(A, '.', A, '.nc')") trim(dataset%file_prefix_or_path), trim(curr_time_format)
     end if
 
-    ierr = NF90_CREATE(file_path, NF90_CLOBBER, dataset%id)
-    if (ierr /= NF90_NOERR) then
-      call log_error('Failed to create NetCDF file to output!')
-    end if
-    ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, 'dataset', dataset%name)
-    ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, 'desc', dataset%desc)
-    ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, 'author', dataset%author)
-
-    iter = hash_table_iterator(dataset%metas)
-    do while (.not. iter%ended())
-      select type (value => iter%value)
-      type is (integer)
-        ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key, value)
-      type is (real)
-        ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key, value)
-      type is (character(*))
-        ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key, value)
-      type is (logical)
-        ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key, to_string(value))
-      end select
-      call iter%next()
-    end do
-
-    iter = hash_table_iterator(dataset%dims)
-    do while (.not. iter%ended())
-      dim => dataset%get_dim(iter%key)
-      ierr = NF90_DEF_DIM(dataset%id, dim%name, dim%size, dim%id)
+    if (dataset%new_file_alert == 'N/A' .or. time_is_alerted(dataset%new_file_alert) .or. dataset%time_step == 0) then
+      ierr = NF90_CREATE(file_path, NF90_CLOBBER, dataset%id)
       if (ierr /= NF90_NOERR) then
-        call log_error('Failed to define dimension ' // trim(dim%name) // '!')
+        call log_error('Failed to create NetCDF file to output!')
       end if
-      call iter%next()
-    end do
+      ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, 'dataset', dataset%name)
+      ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, 'desc', dataset%desc)
+      ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, 'author', dataset%author)
 
-    iter = hash_table_iterator(dataset%vars)
-    do while (.not. iter%ended())
-      var => dataset%get_var(iter%key)
-      do i = 1, size(var%dims)
-        dimids(i) = var%dims(i)%ptr%id
+      iter = hash_table_iterator(dataset%metas)
+      do while (.not. iter%ended())
+        select type (value => iter%value)
+        type is (integer)
+          ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key, value)
+        type is (real(4))
+          ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key, value)
+        type is (real(8))
+          ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key, value)
+        type is (character(*))
+          ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key, value)
+        type is (logical)
+          ierr = NF90_PUT_ATT(dataset%id, NF90_GLOBAL, iter%key, to_string(value))
+        end select
+        call iter%next()
       end do
-      ierr = NF90_DEF_VAR(dataset%id, var%name, var%data_type, dimids(1:size(var%dims)), var%id)
+
+      iter = hash_table_iterator(dataset%dims)
+      do while (.not. iter%ended())
+        dim => dataset%get_dim(iter%key)
+        ierr = NF90_DEF_DIM(dataset%id, dim%name, dim%size, dim%id)
+        if (ierr /= NF90_NOERR) then
+          call log_error('Failed to define dimension ' // trim(dim%name) // '!')
+        end if
+        call iter%next()
+      end do
+
+      iter = hash_table_iterator(dataset%vars)
+      do while (.not. iter%ended())
+        var => dataset%get_var(iter%key)
+        do i = 1, size(var%dims)
+          dimids(i) = var%dims(i)%ptr%id
+        end do
+        ierr = NF90_DEF_VAR(dataset%id, var%name, var%data_type, dimids(1:size(var%dims)), var%id)
+        if (ierr /= NF90_NOERR) then
+          call log_error('Failed to define variable ' // trim(var%name) // '!')
+        end if
+        ierr = NF90_PUT_ATT(dataset%id, var%id, 'long_name', trim(var%long_name))
+        ierr = NF90_PUT_ATT(dataset%id, var%id, 'units', trim(var%units))
+        call iter%next()
+      end do
+
+      ierr = NF90_ENDDEF(dataset%id)
+
+      dataset%time_step = 0 ! Reset to zero!
+      dataset%last_file_path = file_path
+    else
+      ierr = NF90_OPEN(dataset%last_file_path, NF90_WRITE, dataset%id)
       if (ierr /= NF90_NOERR) then
-        call log_error('Failed to define variable ' // trim(var%name) // '!')
+        call log_error('Failed to open NetCDF file to output! ' // trim(NF90_STRERROR(ierr)), __FILE__, __LINE__)
       end if
-      ierr = NF90_PUT_ATT(dataset%id, var%id, 'long_name', trim(var%long_name))
-      ierr = NF90_PUT_ATT(dataset%id, var%id, 'units', trim(var%units))
-      call iter%next()
-    end do
-
-    ierr = NF90_ENDDEF(dataset%id)
-
+    end if
+    
     ! Write time dimension variable.
     if (associated(dataset%time_var)) then
+      dataset%time_step = dataset%time_step + 1
       ! Update time units because restart may change it.
       write(dataset%time_var%units, '(A, " since ", A)') trim(time_units), start_time_format
       ierr = NF90_PUT_ATT(dataset%id, dataset%time_var%id, 'units', trim(dataset%time_var%units))
-      ierr = NF90_PUT_VAR(dataset%id, dataset%time_var%id, time_elapsed_seconds() / time_units_in_seconds)
+      ierr = NF90_PUT_VAR(dataset%id, dataset%time_var%id, [time_elapsed_seconds() / time_units_in_seconds], [dataset%time_step], [1])
       if (ierr /= NF90_NOERR) then
         call log_error('Failed to write variable time!')
       end if
-      dataset%time_step = dataset%time_step + 1
     end if
 
   end subroutine io_start_output
@@ -515,18 +550,13 @@ contains
       count(1) = var%dims(1)%ptr%size
     else
       do i = 1, 2
-        start(i) = 1
         if (var%dims(i)%ptr%size == NF90_UNLIMITED) then
+          start(i) = dataset%time_step
           count(i) = 1
         else
-          select case (var%dims(i)%ptr%name)
-          case ('lon')
-            lb = lbound(array, 1) + parallel%lon_halo_width
-            ub = ubound(array, 1) - parallel%lon_halo_width
-          case ('lat')
-            lb = lbound(array, 1) + parallel%lat_halo_width
-            ub = ubound(array, 1) - parallel%lat_halo_width
-          end select
+          lb = lbound(array, i)
+          ub = ubound(array, i)
+          start(i) = 1
           count(i) = var%dims(i)%ptr%size
         end if
       end do
@@ -539,7 +569,7 @@ contains
       ierr = NF90_PUT_VAR(dataset%id, var%id, array(lb:ub), start, count)
     end select
     if (ierr /= NF90_NOERR) then
-      call log_error('Failed to write variable ' // trim(name) // ' in dataset ' // trim(dataset%name) // '! ' // trim(NF90_STRERROR(ierr)))
+      call log_error('Failed to write variable ' // trim(name) // ' in dataset ' // trim(dataset%name) // '! ' // trim(NF90_STRERROR(ierr)), __FILE__, __LINE__)
     end if
 
   end subroutine io_output_1d
@@ -563,16 +593,17 @@ contains
     end if
     var => dataset%get_var(name)
 
-    lb1 = lbound(array, 1) + parallel%lon_halo_width
-    ub1 = ubound(array, 1) - parallel%lon_halo_width
-    lb2 = lbound(array, 2) + parallel%lat_halo_width
-    ub2 = ubound(array, 2) - parallel%lat_halo_width
+    lb1 = lbound(array, 1)
+    ub1 = ubound(array, 1)
+    lb2 = lbound(array, 2)
+    ub2 = ubound(array, 2)
 
-    do i = 1, 3
-      start(i) = 1
+    do i = 1, size(var%dims)
       if (var%dims(i)%ptr%size == NF90_UNLIMITED) then
+        start(i) = dataset%time_step
         count(i) = 1
       else
+        start(i) = 1
         count(i) = var%dims(i)%ptr%size
       end if
     end do
@@ -584,7 +615,7 @@ contains
       ierr = NF90_PUT_VAR(dataset%id, var%id, array(lb1:ub1,lb2:ub2), start, count)
     end select
     if (ierr /= NF90_NOERR) then
-      call log_error('Failed to write variable ' // trim(name) // ' to ' // trim(dataset%name) // '!' // NF90_STRERROR(ierr))
+      call log_error('Failed to write variable ' // trim(name) // ' to ' // trim(dataset%name) // '! ' // NF90_STRERROR(ierr), __FILE__, __LINE__)
     end if
 
   end subroutine io_output_2d
@@ -670,10 +701,10 @@ contains
       dataset => get_dataset(mode='input')
     end if
 
-    lb1 = lbound(array, 1) + parallel%lon_halo_width
-    ub1 = ubound(array, 1) - parallel%lon_halo_width
-    lb2 = lbound(array, 2) + parallel%lat_halo_width
-    ub2 = ubound(array, 2) - parallel%lat_halo_width
+    lb1 = lbound(array, 1)
+    ub1 = ubound(array, 1)
+    lb2 = lbound(array, 2)
+    ub2 = ubound(array, 2)
     allocate(buffer(lb1:ub1,lb2:ub2))
 
     ierr = NF90_INQ_VARID(dataset%id, name, varid)
