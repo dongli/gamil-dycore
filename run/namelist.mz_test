@@ -1,21 +1,23 @@
 &dycore_params
 test_case = 'mountain_zonal_flow'
-case_name = 'mz_c_u_01.180x90.dt480'
+case_name = 'mz_c_u_01.180x90.dt720'
 case_desc = 'Mountain zonal flow test'
 author = 'Li Dong <dongli@lasg.iap.ac.cn>'
-days = 20
+run_days = 50
 num_lon = 180
 num_lat = 90
-time_step_size = 480
-history_periods = '1 hours'
-restart_period = '6 hours'
+time_step_size = 720
+history_periods = '1 days'
+restart_period = '10 days'
 time_scheme = 'predict_correct' ! 'predict_correct' or 'runge_kutta'
+uv_adv_scheme = 'upwind'
+uv_adv_upwind_lat_beta = 0.1
 qcon_modified = .true.
 split_scheme = 'csp2' ! 'csp2' or 'csp1' or 'isp'
-subcycles = 6
+subcycles = 8
 use_zonal_tend_filter = .true.
 zonal_tend_filter_cutoff_wavenumber = 4, 4, 4
 /
 &mountain_zonal_flow_test_params
-smooth_moutain = .false.
+smooth_mountain = .false.
 /

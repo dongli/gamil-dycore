@@ -52,10 +52,12 @@ module params_mod
   character(30) split_scheme
 
   ! Options:
-  ! - center-difference
+  ! - center_diff
   ! - upwind
   ! - weno
-  character(30) :: uv_adv_scheme = 'center-difference'
+  character(30) :: uv_adv_scheme = 'center_diff'
+  real :: uv_adv_upwind_lon_beta = 0.0
+  real :: uv_adv_upwind_lat_beta = 0.5
   integer :: weno_order = 2
 
   logical is_restart_run
@@ -87,6 +89,8 @@ module params_mod
     qcon_modified, &
     split_scheme, &
     uv_adv_scheme, &
+    uv_adv_upwind_lon_beta, &
+    uv_adv_upwind_lat_beta, &
     use_zonal_tend_filter, &
     zonal_tend_filter_cutoff_wavenumber, &
     use_diffusion, &
