@@ -33,7 +33,7 @@ res_pannel = True
 res_pannel@gsnPanelRowSpec = True
 
 f = addfile(file_names(0), "r")
-gd0 = f->gd
+gh0 = f->gh
 
 ; Minus perturbation.
 ; g = 9.80616
@@ -44,7 +44,7 @@ gd0 = f->gd
 ; beta = 1.0 / 15.0
 ; do j = 0, dimsizes(f->lat) - 1
 ;   do i = 0, dimsizes(f->lon) - 1
-;     gd0(0,j,i) = gd0(0,j,i) - ghd * cos(f->lat(j)) * \
+;     gh0(0,j,i) = gh0(0,j,i) - ghd * cos(f->lat(j)) * \
 ;       exp(-((f->lon(i) - pi)  / alpha)^2) * \
 ;       exp(-((lat2 - f->lat(j)) / beta)^2)
 ;   end do
@@ -58,8 +58,8 @@ do t = 0, dimsizes(file_names) - 1
   res_vor@gsnRightString = cd_string(f->time, "Day %d Hour %H Min %M")
   plot0 = gsn_csm_contour_map(wks, f->vor(0,:,:), res_vor)
 
-  h = (f->gd - gd0) / 9.80616
-  copy_VarCoords(f->gd, h)
+  h = (f->gh - gh0) / 9.80616
+  copy_VarCoords(f->gh, h)
   h@long_name = "height"
   plot1 = gsn_csm_contour_map(wks, h(0,:,:), res_h)
 
